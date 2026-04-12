@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Governance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<style>
+:root{
+--bg:#fff;--bg2:#f6f5f2;--bg3:#eeedeb;--text:#1a1a1a;--text2:#5f5e5a;--text3:#888780;
+--border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);
+--blue:#185FA5;--blue-l:#E6F1FB;--teal:#0F6E56;--teal-l:#E1F5EE;
+--coral:#993C1D;--coral-l:#FAECE7;--amber:#854F0B;--amber-l:#FAEEDA;
+--green:#3B6D11;--green-l:#EAF3DE;--red:#A32D2D;--red-l:#FCEBEB;
+--purple:#534AB7;--purple-l:#EEEDFE;--gray:#5F5E5A;--gray-l:#F1EFE8;
+--pink:#993556;--pink-l:#FBEAF0;
+--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'SF Mono',Menlo,monospace;--r:10px;
+}
+@media(prefers-color-scheme:dark){:root{
+--bg:#1a1a1a;--bg2:#252523;--bg3:#2c2c2a;--text:#e8e6de;--text2:#b4b2a9;--text3:#888780;
+--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+--blue:#85B7EB;--blue-l:#042C53;--teal:#5DCAA5;--teal-l:#04342C;
+--coral:#F0997B;--coral-l:#4A1B0C;--amber:#EF9F27;--amber-l:#412402;
+--green:#97C459;--green-l:#173404;--red:#F09595;--red-l:#501313;
+--purple:#AFA9EC;--purple-l:#26215C;--gray:#B4B2A9;--gray-l:#2C2C2A;
+--pink:#ED93B1;--pink-l:#4B1528;
+}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5}
+.app{max-width:1200px;margin:0 auto;padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.header h1{font-size:22px;font-weight:600}
+.header .meta{font-size:12px;color:var(--text3)}
+.load-bar{background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;margin:40px 0}
+.load-bar input[type=file]{display:none}
+.load-bar label{cursor:pointer;padding:10px 24px;border:.5px solid var(--border2);border-radius:var(--r);font-size:14px;display:inline-block;transition:background .15s}
+.load-bar label:hover{background:var(--bg3)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:24px}
+.stat{background:var(--bg2);border-radius:var(--r);padding:14px 16px}
+.stat .label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.stat .value{font-size:22px;font-weight:500;margin-top:2px}
+.controls{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.controls input[type=text]{flex:1;min-width:180px;padding:8px 12px;border:.5px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--text);font-family:var(--font)}
+.controls select{padding:8px 12px;border:.5px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--text);font-family:var(--font)}
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:8px 16px;border:.5px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg);color:var(--text);transition:all .15s;font-family:var(--font)}
+.tab:hover{background:var(--bg2)}
+.tab.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.view{display:none}.view.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;background:var(--bg2);color:var(--text2);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);position:sticky;top:0;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+th .sa{margin-left:4px;font-size:10px}
+td{padding:10px 12px;border-bottom:.5px solid var(--border);vertical-align:top}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-active{background:var(--green-l);color:var(--green)}
+.badge-superseded{background:var(--gray-l);color:var(--gray)}
+.badge-draft{background:var(--blue-l);color:var(--blue)}
+.badge-not-in-repo{background:var(--amber-l);color:var(--amber)}
+.badge-archived{background:var(--purple-l);color:var(--purple)}
+.badge-pending{background:var(--red-l);color:var(--red)}
+.badge-resolved{background:var(--green-l);color:var(--green)}
+.badge-format{background:var(--bg3);color:var(--text2)}
+.fn{font-family:var(--mono);font-size:11px;word-break:break-all}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:var(--bg3);color:var(--text2);margin:1px 2px}
+.loc{display:inline-flex;align-items:center;gap:3px;font-size:11px;margin:1px 3px 1px 0}
+.loc-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.loc-disk .loc-dot{background:var(--green)}
+.loc-chat .loc-dot{background:var(--blue)}
+.loc-cowork .loc-dot{background:var(--purple)}
+.loc-missing .loc-dot{background:var(--red);opacity:.5}
+.alert-panel{margin-bottom:24px}
+.alert{padding:12px 16px;border-radius:var(--r);margin-bottom:8px;font-size:13px;line-height:1.6}
+.alert-red{background:var(--red-l);color:var(--red)}
+.alert-amber{background:var(--amber-l);color:var(--amber)}
+.alert-blue{background:var(--blue-l);color:var(--blue)}
+.alert-green{background:var(--green-l);color:var(--green)}
+.dep-graph{background:var(--bg2);border-radius:var(--r);padding:20px;min-height:200px}
+.dep-node{display:inline-block;padding:6px 12px;border-radius:6px;font-size:12px;margin:4px;cursor:pointer;border:.5px solid var(--border);transition:all .15s;background:var(--bg)}
+.dep-node:hover{border-color:var(--blue);background:var(--blue-l)}
+.dep-node.selected{border:2px solid var(--blue);background:var(--blue-l)}
+.dep-section{margin-bottom:16px}
+.dep-section h4{font-size:12px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.dep-detail{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:16px;margin-top:12px;font-size:13px}
+.dep-detail h3{font-size:15px;font-weight:500;margin-bottom:8px}
+.dep-detail p{color:var(--text2);margin-bottom:6px}
+.dep-arrow{color:var(--text3);font-size:11px;margin:0 4px}
+.loc-legend{display:flex;gap:16px;margin:12px 0;font-size:12px;color:var(--text2);flex-wrap:wrap}
+.loc-legend-item{display:flex;align-items:center;gap:4px}
+.empty{text-align:center;padding:40px;color:var(--text3);font-style:italic}
+.footer{text-align:center;padding:24px 0;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:32px}
+.sync-panel{background:var(--bg2);border-radius:var(--r);padding:20px}
+.sync-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:.5px solid var(--border);font-size:13px}
+.sync-row:last-child{border-bottom:none}
+.sync-title{flex:1;font-weight:500}
+.sync-locs{display:flex;gap:2px}
+.sync-action{font-size:11px;color:var(--text3);min-width:120px;text-align:right}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+<div>
+<h1 id="project-title">Document governance dashboard</h1>
+<div class="meta" id="project-meta">Load a REGISTRY.yaml to begin</div>
+</div>
+<div class="meta" id="audit-info"></div>
+</div>
+
+<div class="load-bar" id="load-bar">
+<p style="margin-bottom:12px;color:var(--text2)">Drop a REGISTRY.yaml here or click to browse</p>
+<label for="file-input">Load REGISTRY.yaml</label>
+<input type="file" id="file-input" accept=".yaml,.yml">
+</div>
+
+<div id="dashboard" style="display:none">
+<div class="stats" id="stats"></div>
+<div class="alert-panel" id="alerts"></div>
+<div class="loc-legend">
+<div class="loc-legend-item"><span class="loc-dot" style="background:var(--green)"></span>On disk</div>
+<div class="loc-legend-item"><span class="loc-dot" style="background:var(--blue)"></span>Chat knowledge</div>
+<div class="loc-legend-item"><span class="loc-dot" style="background:var(--purple)"></span>Cowork visible</div>
+<div class="loc-legend-item"><span class="loc-dot" style="background:var(--red);opacity:.5"></span>Missing</div>
+</div>
+<div class="tabs" id="tabs">
+<div class="tab active" onclick="showView('table',this)">All documents</div>
+<div class="tab" onclick="showView('sync',this)">Location sync</div>
+<div class="tab" onclick="showView('deps',this)">Dependencies</div>
+<div class="tab" onclick="showView('xrefs',this)">Cross-references</div>
+<div class="tab" onclick="showView('violations',this)">Violations</div>
+<div class="tab" onclick="showView('timeline',this)">Timeline</div>
+</div>
+<div class="controls" id="controls">
+<input type="text" id="search" placeholder="Search documents..." oninput="filterDocs()">
+<select id="status-filter" onchange="filterDocs()"><option value="">All statuses</option><option value="active">Active</option><option value="superseded">Superseded</option><option value="draft">Draft</option><option value="not-in-repo">Not in repo</option><option value="archived">Archived</option></select>
+<select id="format-filter" onchange="filterDocs()"><option value="">All formats</option><option value="docx">docx</option><option value="md">md</option><option value="html">html</option><option value="pdf">pdf</option></select>
+<select id="loc-filter" onchange="filterDocs()"><option value="">All locations</option><option value="disk">On disk</option><option value="chat">In Chat</option><option value="cowork">Cowork visible</option><option value="disk-only">Disk only (not in Chat)</option><option value="chat-only">Chat only (not on disk)</option></select>
+</div>
+<div class="view active" id="view-table"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+<div class="view" id="view-sync"><div class="sync-panel" id="sync-content"></div></div>
+<div class="view" id="view-deps"><div class="dep-graph" id="dep-graph"></div></div>
+<div class="view" id="view-xrefs"><div id="xref-content"></div></div>
+<div class="view" id="view-violations"><div id="violation-content"></div></div>
+<div class="view" id="view-timeline"><div id="timeline-content"></div></div>
+</div>
+<div class="footer">Document Governance Dashboard V1.1 — reads any REGISTRY.yaml — locations: disk / chat / cowork</div>
+</div>
+<script>
+let DATA=null,DOCS=[],SORTED_COL=null,SORTED_DIR='asc';
+const $=id=>document.getElementById(id);
+const badge=(s)=>{const c={'active':'badge-active','superseded':'badge-superseded','draft':'badge-draft','not-in-repo':'badge-not-in-repo','archived':'badge-archived','pending':'badge-pending','resolved':'badge-resolved'};return`<span class="badge ${c[s]||'badge-format'}">${s}</span>`};
+
+function locDots(locs){
+if(!locs)return'<span class="loc loc-missing"><span class="loc-dot"></span>unknown</span>';
+let h='';
+if(locs.disk)h+='<span class="loc loc-disk"><span class="loc-dot"></span>disk</span>';
+if(locs.chat)h+='<span class="loc loc-chat"><span class="loc-dot"></span>chat</span>';
+if(locs.cowork)h+='<span class="loc loc-cowork"><span class="loc-dot"></span>cowork</span>';
+if(!locs.disk&&!locs.chat&&!locs.cowork)h+='<span class="loc loc-missing"><span class="loc-dot"></span>nowhere</span>';
+return h;
+}
+
+const loadBar=$('load-bar'),dashboard=$('dashboard'),fileInput=$('file-input');
+loadBar.addEventListener('dragover',e=>{e.preventDefault();loadBar.style.borderColor='var(--blue)'});
+loadBar.addEventListener('dragleave',()=>{loadBar.style.borderColor='var(--border2)'});
+loadBar.addEventListener('drop',e=>{e.preventDefault();loadBar.style.borderColor='var(--border2)';if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});
+
+function readFile(f){const r=new FileReader();r.onload=e=>{try{DATA=jsyaml.load(e.target.result);DOCS=DATA.documents||[];render()}catch(err){alert('Error parsing YAML: '+err.message)}};r.readAsText(f)}
+
+function render(){
+loadBar.style.display='none';dashboard.style.display='block';
+const cfg=DATA.project_config||{};const meta=DATA.registry_meta||{};
+$('project-title').textContent=(cfg.project_name||'Project')+' — Document governance';
+$('project-meta').textContent=`${DOCS.length} documents | Last audit: ${meta.last_audit||'unknown'}`;
+$('audit-info').innerHTML=meta.pending_cross_reference_updates?`<span class="badge badge-pending">${meta.pending_cross_reference_updates} pending xrefs</span>`:'';
+renderStats(meta);renderAlerts(meta);renderTable();renderSync();renderDeps();renderXrefs();renderViolations();renderTimeline()
+}
+
+function renderStats(m){
+const counts={active:0,superseded:0,draft:0,'not-in-repo':0,archived:0};
+DOCS.forEach(d=>counts[d.status]=(counts[d.status]||0)+1);
+const locCounts={disk:0,chat:0,cowork:0,nowhere:0};
+DOCS.forEach(d=>{const l=d.locations||{};if(l.disk)locCounts.disk++;if(l.chat)locCounts.chat++;if(l.cowork)locCounts.cowork++;if(!l.disk&&!l.chat&&!l.cowork)locCounts.nowhere++});
+$('stats').innerHTML=`
+<div class="stat"><div class="label">Total</div><div class="value">${DOCS.length}</div></div>
+<div class="stat"><div class="label">Active</div><div class="value" style="color:var(--green)">${counts.active}</div></div>
+<div class="stat"><div class="label">On disk</div><div class="value" style="color:var(--green)">${locCounts.disk}</div></div>
+<div class="stat"><div class="label">In chat</div><div class="value" style="color:var(--blue)">${locCounts.chat}</div></div>
+<div class="stat"><div class="label">Pending xrefs</div><div class="value" style="color:var(--red)">${m.pending_cross_reference_updates||0}</div></div>
+<div class="stat"><div class="label">Superseded</div><div class="value" style="color:var(--gray)">${counts.superseded}</div></div>
+<div class="stat"><div class="label">Not in repo</div><div class="value" style="color:var(--amber)">${counts['not-in-repo']}</div></div>
+<div class="stat"><div class="label">Violations</div><div class="value" style="color:var(--coral)">${m.naming_violations||0}</div></div>
+`}
+
+function renderAlerts(m){
+let html='';
+if(m.pending_cross_reference_updates>0)html+=`<div class="alert alert-red"><strong>Blocking:</strong> ${m.pending_cross_reference_updates} cross-reference update(s) pending from addenda.</div>`;
+const nir=DOCS.filter(d=>d.status==='not-in-repo');
+if(nir.length>0)html+=`<div class="alert alert-amber"><strong>Data risk:</strong> ${nir.length} document(s) exist only in Chat, not on disk. Copy to repo to prevent data loss.</div>`;
+const chatOnly=DOCS.filter(d=>{const l=d.locations||{};return l.chat&&!l.disk&&d.status!=='not-in-repo'&&d.status!=='superseded'});
+if(chatOnly.length>0)html+=`<div class="alert alert-amber"><strong>Sync gap:</strong> ${chatOnly.length} active document(s) in Chat but not on disk.</div>`;
+const diskOnly=DOCS.filter(d=>{const l=d.locations||{};return l.disk&&!l.chat&&d.status==='active'});
+if(diskOnly.length>0)html+=`<div class="alert alert-blue"><strong>Chat outdated:</strong> ${diskOnly.length} active document(s) on disk but not in Chat project knowledge.</div>`;
+if(m.naming_violations>0)html+=`<div class="alert alert-blue"><strong>Cosmetic:</strong> ${m.naming_violations} naming violation(s) — defer to next version bump.</div>`;
+const allSynced=nir.length===0&&chatOnly.length===0&&(m.pending_cross_reference_updates||0)===0;
+if(allSynced)html+=`<div class="alert alert-green"><strong>All clear:</strong> All documents synced across locations. No blocking issues.</div>`;
+$('alerts').innerHTML=html
+}
+
+function renderTable(){
+$('thead').innerHTML=`<tr>${['Title','Filename','Ver','Date','Status','Locations','Format'].map((h,i)=>`<th onclick="sortTable(${i})">${h}<span class="sa"></span></th>`).join('')}</tr>`;
+filterDocs()
+}
+
+function filterDocs(){
+const q=($('search').value||'').toLowerCase();
+const sf=$('status-filter').value;
+const ff=$('format-filter').value;
+const lf=$('loc-filter').value;
+let docs=DOCS.filter(d=>{
+if(sf&&d.status!==sf)return false;
+if(ff&&d.format!==ff)return false;
+const l=d.locations||{};
+if(lf==='disk'&&!l.disk)return false;
+if(lf==='chat'&&!l.chat)return false;
+if(lf==='cowork'&&!l.cowork)return false;
+if(lf==='disk-only'&&(!l.disk||l.chat))return false;
+if(lf==='chat-only'&&(!l.chat||l.disk))return false;
+if(q&&!(d.title||'').toLowerCase().includes(q)&&!(d.filename||'').toLowerCase().includes(q)&&!(d.description||'').toLowerCase().includes(q)&&!((d.tags||[]).join(' ')).toLowerCase().includes(q))return false;
+return true
+});
+if(SORTED_COL!==null){
+const keys=['title','filename','version','date','status','_loc','format'];
+const k=keys[SORTED_COL];
+docs.sort((a,b)=>{
+let va,vb;
+if(k==='_loc'){const la=a.locations||{};const lb=b.locations||{};va=((la.disk?1:0)+(la.chat?1:0)+(la.cowork?1:0)).toString();vb=((lb.disk?1:0)+(lb.chat?1:0)+(lb.cowork?1:0)).toString()}
+else{va=(a[k]||'').toString().toLowerCase();vb=(b[k]||'').toString().toLowerCase()}
+return SORTED_DIR==='asc'?va.localeCompare(vb):vb.localeCompare(va)})
+}
+$('tbody').innerHTML=docs.map(d=>`<tr>
+<td><strong>${d.title||'Untitled'}</strong><div style="font-size:11px;color:var(--text3);margin-top:2px">${(d.tags||[]).slice(0,4).map(t=>`<span class="tag">${t}</span>`).join('')}</div></td>
+<td class="fn">${d.filename}</td>
+<td>${d.version||'—'}</td>
+<td>${d.date||'—'}</td>
+<td>${badge(d.status)}</td>
+<td>${locDots(d.locations)}</td>
+<td>${badge(d.format)}</td>
+</tr>`).join('');
+if(docs.length===0)$('tbody').innerHTML='<tr><td colspan="7" class="empty">No documents match filters</td></tr>'
+}
+
+function sortTable(col){
+if(SORTED_COL===col)SORTED_DIR=SORTED_DIR==='asc'?'desc':'asc';
+else{SORTED_COL=col;SORTED_DIR='asc'}
+filterDocs();
+document.querySelectorAll('.sa').forEach((el,i)=>{el.textContent=i===col?(SORTED_DIR==='asc'?'▲':'▼'):''})
+}
+
+function renderSync(){
+const active=DOCS.filter(d=>d.status==='active'||d.status==='not-in-repo');
+let html='';
+const groups=[
+{label:'On disk + Chat + Cowork (fully synced)',filter:d=>{const l=d.locations||{};return l.disk&&l.chat&&l.cowork},color:'var(--green)'},
+{label:'On disk + Chat (no Cowork)',filter:d=>{const l=d.locations||{};return l.disk&&l.chat&&!l.cowork},color:'var(--teal)'},
+{label:'On disk only (not in Chat)',filter:d=>{const l=d.locations||{};return l.disk&&!l.chat},color:'var(--blue)'},
+{label:'Chat only (not on disk)',filter:d=>{const l=d.locations||{};return l.chat&&!l.disk},color:'var(--amber)'},
+{label:'No location data',filter:d=>!d.locations,color:'var(--gray)'}
+];
+groups.forEach(g=>{
+const matches=active.filter(g.filter);
+if(matches.length===0)return;
+html+=`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:500;color:${g.color};margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${g.label} (${matches.length})</div>`;
+matches.forEach(d=>{
+const action=g.label.includes('Chat only')?'Copy to disk':g.label.includes('disk only')?'Add to Chat':'Synced';
+html+=`<div class="sync-row"><span class="sync-title">${d.title}</span><span class="sync-locs">${locDots(d.locations)}</span><span class="sync-action">${action}</span></div>`
+});
+html+='</div>'
+});
+if(!html)html='<p class="empty">No location data found. Add locations fields to REGISTRY.yaml to enable sync tracking.</p>';
+$('sync-content').innerHTML=html
+}
+
+function renderDeps(){
+const active=DOCS.filter(d=>d.status==='active');
+const graph=$('dep-graph');
+const suppMap={};
+active.forEach(d=>{(d.supplements||[]).forEach(s=>{if(!suppMap[s])suppMap[s]=[];suppMap[s].push(d.filename)})});
+let html='<div class="dep-section"><h4>Documents with supplements / addenda</h4>';
+const targets=Object.keys(suppMap);
+if(targets.length===0){html+='<p class="empty">No dependency relationships found</p>';graph.innerHTML=html+'</div>';return}
+targets.forEach(t=>{
+const tDoc=DOCS.find(d=>d.filename===t);
+html+=`<div style="margin:8px 0"><span class="dep-node" onclick="showDepDetail('${t}')">${tDoc?tDoc.title:t}</span>`;
+html+=`<span class="dep-arrow">◄ supplemented by</span>`;
+suppMap[t].forEach(s=>{const sDoc=DOCS.find(d=>d.filename===s);html+=`<span class="dep-node" onclick="showDepDetail('${s}')">${sDoc?sDoc.title:s}</span> `});
+html+='</div>'
+});
+html+='</div><div id="dep-detail-panel"></div>';
+graph.innerHTML=html
+}
+
+window.showDepDetail=function(fn){
+const d=DOCS.find(doc=>doc.filename===fn);if(!d)return;
+const supps=(d.supplements||[]).map(s=>{const sd=DOCS.find(doc=>doc.filename===s);return sd?sd.title:s}).join(', ')||'None';
+const xrefs=(d.cross_references||[]).map(x=>`${x.doc}: ${(x.sections||[]).join(', ')} ${badge(x.status||'unknown')}`).join('<br>')||'None';
+$('dep-detail-panel').innerHTML=`<div class="dep-detail">
+<h3>${d.title}</h3>
+<p><strong>File:</strong> <span class="fn">${d.filename}</span></p>
+<p><strong>Status:</strong> ${badge(d.status)} <strong>Version:</strong> ${d.version} <strong>Date:</strong> ${d.date}</p>
+<p><strong>Locations:</strong> ${locDots(d.locations)}</p>
+<p><strong>Supplements:</strong> ${supps}</p>
+<p><strong>Cross-references:</strong><br>${xrefs}</p>
+<p><strong>Description:</strong> ${d.description||'—'}</p>
+</div>`
+}
+
+function renderXrefs(){
+const withXrefs=DOCS.filter(d=>(d.cross_references||[]).length>0);
+if(withXrefs.length===0){$('xref-content').innerHTML='<p class="empty">No cross-references found</p>';return}
+let html='<table><thead><tr><th>Source</th><th>Target</th><th>Sections</th><th>Status</th></tr></thead><tbody>';
+withXrefs.forEach(d=>{(d.cross_references||[]).forEach(x=>{html+=`<tr><td>${d.title}<br><span class="fn">${d.filename}</span></td><td class="fn">${x.doc}</td><td style="font-size:12px">${(x.sections||[]).join('<br>')}</td><td>${badge(x.status||'unknown')}</td></tr>`})});
+html+='</tbody></table>';$('xref-content').innerHTML=html
+}
+
+function renderViolations(){
+const meta=DATA.registry_meta||{};const details=meta.naming_violation_details||[];
+if(details.length===0){$('violation-content').innerHTML='<p class="empty">No naming violations recorded</p>';return}
+let html='<table><thead><tr><th>Filename</th><th>Issue</th></tr></thead><tbody>';
+details.forEach(v=>{html+=`<tr><td class="fn">${v.filename}</td><td>${v.issue}</td></tr>`});
+html+='</tbody></table>';$('violation-content').innerHTML=html
+}
+
+function renderTimeline(){
+const dated=DOCS.filter(d=>d.date).sort((a,b)=>b.date.localeCompare(a.date));
+if(dated.length===0){$('timeline-content').innerHTML='<p class="empty">No dated documents</p>';return}
+const byDate={};dated.forEach(d=>{if(!byDate[d.date])byDate[d.date]=[];byDate[d.date].push(d)});
+let html='';
+Object.keys(byDate).sort().reverse().forEach(date=>{
+html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${date}</div>`;
+byDate[date].forEach(d=>{html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;flex-wrap:wrap">${badge(d.status)}${badge(d.format)}<span style="font-size:13px">${d.title}</span><span style="font-size:11px;color:var(--text3)">v${d.version||'?'}</span>${locDots(d.locations)}</div>`});
+html+='</div>'
+});
+$('timeline-content').innerHTML=html
+}
+
+function showView(id,el){
+document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+$('view-'+id).classList.add('active');el.classList.add('active');
+$('controls').style.display=(id==='table')?'flex':'none'
+}
+</script>
+</body>
+</html>
