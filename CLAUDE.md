@@ -20,17 +20,19 @@ Project-agnostic by design — PRISM (`~/projects/prism`) is the first consumer.
 
 ## Package Structure
 ```
-librarian/                  # pip-installable Python package (v0.3.0)
+librarian/                  # pip-installable Python package (v0.5.0)
 ├── __init__.py             # public API exports + __version__
-├── __main__.py             # CLI: audit, status, register, bump, manifest, evidence, diff, log
+├── __main__.py             # CLI: audit, status, register, bump, manifest, evidence, diff, log, dashboard, site
 ├── naming.py               # naming convention parser + validator
 ├── versioning.py           # version bump logic
 ├── registry.py             # REGISTRY.yaml CRUD
-├── audit.py                # OODA audit engine + formatter
+├── audit.py                # OODA audit engine + formatter + folder density analysis
 ├── manifest.py             # portable JSON + SHA-256 hashes + dependency graph
 ├── oplog.py                # append-only JSONL operation log
 ├── evidence.py             # tamper-evident IP evidence pack
-└── diffaudit.py            # delta report between two manifests
+├── diffaudit.py            # delta report between two manifests
+├── dashboard.py            # dashboard template loader + manifest JSON injection
+└── sitegen.py              # static site generator (sidebar tree, grouping, graph)
 ```
 
 ---
@@ -40,7 +42,7 @@ librarian/                  # pip-installable Python package (v0.3.0)
 python -m librarian --registry <path> <command>
 
 Commands:
-  audit       OODA governance audit (drift, naming, orphans, cross-refs)
+  audit       OODA governance audit (drift, naming, orphans, cross-refs, folder suggestions)
   status      Quick registry summary (counts by status)
   register    Add a new document entry to the registry
   bump        Version-bump an existing document
@@ -48,41 +50,43 @@ Commands:
   evidence    Generate tamper-evident IP evidence pack (-o output.json)
   diff        Compare two manifests (old.json new.json --json)
   log         Read/filter operation log (--since, --last N)
+  dashboard   Render interactive HTML dashboard from manifest
+  site        Generate full static site with sidebar tree navigation
 ```
 
 ---
 
 ## Test Suite
-- **128 tests** across 7 test files
+- **191 tests** across 9 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Phase B: 26 (manifest)
 - Phase C: 66 (oplog 18, evidence 13, diffaudit 35)
+- Phase D: 16 (dashboard)
+- Phase E: 39 (sitegen 23 + sidebar/grouping 16)
+- Folder suggestions: 8 (audit density analysis)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
 ---
 
 ## Current State
-**Version:** 0.3.0 (Phase C complete)
-**Tests:** 128/128 PASS
-**Last commit:** `db37d4f` — Phase C (oplog, evidence, diffaudit)
+**Version:** 0.5.0
+**Tests:** 191/191 PASS
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
 - **Phase B** (Session 28): Manifest system — portable JSON + SHA-256 + dependency graph
 - **Phase C** (Session 28): Audit extensions — operation log, evidence pack, diff audit
+- **Phase D** (Session 29): Interactive dashboard — Lunr search, cytoscape.js graph, filter chips, timeline
+- **Phase E** (Session 29): Static site generator — multi-page HTML, per-doc pages, graph page
+- **Sidebar + grouping** (Session 30): Collapsible tree nav with status/tag/path grouping modes
+- **Folder suggestions** (Session 30): Audit auto-detects crowded directories/tags, suggests reorganization
+- **Design refresh** (Session 30): Unified design tokens across sitegen + dashboard template
 
-### Next Phase
-- **Phase D:** Web output V1 — extended dashboard with search, filter, timeline, cross-reference graph
-  - Template: `dashboard/librarian-dashboard-template-YYYYMMDD-V3.0.html`
-  - CLI: `python -m librarian dashboard` — renders template against manifest
-  - Client-side Lunr search, filter UI, timeline view, d3-force or cytoscape.js graph
-  - Zero external dependencies, works offline
-  - Supersedes legacy PRISM dashboards (`doc-librarian-dashboard-*`)
-
-### Future Phases
-- **Phase E:** Static site scaffold (MkDocs-like generator)
-- **Phase F:** Plugin conversion + open-source release + vector index
+### Next Steps (by priority)
+1. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
+2. **Review scheduling:** `next_review` date field in registry, surfaced as KPI
+3. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
 
 ---
 
@@ -90,7 +94,7 @@ Commands:
 The authoritative buildout plan lives in PRISM at:
 `~/projects/prism/docs/librarian-buildout-plan-20260411-V1.2.md`
 
-A copy should be brought into this repo at `docs/` during Phase D.
+A local copy is at `docs/librarian-buildout-plan-20260411-V1.2.md`.
 
 ---
 
@@ -142,6 +146,7 @@ python -m librarian --registry ~/projects/prism/docs/REGISTRY.yaml audit
 - Evidence packs are tamper-evident — changing any file invalidates the seal
 - Python source files are NOT governed documents (no YYYYMMDD-VX.Y naming)
 - Pre-commit hook validates governed document names, not code files
+- Cowork sandbox: .git/index.lock cannot be removed — all git ops in host terminal
 
 ---
 
@@ -150,6 +155,14 @@ python -m librarian --registry ~/projects/prism/docs/REGISTRY.yaml audit
 - PyYAML
 - pytest
 - No other runtime dependencies (by design — zero-dep governance tool)
+
+---
+
+## Session Efficiency
+- Keep sessions to ONE feature — commit, start fresh
+- This CLAUDE.md is the handoff doc; update it at session end
+- Avoid reading the dashboard template (~500KB) — modify surgically
+- Use subagents for parallel isolated work
 
 ---
 

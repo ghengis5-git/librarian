@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .naming import validate as validate_name
 from .registry import Registry
@@ -11,6 +12,19 @@ from .registry import Registry
 DEFAULT_SKIP_DIRS = frozenset(
     {".git", ".venv", "venv", "__pycache__", "node_modules", "build", "dist"}
 )
+
+# When any single folder or logical group exceeds this count, suggest splitting.
+DEFAULT_FOLDER_THRESHOLD = 15
+
+
+@dataclass
+class FolderSuggestion:
+    """A recommendation to reorganize documents into a subfolder."""
+
+    group_type: str  # "directory" | "tag" | "status"
+    group_name: str  # e.g. "docs" or "phase-a"
+    count: int
+    suggestion: str  # human-readable recommendation
 
 
 @dataclass
@@ -21,9 +35,11 @@ class AuditReport:
     missing: list[str] = field(default_factory=list)
     naming_violations: list[tuple[str, list[str]]] = field(default_factory=list)
     pending_cross_refs: list[str] = field(default_factory=list)
+    folder_suggestions: list[FolderSuggestion] = field(default_factory=list)
 
     @property
     def clean(self) -> bool:
+        # folder_suggestions are advisory — they don't fail the audit
         return not (
             self.unregistered
             or self.missing
@@ -53,7 +69,12 @@ def _walk_tracked(
     return result
 
 
-def audit(registry: Registry, repo_root: str | Path) -> AuditReport:
+def audit(
+    registry: Registry,
+    repo_root: str | Path,
+    *,
+    folder_threshold: int = DEFAULT_FOLDER_THRESHOLD,
+) -> AuditReport:
     """Produce an audit report for the repo under the given registry."""
     repo_root = Path(repo_root)
     report = AuditReport()
@@ -101,7 +122,70 @@ def audit(registry: Registry, repo_root: str | Path) -> AuditReport:
                         f"{doc.get('filename', '?')} -> {xref.get('target', '?')}"
                     )
 
+    # Folder density analysis
+    report.folder_suggestions = _analyze_folder_density(
+        registry, threshold=folder_threshold
+    )
+
     return report
+
+
+def _analyze_folder_density(
+    registry: Registry,
+    *,
+    threshold: int = DEFAULT_FOLDER_THRESHOLD,
+) -> list[FolderSuggestion]:
+    """Check document groupings and suggest splits when groups are too large."""
+    suggestions: list[FolderSuggestion] = []
+    documents = registry.documents
+
+    if not documents:
+        return suggestions
+
+    # 1. Check by directory — most actionable
+    by_dir: dict[str, list[str]] = defaultdict(list)
+    for doc in documents:
+        path = doc.get("path", doc.get("filename", ""))
+        parent = str(PurePosixPath(path).parent) if "/" in path else "."
+        by_dir[parent].append(doc.get("filename", ""))
+
+    for dirname, files in sorted(by_dir.items()):
+        if len(files) > threshold:
+            suggestions.append(
+                FolderSuggestion(
+                    group_type="directory",
+                    group_name=dirname,
+                    count=len(files),
+                    suggestion=(
+                        f'Directory "{dirname}" has {len(files)} documents '
+                        f"(threshold: {threshold}). Consider splitting by "
+                        f"status or topic into subdirectories."
+                    ),
+                )
+            )
+
+    # 2. Check by tag — suggest tag-based folders
+    by_tag: dict[str, list[str]] = defaultdict(list)
+    for doc in documents:
+        for tag in doc.get("tags") or []:
+            by_tag[tag].append(doc.get("filename", ""))
+
+    for tag, files in sorted(by_tag.items()):
+        if len(files) > threshold:
+            suggestions.append(
+                FolderSuggestion(
+                    group_type="tag",
+                    group_name=tag,
+                    count=len(files),
+                    suggestion=(
+                        f'Tag "{tag}" spans {len(files)} documents '
+                        f"(threshold: {threshold}). Consider grouping "
+                        f'"{tag}" documents into a dedicated folder.'
+                    ),
+                )
+            )
+
+    return suggestions
 
 
 def format_report(report: AuditReport) -> str:
@@ -140,6 +224,12 @@ def format_report(report: AuditReport) -> str:
         lines.append(f"-- Pending cross-refs ({len(report.pending_cross_refs)}) --")
         for x in report.pending_cross_refs:
             lines.append(f"  ! {x}")
+        lines.append("")
+
+    if report.folder_suggestions:
+        lines.append(f"-- Folder suggestions ({len(report.folder_suggestions)}) --")
+        for fs in report.folder_suggestions:
+            lines.append(f"  ~ {fs.suggestion}")
         lines.append("")
 
     if report.clean:
