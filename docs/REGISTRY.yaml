@@ -1,0 +1,207 @@
+# Librarian Document Registry
+# Maintained by: librarian skill
+# Location: docs/REGISTRY.yaml
+# Last updated: 2026-04-11 (initial scaffold)
+#
+# This file is the single source of truth for all documentation in this
+# repository. Every tracked document must have an entry here. Run the
+# librarian's audit function to detect unregistered files.
+#
+# ============================================================
+# ABOUT THIS REGISTRY
+# ============================================================
+# This is the REGISTRY.yaml for the Librarian project itself —
+# the standalone, project-agnostic document governance skill that was
+# extracted from Project PRISM's in-repo prism-librarian skill.
+#
+# The librarian dogfoods its own governance rules from commit #1:
+# this file is the registry for THIS repo, not a template. The
+# templates and schema documentation for adopting the librarian
+# in OTHER projects live in skill/SKILL.md under the "Getting
+# Started" and "project_config Schema" sections.
+#
+# To adopt the librarian in a different project, copy skill/SKILL.md
+# into that project's skill directory and create a new REGISTRY.yaml
+# with a project_config block tuned to that project.
+# ============================================================
+
+# ============================================================
+# PROJECT CONFIGURATION
+# ============================================================
+# Project-specific rules consumed by the librarian skill.
+# The skill reads this block on every invocation. If a key is missing,
+# the skill falls back to its hardcoded generic defaults (documented
+# in skill/SKILL.md under "Fallback Defaults").
+# ============================================================
+
+project_config:
+  project_name: "Librarian"
+  naming_convention: "descriptive-name-YYYYMMDD-VX.Y.ext"
+  naming_rules:
+    separator: "-"
+    case: "lowercase"
+    forbidden_words:
+      - "file"
+      - "download"
+      - "output"
+      - "document"
+    infrastructure_exempt:
+      - "SKILL.md"
+      - "REGISTRY.yaml"
+      - "CLAUDE.md"
+      - "README.md"
+      - ".gitignore"
+      - ".python-version"
+  default_author: "Chris Kahn"
+  default_classification: "PERSONAL / INTERNAL USE ONLY"
+  classification_levels:
+    - "PERSONAL / INTERNAL USE ONLY"
+    - "CONFIDENTIAL"
+    - "PUBLIC"
+  tags_taxonomy:
+    domain:
+      - governance
+      - infrastructure
+      - architecture
+      - operational
+      - meta
+    phase:
+      - phase-a
+      - phase-b
+      - phase-c
+      - phase-d
+      - phase-e
+      - phase-f
+    type:
+      - skill-definition
+      - technical-spec
+      - schema
+      - tool
+      - example
+      - project-plan
+      - report
+    status_indicators:
+      - needs-update
+      - pending-review
+      - blocked
+  tracked_dirs:
+    - "docs/"
+    - "skill/"
+  docs_path: "docs/"
+  archive_path: "docs/archive/"
+  diagrams_path: "docs/diagrams/"
+  operator_path: "docs/phase-specs/"
+  staleness_threshold_days: 90
+  git_author_name: "Chris Kahn"
+  git_author_email: "research+ai@brokenwire.org"
+  git_commit_prefixes:
+    docs: "docs:"
+    registry: "registry:"
+    infra: "infra:"
+    skill: "skill:"
+    refactor: "refactor:"
+  os_target: "darwin"
+
+documents:
+
+  # ============================================================
+  # SKILL DEFINITION
+  # ============================================================
+  # The canonical librarian skill file. Lives outside docs/ because
+  # skill/SKILL.md is the discoverable entry point for the Claude
+  # skill loader. Registered here anyway for inventory completeness.
+
+  - filename: "SKILL.md"
+    path: "skill/SKILL.md"
+    title: "Document Librarian Skill Definition"
+    description: "Canonical skill definition for the project-agnostic document librarian. Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed and a Getting Started section added."
+    format: "md"
+    version: "1.0"
+    date: "2026-04-11"
+    status: "active"
+    author: "Chris Kahn"
+    classification: "PERSONAL / INTERNAL USE ONLY"
+    locations:
+      disk: true
+      chat: false
+      cowork: true
+    parent: null
+    supplements: []
+    cross_references: []
+    supersedes: null
+    superseded_by: null
+    infrastructure_exempt: true
+    exemption_reason: "Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version suffix not applied."
+    tags:
+      - governance
+      - skill-definition
+      - meta
+      - phase-a
+
+  # ============================================================
+  # PROJECT INFRASTRUCTURE
+  # ============================================================
+
+  - filename: "README.md"
+    path: "README.md"
+    title: "Project README"
+    description: "Top-level project README. Overview, installation instructions, and usage examples for the standalone librarian."
+    format: "md"
+    version: "1.0"
+    date: "2026-04-11"
+    status: "draft"
+    author: "Chris Kahn"
+    classification: "PERSONAL / INTERNAL USE ONLY"
+    locations:
+      disk: true
+      chat: false
+      cowork: true
+    parent: null
+    supplements: []
+    cross_references:
+      - doc: "SKILL.md"
+        sections:
+          - "Getting Started — Adopting the Librarian in a New Project"
+        status: "pending"
+        note: "README should link to the Getting Started section once written"
+    supersedes: null
+    superseded_by: null
+    infrastructure_exempt: true
+    exemption_reason: "Filename is hardcoded by git/GitHub conventions (README.md). Date-version suffix not applied."
+    tags:
+      - infrastructure
+      - meta
+      - phase-a
+
+# ============================================================
+# REGISTRY METADATA
+# ============================================================
+
+registry_meta:
+  version_convention_note: >-
+    This project was created 2026-04-11 with the canonical dot form (VX.Y)
+    from day one. No legacy transition rules apply.
+  total_documents: 2
+  active: 1
+  draft: 1
+  superseded: 0
+  not_in_repo: 0
+  archived: 0
+  in_docs_archive: 0
+  pending_cross_reference_updates: 1
+  last_audit: "2026-04-11"
+  last_audit_note: >-
+    2026-04-11 (Phase A, initial scaffold): registry created with the
+    librarian's own SKILL.md and README.md as the first two entries,
+    demonstrating that the librarian governs itself from commit #1.
+    README is marked draft because the file currently has zero bytes
+    of content — it will be populated in a follow-up Phase A step.
+    One pending cross-reference: the README should eventually link
+    to the "Getting Started" section of SKILL.md once written.
+  naming_violations: 0
+  naming_violation_details: []
+  total_on_disk: 2
+  locations_in_chat: 0
+  locations_in_cowork: 2
+  locations_disk_only: 0
+  locations_chat_only: 0

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "librarian"
+version = "0.1.0"
+description = "Document governance, version control, and registry management"
+requires-python = ">=3.13"
+authors = [
+    {name = "Chris Kahn", email = "research+ai@brokenwire.org"}
+]
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+librarian = "librarian.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["librarian*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
