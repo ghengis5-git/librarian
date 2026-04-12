@@ -8,12 +8,14 @@ from datetime import date
 from pathlib import Path
 
 from .audit import audit, format_report
+from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import diff_manifests, format_diff
 from .evidence import generate_evidence, write_evidence, verify_evidence
 from .manifest import generate as generate_manifest, write_manifest
 from .naming import parse_filename
 from .oplog import log_operation, read_log, read_log_since, format_log
 from .registry import Registry
+from .sitegen import generate_site
 from .versioning import bump_filename
 
 DEFAULT_REGISTRY = "docs/REGISTRY.yaml"
@@ -249,6 +251,89 @@ def cmd_log(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dashboard(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+
+    manifest = generate_manifest(reg, repo_root)
+
+    template_path = Path(args.template) if args.template else None
+
+    if args.output:
+        out = write_dashboard(manifest, args.output, template_path=template_path)
+    else:
+        # Default output path
+        out = write_dashboard(
+            manifest,
+            repo_root / "docs" / "diagrams" / "librarian-dashboard.html",
+            template_path=template_path,
+        )
+    print(f"Dashboard written to: {out}")
+
+    sys.stderr.write(
+        f"\n  Documents: {manifest.total_registered}"
+        f"  |  Edges: {manifest.total_edges}"
+        f"  |  Seal: {manifest.manifest_sha256[:16]}...\n"
+    )
+
+    # Log the operation
+    log_operation(
+        "dashboard",
+        files=[str(out)],
+        details={
+            "registered": manifest.total_registered,
+            "edges": manifest.total_edges,
+        },
+        repo_root=repo_root,
+    )
+    return 0
+
+
+def cmd_site(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+
+    manifest = generate_manifest(reg, repo_root)
+
+    output_dir = Path(args.output_dir) if args.output_dir else repo_root / "_site"
+
+    # Optionally render dashboard and include it
+    dashboard_path = None
+    if not args.no_dashboard:
+        dashboard_out = output_dir / "dashboard.html"
+        dashboard_out.parent.mkdir(parents=True, exist_ok=True)
+        template_path = Path(args.template) if args.template else None
+        write_dashboard(manifest, dashboard_out, template_path=template_path)
+        dashboard_path = dashboard_out
+
+    site_dir = generate_site(manifest, output_dir, dashboard_path=dashboard_path)
+
+    # Count pages
+    pages = list(site_dir.rglob("*.html"))
+    print(f"Site generated: {site_dir}")
+    print(f"  Pages: {len(pages)}")
+
+    sys.stderr.write(
+        f"\n  Documents: {manifest.total_registered}"
+        f"  |  Edges: {manifest.total_edges}"
+        f"  |  Pages: {len(pages)}\n"
+    )
+
+    # Log the operation
+    log_operation(
+        "site",
+        files=[str(site_dir)],
+        details={
+            "registered": manifest.total_registered,
+            "pages": len(pages),
+        },
+        repo_root=repo_root,
+    )
+    return 0
+
+
 # ------------------------------------------------------------------ parser
 
 
@@ -303,6 +388,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_diff.add_argument("new", help="path to the new/current manifest JSON")
     p_diff.add_argument("--json", action="store_true", help="output as JSON instead of text")
     p_diff.set_defaults(func=cmd_diff)
+
+    # --- dashboard (Phase D)
+    p_dash = sub.add_parser("dashboard", help="Generate HTML dashboard from manifest")
+    p_dash.add_argument("-o", "--output", help="write to file (default: docs/diagrams/librarian-dashboard.html)")
+    p_dash.add_argument("--template", help="path to template file or directory")
+    p_dash.set_defaults(func=cmd_dashboard)
+
+    # --- site (Phase E)
+    p_site = sub.add_parser("site", help="Generate static HTML site from manifest")
+    p_site.add_argument("-o", "--output-dir", help="output directory (default: _site/)")
+    p_site.add_argument("--template", help="path to dashboard template file or directory")
+    p_site.add_argument("--no-dashboard", action="store_true", help="omit dashboard page from site")
+    p_site.set_defaults(func=cmd_site)
 
     # --- log (Phase C)
     p_log = sub.add_parser("log", help="View the operation log")

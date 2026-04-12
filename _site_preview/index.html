@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Index — Librarian</title>
+<link rel="stylesheet" href="assets/style.css">
+
+</head>
+<body>
+<header class="site-header">
+  <div class="brand"><span>&#9670;</span> Librarian</div>
+  <nav><a href="index.html" class="active">Index</a><a href="graph.html">Graph</a><a href="dashboard.html">Dashboard</a></nav>
+  <div class="header-spacer"></div>
+  <div class="header-seal">seal 11a836c932dd2663...</div>
+</header>
+<div class="site-body">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Documents</div>
+  </div>
+  <div class="group-toggles">
+    <button class="group-btn active" data-group="status" onclick="switchGroup(this, 'status')">Status</button>
+    <button class="group-btn" data-group="tag" onclick="switchGroup(this, 'tag')">Tag</button>
+    <button class="group-btn" data-group="path" onclick="switchGroup(this, 'path')">Path</button>
+  </div>
+  <div class="tree-container" id="tree-container"></div>
+  <script>
+  var TREE_DATA = {
+  "path": {
+    ".": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "docs": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ],
+    "examples": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ]
+  },
+  "status": {
+    "active": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "draft": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ]
+  },
+  "tag": {
+    "architecture": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      }
+    ],
+    "example": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "governance": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "infrastructure": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "meta": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-a": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-b": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill-definition": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "untagged": [
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ]
+  }
+};
+  var BASE_PREFIX = "";
+  function renderTree(mode) {
+    var container = document.getElementById("tree-container");
+    var groups = TREE_DATA[mode] || {};
+    var html = "";
+    var keys = Object.keys(groups).sort();
+    keys.forEach(function(key) {
+      var docs = groups[key];
+      html += '<div class="tree-group">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle('collapsed')">';
+      html += '<svg class="tree-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>';
+      html += '<span class="tree-group-label">' + key + '</span>';
+      html += '<span class="tree-group-count">' + docs.length + '</span>';
+      html += '</div>';
+      html += '<div class="tree-items">';
+      docs.forEach(function(d) {
+        var dotCls = "tree-dot tree-dot--" + (d.status || "");
+        html += '<a class="tree-item" href="' + BASE_PREFIX + 'docs/' + d.filename + '.html">';
+        html += '<span class="' + dotCls + '"></span>';
+        html += d.title || d.filename;
+        html += '</a>';
+      });
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  }
+  function switchGroup(btn, mode) {
+    document.querySelectorAll(".group-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    renderTree(mode);
+  }
+  renderTree("status");
+  </script>
+</aside>
+<main class="main">
+<h1>Librarian — Document Registry</h1>
+<div class="subtitle">10 registered documents</div>
+<div class="kpi-row"><div class="kpi"><div class="kpi-value">10</div><div class="kpi-label">Total</div></div><div class="kpi"><div class="kpi-value kpi-value--ok">9</div><div class="kpi-label">Active</div></div><div class="kpi"><div class="kpi-value kpi-value--warn">1</div><div class="kpi-label">Draft</div></div><div class="kpi"><div class="kpi-value">0</div><div class="kpi-label">Superseded</div></div><div class="kpi"><div class="kpi-value kpi-value--ok">0</div><div class="kpi-label">Violations</div></div><div class="kpi"><div class="kpi-value kpi-value--warn">1</div><div class="kpi-label">Pending XRefs</div></div></div>
+<table>
+<thead><tr>
+<th>Filename</th><th>Title</th><th>Ver</th><th>Status</th><th>Date</th><th>Fmt</th><th>Tags</th>
+</tr></thead>
+<tbody><tr>
+<td><a href="docs/README.md.html"><code>README.md</code></a></td>
+<td>Project README</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--draft">draft</span></td>
+<td>2026-04-11</td>
+<td><code>md</code></td>
+<td><span class="tag">infrastructure</span><span class="tag">meta</span><span class="tag">phase-a</span></td>
+</tr><tr>
+<td><a href="docs/SKILL.md.html"><code>SKILL.md</code></a></td>
+<td>Document Librarian Skill Definition</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>md</code></td>
+<td><span class="tag">governance</span><span class="tag">skill-definition</span><span class="tag">meta</span><span class="tag">phase-a</span></td>
+</tr><tr>
+<td><a href="docs/librarian-architecture-20260411-V1.0.md.html"><code>librarian-architecture-20260411-V1.0.md</code></a></td>
+<td>Librarian Architecture</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>md</code></td>
+<td><span class="tag">architecture</span><span class="tag">governance</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/librarian-buildout-plan-20260411-V1.2.md.html"><code>librarian-buildout-plan-20260411-V1.2.md</code></a></td>
+<td>Doc Librarian Buildout Plan</td>
+<td><code>V1.2</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-12</td>
+<td><code>md</code></td>
+<td></td>
+</tr><tr>
+<td><a href="docs/manifest.schema.json.html"><code>manifest.schema.json</code></a></td>
+<td>Manifest JSON Schema</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>json</code></td>
+<td><span class="tag">schema</span><span class="tag">governance</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/project_config.full.yaml.html"><code>project_config.full.yaml</code></a></td>
+<td>Full Config Example</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>yaml</code></td>
+<td><span class="tag">example</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/project_config.minimal.yaml.html"><code>project_config.minimal.yaml</code></a></td>
+<td>Minimal Config Example</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>yaml</code></td>
+<td><span class="tag">example</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/project_config.prism.yaml.html"><code>project_config.prism.yaml</code></a></td>
+<td>PRISM Config Reference</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>yaml</code></td>
+<td><span class="tag">example</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/project_config.schema.yaml.html"><code>project_config.schema.yaml</code></a></td>
+<td>Project Config Schema</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>yaml</code></td>
+<td><span class="tag">schema</span><span class="tag">governance</span><span class="tag">phase-b</span></td>
+</tr><tr>
+<td><a href="docs/registry.schema.yaml.html"><code>registry.schema.yaml</code></a></td>
+<td>Registry Schema</td>
+<td><code>1.0</code></td>
+<td><span class="badge badge--active">active</span></td>
+<td>2026-04-11</td>
+<td><code>yaml</code></td>
+<td><span class="tag">schema</span><span class="tag">governance</span><span class="tag">phase-b</span></td>
+</tr></tbody>
+</table>
+<footer>
+<span>Librarian</span>
+<span>Generated 2026-04-12T12:30:10Z</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

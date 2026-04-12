@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>registry.schema.yaml — Librarian</title>
+<link rel="stylesheet" href="assets/style.css">
+<base href="../">
+</head>
+<body>
+<header class="site-header">
+  <div class="brand"><span>&#9670;</span> Librarian</div>
+  <nav><a href="index.html">Index</a><a href="graph.html">Graph</a><a href="dashboard.html">Dashboard</a></nav>
+  <div class="header-spacer"></div>
+  <div class="header-seal">seal 11a836c932dd2663...</div>
+</header>
+<div class="site-body">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Documents</div>
+  </div>
+  <div class="group-toggles">
+    <button class="group-btn active" data-group="status" onclick="switchGroup(this, 'status')">Status</button>
+    <button class="group-btn" data-group="tag" onclick="switchGroup(this, 'tag')">Tag</button>
+    <button class="group-btn" data-group="path" onclick="switchGroup(this, 'path')">Path</button>
+  </div>
+  <div class="tree-container" id="tree-container"></div>
+  <script>
+  var TREE_DATA = {
+  "path": {
+    ".": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "docs": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ],
+    "examples": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ]
+  },
+  "status": {
+    "active": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "draft": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ]
+  },
+  "tag": {
+    "architecture": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      }
+    ],
+    "example": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "governance": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "infrastructure": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "meta": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-a": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-b": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill-definition": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "untagged": [
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ]
+  }
+};
+  var BASE_PREFIX = "../";
+  function renderTree(mode) {
+    var container = document.getElementById("tree-container");
+    var groups = TREE_DATA[mode] || {};
+    var html = "";
+    var keys = Object.keys(groups).sort();
+    keys.forEach(function(key) {
+      var docs = groups[key];
+      html += '<div class="tree-group">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle('collapsed')">';
+      html += '<svg class="tree-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>';
+      html += '<span class="tree-group-label">' + key + '</span>';
+      html += '<span class="tree-group-count">' + docs.length + '</span>';
+      html += '</div>';
+      html += '<div class="tree-items">';
+      docs.forEach(function(d) {
+        var dotCls = "tree-dot tree-dot--" + (d.status || "");
+        html += '<a class="tree-item" href="' + BASE_PREFIX + 'docs/' + d.filename + '.html">';
+        html += '<span class="' + dotCls + '"></span>';
+        html += d.title || d.filename;
+        html += '</a>';
+      });
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  }
+  function switchGroup(btn, mode) {
+    document.querySelectorAll(".group-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    renderTree(mode);
+  }
+  renderTree("status");
+  </script>
+</aside>
+<main class="main">
+<h1><code>registry.schema.yaml</code></h1>
+<div class="subtitle">Registry Schema</div>
+
+<div class="detail-card">
+<div class="meta-grid">
+
+<span class="meta-key">Filename</span><span class="meta-val"><code>registry.schema.yaml</code></span>
+<span class="meta-key">Title</span><span class="meta-val">Registry Schema</span>
+<span class="meta-key">Version</span><span class="meta-val"><code>1.0</code></span>
+<span class="meta-key">Status</span><span class="meta-val"><span class="badge badge--active">active</span></span>
+<span class="meta-key">Date</span><span class="meta-val">2026-04-11</span>
+<span class="meta-key">Author</span><span class="meta-val">Chris Kahn</span>
+<span class="meta-key">Classification</span><span class="meta-val">PERSONAL / INTERNAL USE ONLY</span>
+<span class="meta-key">Path</span><span class="meta-val"><code>schema/registry.schema.yaml</code></span>
+<span class="meta-key">Format</span><span class="meta-val"><code>yaml</code></span>
+<span class="meta-key">Tags</span><span class="meta-val"><span class="tag">schema</span> <span class="tag">governance</span> <span class="tag">phase-b</span> </span>
+<span class="meta-key">Infra Exempt</span><span class="meta-val">yes</span>
+<span class="meta-key">SHA-256</span><span class="meta-val"><code>2e3f09208239958e8232b74328f2d6131757dc1cf5338a45a09b96a968091085</code></span>
+<span class="meta-key">Size</span><span class="meta-val">7,101 bytes</span>
+
+
+</div>
+</div>
+
+<h3 class="section-title">Description</h3>
+<p>YAML schema documenting the full structure of REGISTRY.yaml including project_config, documents array, and registry_meta.</p>
+
+<details class="xref-supplements" open>
+<summary class="section-title">Cross-References &amp; Supplements</summary>
+<div class="xref-grid">
+<span class="xref-label">Cross-refs</span><span>none</span>
+<span class="xref-label">Supplements</span><span><a href="SKILL.md.html">SKILL.md</a></span>
+</div>
+</details>
+
+<h3 class="section-title">Contents</h3>
+<div class="doc-content"><pre><code class="language-yaml"># registry.schema.yaml — defines the full structure of REGISTRY.yaml
+#
+# REGISTRY.yaml is the single source of truth for document governance.
+# It contains three top-level keys: project_config, documents, and registry_meta.
+
+registry:
+  type: object
+  description: Complete REGISTRY.yaml file structure.
+  required:
+    - documents
+  properties:
+
+    # ---------------------------------------------------- project_config
+    project_config:
+      description: &gt;-
+        Project-specific configuration.  See project_config.schema.yaml
+        for the full property definitions.
+      type: object
+
+    # ---------------------------------------------------- documents
+    documents:
+      type: array
+      description: Ordered list of all registered documents.
+      items:
+        type: object
+        required: [filename, status]
+        properties:
+          filename:
+            type: string
+            description: &gt;-
+              Canonical filename.  Must match the file on disk exactly.
+              Used as the unique identifier for the document.
+
+          title:
+            type: string
+            description: Human-readable document title.
+
+          description:
+            type: string
+            description: &gt;-
+              One-paragraph description of the document content and purpose.
+              Displayed in status reports and the dashboard.
+
+          format:
+            type: string
+            enum: [md, docx, html, jsx, json, pdf, pptx, xlsx, sh, py, yaml]
+            description: File format (extension without the dot).
+
+          version:
+            type: string
+            description: &gt;-
+              Current version string.  Matches the VX.Y in the filename
+              for convention-compliant files.  May be &quot;1.0&quot;, &quot;V1.0&quot;, etc.
+
+          date:
+            type: string
+            format: date
+            description: Date of creation or last major revision (YYYY-MM-DD).
+
+          status:
+            type: string
+            enum: [draft, active, superseded, archived]
+            description: &gt;-
+              Lifecycle status.
+              draft — placeholder, content incomplete.
+              active — current authoritative version.
+              superseded — replaced by a newer version.
+              archived — moved to archive path for long-term retention.
+
+          author:
+            type: string
+            description: Document author name.
+
+          classification:
+            type: string
+            description: &gt;-
+              Security classification level.  Must be one of the values
+              defined in project_config.classification_levels.
+
+          locations:
+            type: object
+            description: Where copies of this document exist.
+            properties:
+              disk:
+                type: boolean
+                description: File exists on local filesystem.
+              chat:
+                type: boolean
+                description: File exists in Claude Chat project knowledge.
+              cowork:
+                type: boolean
+                description: File accessible via Cowork mount.
+
+          parent:
+            type: [string, &quot;null&quot;]
+            description: &gt;-
+              Filename of the parent document, if this is an addendum
+              or supplement.  Null for standalone documents.
+
+          supplements:
+            type: array
+            items: { type: string }
+            description: &gt;-
+              List of filenames that this document supplements.
+              Creates dependency edges in the manifest graph.
+
+          cross_references:
+            type: array
+            description: &gt;-
+              Explicit cross-reference declarations.  Each entry
+              identifies a target document and the sections affected.
+            items:
+              type: object
+              properties:
+                doc:
+                  type: string
+                  description: Target document filename.
+                sections:
+                  type: array
+                  items: { type: string }
+                  description: Specific sections in the target document.
+                status:
+                  type: string
+                  enum: [pending, resolved, unknown]
+                  description: Whether the cross-reference has been addressed.
+                resolved_date:
+                  type: string
+                  format: date
+                resolution:
+                  type: string
+                  description: How the cross-reference was resolved.
+
+          supersedes:
+            type: [string, array, &quot;null&quot;]
+            description: &gt;-
+              Filename(s) of documents this one replaces.  String for a
+              single predecessor, array for merge-supersession.
+
+          superseded_by:
+            type: [string, &quot;null&quot;]
+            description: Filename of the document that replaced this one.
+
+          tags:
+            type: array
+            items: { type: string }
+            description: &gt;-
+              Classification tags.  Should use values from
+              project_config.tags_taxonomy but are not strictly enforced.
+
+          path:
+            type: string
+            description: &gt;-
+              Relative path from repo root to the file on disk.
+              Used by the manifest generator to locate files for hashing.
+
+          infrastructure_exempt:
+            type: boolean
+            description: &gt;-
+              Whether this file is exempt from the date-version naming
+              convention.  True for files like SKILL.md, README.md.
+
+          exemption_reason:
+            type: string
+            description: &gt;-
+              Why this file is infrastructure-exempt.  Required when
+              infrastructure_exempt is true.
+
+          date_archived:
+            type: string
+            format: date
+            description: Date the file was moved to the archive path.
+
+    # ---------------------------------------------------- registry_meta
+    registry_meta:
+      type: object
+      description: &gt;-
+        Aggregate metadata about the registry.  Updated automatically
+        by Registry.update_meta() and manually during audits.
+      properties:
+        total_documents:
+          type: integer
+          minimum: 0
+        active:
+          type: integer
+          minimum: 0
+        draft:
+          type: integer
+          minimum: 0
+        superseded:
+          type: integer
+          minimum: 0
+        archived:
+          type: integer
+          minimum: 0
+        pending_cross_reference_updates:
+          type: integer
+          minimum: 0
+        naming_violations:
+          type: integer
+          minimum: 0
+        total_on_disk:
+          type: integer
+          minimum: 0
+        last_audit:
+          type: string
+          format: date
+        last_updated:
+          type: string
+          format: date
+        version_convention_note:
+          type: string
+          description: &gt;-
+            Human-readable note about the project&#x27;s naming convention
+            history (e.g., legacy underscore migration).
+</code></pre></div>
+
+<a class="back-link" href="../index.html">&larr; Back to index</a>
+
+<footer>
+<span>Librarian</span>
+<span>Generated 2026-04-12T14:11:30Z</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

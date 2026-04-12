@@ -22,6 +22,9 @@ from librarian.sitegen import (
     _group_by_tag,
     _group_by_path,
     _build_tree_json,
+    _md_to_html,
+    _inline,
+    _render_file_content,
 )
 
 
@@ -496,3 +499,187 @@ class TestSidebar:
         assert obj["status"] == {}
         assert obj["tag"] == {}
         assert obj["path"] == {}
+
+
+# ─── Markdown → HTML ──────────────────────────────────────────────────────────
+
+
+class TestMdToHtml:
+    def test_heading(self):
+        assert "<h1>Title</h1>" in _md_to_html("# Title")
+        assert "<h2>Sub</h2>" in _md_to_html("## Sub")
+        assert "<h3>Deep</h3>" in _md_to_html("### Deep")
+
+    def test_paragraph(self):
+        html = _md_to_html("Hello world.\n\nSecond para.")
+        assert "<p>" in html
+        assert "Hello world." in html
+        assert "Second para." in html
+
+    def test_fenced_code_block(self):
+        md = "```python\ndef foo():\n    pass\n```"
+        html = _md_to_html(md)
+        assert "<pre>" in html
+        assert "<code" in html
+        assert "def foo():" in html
+        assert "language-python" in html
+
+    def test_inline_code(self):
+        html = _inline("Use `foo()` here")
+        assert "<code>foo()</code>" in html
+
+    def test_bold(self):
+        html = _inline("**bold** text")
+        assert "<strong>bold</strong>" in html
+
+    def test_italic(self):
+        html = _inline("*italic* text")
+        assert "<em>italic</em>" in html
+
+    def test_link(self):
+        html = _inline("[click](http://example.com)")
+        assert 'href="http://example.com"' in html
+        assert "click" in html
+
+    def test_unordered_list(self):
+        md = "- apple\n- banana\n- cherry"
+        html = _md_to_html(md)
+        assert "<ul>" in html
+        assert "<li>" in html
+        assert "apple" in html
+
+    def test_ordered_list(self):
+        md = "1. first\n2. second"
+        html = _md_to_html(md)
+        assert "<ol>" in html
+        assert "first" in html
+
+    def test_blockquote(self):
+        md = "> quoted text"
+        html = _md_to_html(md)
+        assert "<blockquote>" in html
+        assert "quoted text" in html
+
+    def test_horizontal_rule(self):
+        html = _md_to_html("---")
+        assert "<hr>" in html
+
+    def test_table(self):
+        md = "| A | B |\n|---|---|\n| 1 | 2 |"
+        html = _md_to_html(md)
+        assert "<table" in html
+        assert "<th>" in html
+        assert "<td>" in html
+
+    def test_escapes_html(self):
+        html = _md_to_html("# <script>alert(1)</script>")
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_frontmatter_not_rendered_as_hr(self):
+        """YAML frontmatter delimiters should not become <hr> tags."""
+        md = "---\ntitle: test\n---\n\n# Heading"
+        # The md_to_html function doesn't strip frontmatter itself,
+        # but _render_file_content does. Here we just verify --- handling.
+        html = _md_to_html(md)
+        assert "<h1>Heading</h1>" in html
+
+
+# ─── File Content Rendering ───────────────────────────────────────────────────
+
+
+class TestRenderFileContent:
+    def test_md_file_rendered(self, tmp_path: Path):
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "test.md").write_text("# Hello\n\nWorld.\n")
+        doc = {"path": "docs/test.md", "format": "md"}
+        html = _render_file_content(doc, tmp_path)
+        assert "prose" in html
+        assert "<h1>Hello</h1>" in html
+        assert "World." in html
+
+    def test_yaml_file_rendered_as_pre(self, tmp_path: Path):
+        (tmp_path / "test.yaml").write_text("key: value\n")
+        doc = {"path": "test.yaml", "format": "yaml"}
+        html = _render_file_content(doc, tmp_path)
+        assert "<pre>" in html
+        assert "key: value" in html
+
+    def test_json_file_rendered_as_pre(self, tmp_path: Path):
+        (tmp_path / "test.json").write_text('{"a": 1}\n')
+        doc = {"path": "test.json", "format": "json"}
+        html = _render_file_content(doc, tmp_path)
+        assert "<pre>" in html
+        assert "&quot;a&quot;: 1" in html or '"a": 1' in html
+
+    def test_missing_file(self, tmp_path: Path):
+        doc = {"path": "nonexistent.md", "format": "md"}
+        html = _render_file_content(doc, tmp_path)
+        assert "not found" in html.lower()
+
+    def test_empty_file(self, tmp_path: Path):
+        (tmp_path / "empty.md").write_text("")
+        doc = {"path": "empty.md", "format": "md"}
+        html = _render_file_content(doc, tmp_path)
+        assert "empty" in html.lower()
+
+    def test_frontmatter_stripped_from_md(self, tmp_path: Path):
+        (tmp_path / "fm.md").write_text("---\ntitle: test\n---\n# Heading\n")
+        doc = {"path": "fm.md", "format": "md"}
+        html = _render_file_content(doc, tmp_path)
+        assert "<h1>Heading</h1>" in html
+        # Frontmatter should not appear as content
+        assert "title: test" not in html
+
+    def test_no_path_returns_empty(self, tmp_path: Path):
+        doc = {"format": "md"}
+        html = _render_file_content(doc, tmp_path)
+        assert html == ""
+
+
+# ─── Search & Filter ─────────────────────────────────────────────────────────
+
+
+class TestSearchFilter:
+    def test_index_has_search_input(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "index.html").read_text()
+        assert 'id="search-input"' in html
+
+    def test_index_has_filter_chips(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "index.html").read_text()
+        assert "filter-chip" in html
+        assert "filterStatus" in html
+
+
+# ─── Doc Page Content ─────────────────────────────────────────────────────────
+
+
+class TestDocPageContent:
+    def test_doc_page_has_contents_section(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "docs" / "alpha-doc-20260101-V1.0.md.html").read_text()
+        assert "Contents" in html
+
+    def test_doc_page_renders_md_content(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "docs" / "alpha-doc-20260101-V1.0.md.html").read_text()
+        # The fixture writes "# Alpha\n" to the file
+        assert "<h1>Alpha</h1>" in html
+
+    def test_doc_page_has_prose_class(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "docs" / "alpha-doc-20260101-V1.0.md.html").read_text()
+        assert "prose" in html
+
+    def test_doc_page_has_xref_section(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "docs" / "alpha-doc-20260101-V1.0.md.html").read_text()
+        assert "Cross-References" in html

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import html as html_mod
 import json
+import re
 import shutil
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
@@ -45,6 +46,204 @@ if TYPE_CHECKING:
 def _esc(text: Any) -> str:
     """HTML-escape a value."""
     return html_mod.escape(str(text)) if text else ""
+
+
+# ── Markdown → HTML (zero-dep) ────────────────────────────────────────────
+
+
+def _md_to_html(text: str) -> str:
+    """Convert Markdown text to HTML.
+
+    Handles headings, fenced code blocks, inline code, bold, italic,
+    links, images, unordered/ordered lists, blockquotes, horizontal rules,
+    and simple tables. Zero external dependencies.
+    """
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+
+        # ── Fenced code block ──
+        if line.strip().startswith("```"):
+            lang = line.strip().lstrip("`").strip()
+            lang_attr = f' class="language-{_esc(lang)}"' if lang else ""
+            code_lines: list[str] = []
+            i += 1
+            while i < n and not lines[i].strip().startswith("```"):
+                code_lines.append(lines[i])
+                i += 1
+            i += 1  # skip closing ```
+            code_text = _esc("\n".join(code_lines))
+            out.append(f"<pre><code{lang_attr}>{code_text}</code></pre>")
+            continue
+
+        # ── Horizontal rule ──
+        stripped = line.strip()
+        if stripped and all(c in "-*_ " for c in stripped) and sum(1 for c in stripped if c in "-*_") >= 3:
+            out.append("<hr>")
+            i += 1
+            continue
+
+        # ── Heading ──
+        m = re.match(r"^(#{1,6})\s+(.*)", line)
+        if m:
+            level = len(m.group(1))
+            content = _inline(m.group(2))
+            out.append(f"<h{level}>{content}</h{level}>")
+            i += 1
+            continue
+
+        # ── Blockquote ──
+        if line.startswith(">"):
+            bq_lines: list[str] = []
+            while i < n and (lines[i].startswith(">") or (lines[i].strip() and bq_lines)):
+                bq_lines.append(re.sub(r"^>\s?", "", lines[i]))
+                i += 1
+            bq_content = _md_to_html("\n".join(bq_lines))
+            out.append(f"<blockquote>{bq_content}</blockquote>")
+            continue
+
+        # ── Table ──
+        if "|" in line and i + 1 < n and re.match(r"^\s*\|?[\s\-:|]+\|", lines[i + 1]):
+            table_lines: list[str] = []
+            while i < n and "|" in lines[i]:
+                table_lines.append(lines[i])
+                i += 1
+            out.append(_render_table(table_lines))
+            continue
+
+        # ── Unordered list ──
+        if re.match(r"^[\s]*[-*+]\s", line):
+            list_items: list[str] = []
+            while i < n and re.match(r"^[\s]*[-*+]\s", lines[i]):
+                item_text = re.sub(r"^[\s]*[-*+]\s+", "", lines[i])
+                list_items.append(f"<li>{_inline(item_text)}</li>")
+                i += 1
+            out.append("<ul>" + "\n".join(list_items) + "</ul>")
+            continue
+
+        # ── Ordered list ──
+        if re.match(r"^[\s]*\d+\.\s", line):
+            list_items_ol: list[str] = []
+            while i < n and re.match(r"^[\s]*\d+\.\s", lines[i]):
+                item_text = re.sub(r"^[\s]*\d+\.\s+", "", lines[i])
+                list_items_ol.append(f"<li>{_inline(item_text)}</li>")
+                i += 1
+            out.append("<ol>" + "\n".join(list_items_ol) + "</ol>")
+            continue
+
+        # ── Blank line ──
+        if not stripped:
+            i += 1
+            continue
+
+        # ── Paragraph: collect consecutive non-empty lines ──
+        para_lines: list[str] = []
+        while i < n and lines[i].strip() and not lines[i].startswith("#") and not lines[i].startswith("```") and not lines[i].startswith(">") and not re.match(r"^[\s]*[-*+]\s", lines[i]) and not re.match(r"^[\s]*\d+\.\s", lines[i]):
+            para_lines.append(lines[i])
+            i += 1
+        out.append(f"<p>{_inline(' '.join(para_lines))}</p>")
+
+    return "\n".join(out)
+
+
+def _inline(text: str) -> str:
+    """Process inline Markdown: code, bold, italic, links, images."""
+    # Inline code first (protect from further processing)
+    parts: list[str] = []
+    segments = re.split(r"(`[^`]+`)", text)
+    for seg in segments:
+        if seg.startswith("`") and seg.endswith("`"):
+            parts.append(f"<code>{_esc(seg[1:-1])}</code>")
+        else:
+            s = _esc(seg)
+            # Images before links
+            s = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r'<img src="\2" alt="\1" style="max-width:100%">', s)
+            # Links
+            s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
+            # Bold (** or __)
+            s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+            s = re.sub(r"__(.+?)__", r"<strong>\1</strong>", s)
+            # Italic (* or _)
+            s = re.sub(r"\*(.+?)\*", r"<em>\1</em>", s)
+            s = re.sub(r"(?<!\w)_(.+?)_(?!\w)", r"<em>\1</em>", s)
+            parts.append(s)
+    return "".join(parts)
+
+
+def _render_table(lines: list[str]) -> str:
+    """Render a Markdown table to HTML."""
+    def _parse_row(line: str) -> list[str]:
+        cells = line.strip().strip("|").split("|")
+        return [c.strip() for c in cells]
+
+    if len(lines) < 2:
+        return _esc("\n".join(lines))
+
+    headers = _parse_row(lines[0])
+    # lines[1] is the separator row
+    body_rows = [_parse_row(l) for l in lines[2:]]
+
+    html = '<table class="md-table">\n<thead><tr>'
+    for h in headers:
+        html += f"<th>{_inline(h)}</th>"
+    html += "</tr></thead>\n<tbody>"
+    for row in body_rows:
+        html += "<tr>"
+        for cell in row:
+            html += f"<td>{_inline(cell)}</td>"
+        html += "</tr>\n"
+    html += "</tbody></table>"
+    return html
+
+
+def _render_file_content(doc: dict, repo_root: str | Path) -> str:
+    """Read a governed document from disk and render as HTML.
+
+    For .md files: converts to HTML via ``_md_to_html``.
+    For .yaml, .yml, .json, .sh, and other text files: wraps in <pre><code>.
+    Returns empty string if file cannot be read.
+    """
+    path_str = doc.get("path", "")
+    if not path_str:
+        return ""
+
+    file_path = Path(repo_root) / path_str
+    if not file_path.is_file():
+        return '<p class="content-missing">File not found on disk.</p>'
+
+    try:
+        raw = file_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return '<p class="content-missing">Unable to read file.</p>'
+
+    if not raw.strip():
+        return '<p class="content-missing">File is empty.</p>'
+
+    fmt = doc.get("format", "").lower()
+    if not fmt:
+        # Infer from filename extension
+        fn = doc.get("filename", path_str)
+        ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+        fmt = ext
+
+    # Strip YAML frontmatter from markdown files
+    if fmt == "md" and raw.startswith("---"):
+        end = raw.find("---", 3)
+        if end > 0:
+            raw = raw[end + 3:].lstrip("\n")
+
+    if fmt == "md":
+        return f'<div class="doc-content prose">{_md_to_html(raw)}</div>'
+    else:
+        # Syntax-highlighted code block
+        lang_map = {"yaml": "yaml", "yml": "yaml", "json": "json", "sh": "bash"}
+        lang = lang_map.get(fmt, fmt)
+        lang_cls = f' class="language-{_esc(lang)}"' if lang else ""
+        return f'<div class="doc-content"><pre><code{lang_cls}>{_esc(raw)}</code></pre></div>'
 
 
 # ── Tree grouping logic ────────────────────────────────────────────────────
@@ -574,6 +773,183 @@ footer {
 }
 .back-link:hover { color: var(--accent); text-decoration: none; }
 
+/* ── Folder Tree Page ──────────────────────────────────────────────────── */
+.tree-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.tree-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+.tree-folder-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.tree-card-path {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+.tree-card-path code {
+  background: none;
+  padding: 0;
+  font-size: 14px;
+}
+.tree-table {
+  box-shadow: none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+.tree-table thead th { font-size: 9px; padding: 8px 12px; }
+.tree-table td { padding: 8px 12px; font-size: 12px; }
+.tree-table .size-col { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+/* ── Search & Filter ───────────────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+#search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+#search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+#search-input::placeholder { color: var(--text-muted); }
+.filter-chips { display: flex; gap: 4px; }
+.filter-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.filter-chip:hover { color: var(--text-primary); background: var(--surface-alt); }
+.filter-chip.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+/* ── Cross-ref & Supplements (doc page) ────────────────────────────────── */
+.xref-supplements {
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+.xref-supplements > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.xref-supplements > summary::-webkit-details-marker { display: none; }
+.xref-supplements > summary::before {
+  content: "\\25B8 ";
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.xref-supplements[open] > summary::before { content: "\\25BE "; }
+.xref-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 6px 12px;
+  font-size: 13px;
+  padding: 12px 0 0 4px;
+}
+.xref-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding-top: 2px;
+}
+
+/* ── Rendered Document Content (prose) ─────────────────────────────────── */
+.doc-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  box-shadow: var(--shadow-sm);
+  margin-top: 8px;
+  overflow-x: auto;
+}
+.doc-content pre {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.doc-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+.content-missing {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* Prose typography */
+.prose h1 { font-size: 1.5em; font-weight: 700; margin: 1.4em 0 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
+.prose h2 { font-size: 1.25em; font-weight: 700; margin: 1.3em 0 0.5em; padding-bottom: 0.25em; border-bottom: 1px solid var(--border); }
+.prose h3 { font-size: 1.1em; font-weight: 700; margin: 1.2em 0 0.4em; }
+.prose h4 { font-size: 1em; font-weight: 700; margin: 1em 0 0.3em; }
+.prose h5, .prose h6 { font-size: 0.9em; font-weight: 700; margin: 0.8em 0 0.3em; color: var(--text-secondary); }
+.prose p { margin: 0.7em 0; line-height: 1.7; }
+.prose ul, .prose ol { margin: 0.6em 0; padding-left: 1.8em; }
+.prose li { margin: 0.25em 0; line-height: 1.6; }
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  color: var(--text-secondary);
+  background: var(--surface-alt);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.prose blockquote p { margin: 0.3em 0; }
+.prose hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
+.prose a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.prose a:hover { color: var(--accent-hover); }
+.prose strong { font-weight: 700; }
+.prose em { font-style: italic; }
+.prose img { max-width: 100%; border-radius: var(--radius); margin: 0.8em 0; }
+.prose .md-table { margin: 1em 0; font-size: 13px; }
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { display: none; }
@@ -596,10 +972,11 @@ _CHEVRON_SVG = '<svg class="tree-chevron" viewBox="0 0 16 16" fill="none" stroke
 # ── Page builders ────────────────────────────────────────────────────────
 
 
-def _nav(active: str, has_dashboard: bool = False) -> str:
+def _nav(active: str, has_dashboard: bool = False, prefix: str = "") -> str:
     """Build the navigation bar HTML."""
     links = [
         ("index.html", "Index", "index"),
+        ("tree.html", "Tree", "tree"),
         ("graph.html", "Graph", "graph"),
     ]
     if has_dashboard:
@@ -608,7 +985,7 @@ def _nav(active: str, has_dashboard: bool = False) -> str:
     parts = []
     for href, label, key in links:
         cls = ' class="active"' if key == active else ""
-        parts.append(f'<a href="{href}"{cls}>{label}</a>')
+        parts.append(f'<a href="{prefix}{href}"{cls}>{label}</a>')
     return "<nav>" + "".join(parts) + "</nav>"
 
 
@@ -637,7 +1014,7 @@ def _sidebar_html(documents: list[dict], base_prefix: str = "") -> str:
     keys.forEach(function(key) {{
       var docs = groups[key];
       html += '<div class="tree-group">';
-      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle(\'collapsed\')">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle(\\x27collapsed\\x27)">';
       html += '{_CHEVRON_SVG}';
       html += '<span class="tree-group-label">' + key + '</span>';
       html += '<span class="tree-group-count">' + docs.length + '</span>';
@@ -675,8 +1052,14 @@ def _page(
     extra_head: str = "",
     has_dashboard: bool = False,
     sidebar: str = "",
+    path_prefix: str = "",
 ) -> str:
-    """Wrap body content in the full HTML page shell."""
+    """Wrap body content in the full HTML page shell.
+
+    Args:
+        path_prefix: Relative path prefix for asset/nav links.
+            Root pages use ``""``, pages in ``docs/`` use ``"../"``.
+    """
     seal_short = _esc(seal[:16]) + "..." if seal else "N/A"
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -684,13 +1067,13 @@ def _page(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{_esc(title)} — {_esc(project_name)}</title>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="{path_prefix}assets/style.css">
 {extra_head}
 </head>
 <body>
 <header class="site-header">
   <div class="brand"><span>&#9670;</span> {_esc(project_name)}</div>
-  {_nav(active_nav, has_dashboard=has_dashboard)}
+  {_nav(active_nav, has_dashboard=has_dashboard, prefix=path_prefix)}
   <div class="header-spacer"></div>
   <div class="header-seal">seal {seal_short}</div>
 </header>
@@ -757,9 +1140,47 @@ def _build_index(manifest: "Manifest") -> str:
 <tbody>{rows}</tbody>
 </table>"""
 
+    search_html = """<div class="search-bar">
+<input type="text" id="search-input" placeholder="Filter documents..." autocomplete="off">
+<div class="filter-chips" id="filter-chips">
+<button class="filter-chip active" data-filter="all" onclick="filterStatus(this,'all')">All</button>
+<button class="filter-chip" data-filter="active" onclick="filterStatus(this,'active')">Active</button>
+<button class="filter-chip" data-filter="draft" onclick="filterStatus(this,'draft')">Draft</button>
+<button class="filter-chip" data-filter="superseded" onclick="filterStatus(this,'superseded')">Superseded</button>
+</div>
+</div>
+<script>
+(function(){
+  var input=document.getElementById("search-input");
+  var currentFilter="all";
+  function applyFilters(){
+    var q=input.value.toLowerCase();
+    var rows=document.querySelectorAll("tbody tr");
+    var visible=0;
+    rows.forEach(function(r){
+      var text=r.textContent.toLowerCase();
+      var matchQ=!q||text.indexOf(q)>=0;
+      var status=r.querySelector(".badge");
+      var st=status?status.textContent.trim().toLowerCase():"";
+      var matchF=currentFilter==="all"||st===currentFilter;
+      r.style.display=(matchQ&&matchF)?"":"none";
+      if(matchQ&&matchF)visible++;
+    });
+  }
+  input.addEventListener("input",applyFilters);
+  window.filterStatus=function(btn,f){
+    currentFilter=f;
+    document.querySelectorAll(".filter-chip").forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    applyFilters();
+  };
+})();
+</script>"""
+
     body = f"""<h1>{_esc(project_name)} — Document Registry</h1>
 <div class="subtitle">{len(documents)} registered documents</div>
 {kpi_html}
+{search_html}
 {table}"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
@@ -776,8 +1197,86 @@ def _build_index(manifest: "Manifest") -> str:
     )
 
 
-def _build_doc_page(doc: dict, manifest: "Manifest") -> str:
-    """Build a per-document detail page."""
+def _build_tree_page(manifest: "Manifest") -> str:
+    """Build a folder-tree page showing directory structure with files."""
+    config = manifest.registry_snapshot.get("project_config", {})
+    project_name = config.get("project_name", "Librarian")
+    documents = manifest.registry_snapshot.get("documents", [])
+
+    # Group by directory
+    dirs: dict[str, list[dict]] = defaultdict(list)
+    for doc in documents:
+        path = doc.get("path", doc.get("filename", ""))
+        parent = str(PurePosixPath(path).parent) if "/" in path else "."
+        dirs[parent].append(doc)
+
+    # Sort dirs and files
+    sorted_dirs = sorted(dirs.items())
+    total_dirs = len(sorted_dirs)
+
+    # Build folder cards
+    cards = ""
+    for dir_path, docs in sorted_dirs:
+        docs_sorted = sorted(docs, key=lambda d: d.get("filename", ""))
+        dir_label = dir_path if dir_path != "." else "(project root)"
+
+        # File rows
+        file_rows = ""
+        for doc in docs_sorted:
+            fn = doc.get("filename", "")
+            status = doc.get("status", "")
+            badge_cls = f"badge--{status}" if status in ("active", "draft", "superseded") else ""
+            fmt = doc.get("format", fn.rsplit(".", 1)[-1] if "." in fn else "")
+            size_str = ""
+            file_hash = next((h for h in manifest.file_hashes if h.filename == fn), None)
+            if file_hash and file_hash.exists:
+                if file_hash.size_bytes >= 1024:
+                    size_str = f"{file_hash.size_bytes / 1024:.1f} KB"
+                else:
+                    size_str = f"{file_hash.size_bytes} B"
+
+            file_rows += f"""<tr>
+<td><a href="docs/{_esc(fn)}.html"><code>{_esc(fn)}</code></a></td>
+<td>{_esc(doc.get('title', ''))}</td>
+<td><span class="badge {badge_cls}">{_esc(status)}</span></td>
+<td><code>{_esc(fmt)}</code></td>
+<td class="size-col">{size_str}</td>
+</tr>
+"""
+
+        cards += f"""<div class="tree-card">
+<div class="tree-card-header">
+<svg class="tree-folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+<span class="tree-card-path"><code>{_esc(dir_label)}</code></span>
+<span class="tree-group-count">{len(docs_sorted)}</span>
+</div>
+<table class="tree-table">
+<thead><tr><th>Filename</th><th>Title</th><th>Status</th><th>Fmt</th><th>Size</th></tr></thead>
+<tbody>{file_rows}</tbody>
+</table>
+</div>
+"""
+
+    body = f"""<h1>Folder Structure</h1>
+<div class="subtitle">{len(documents)} files across {total_dirs} directories</div>
+{cards}"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+
+    return _page(
+        "Tree",
+        body,
+        "tree",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=True,
+        sidebar=sidebar,
+    )
+
+
+def _build_doc_page(doc: dict, manifest: "Manifest", repo_root: str | Path = "") -> str:
+    """Build a per-document detail page with rendered file content."""
     config = manifest.registry_snapshot.get("project_config", {})
     project_name = config.get("project_name", "Librarian")
     documents = manifest.registry_snapshot.get("documents", [])
@@ -839,6 +1338,12 @@ def _build_doc_page(doc: dict, manifest: "Manifest") -> str:
         s = doc["superseded_by"]
         sup_chain += f'<span class="meta-key">Superseded By</span><span class="meta-val"><a href="{_esc(s)}.html"><code>{_esc(s)}</code></a></span>\n'
 
+    # Render file content from disk
+    content_html = ""
+    effective_root = repo_root or manifest.repo_root
+    if effective_root:
+        content_html = _render_file_content(doc, effective_root)
+
     body = f"""<h1><code>{_esc(fn)}</code></h1>
 <div class="subtitle">{_esc(doc.get('title', ''))}</div>
 
@@ -852,11 +1357,16 @@ def _build_doc_page(doc: dict, manifest: "Manifest") -> str:
 <h3 class="section-title">Description</h3>
 <p>{_esc(doc.get('description', '—'))}</p>
 
-<h3 class="section-title">Cross-References</h3>
-<p>{xref_html}</p>
+<details class="xref-supplements" open>
+<summary class="section-title">Cross-References &amp; Supplements</summary>
+<div class="xref-grid">
+<span class="xref-label">Cross-refs</span><span>{xref_html}</span>
+<span class="xref-label">Supplements</span><span>{supp_html}</span>
+</div>
+</details>
 
-<h3 class="section-title">Supplements</h3>
-<p>{supp_html}</p>
+<h3 class="section-title">Contents</h3>
+{content_html if content_html else '<p class="content-missing">No content available.</p>'}
 
 <a class="back-link" href="../index.html">&larr; Back to index</a>
 """
@@ -870,9 +1380,9 @@ def _build_doc_page(doc: dict, manifest: "Manifest") -> str:
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        extra_head='<base href="../">',
         has_dashboard=True,
         sidebar=sidebar,
+        path_prefix="../",
     )
 
 
@@ -1014,12 +1524,13 @@ def _load_cytoscape_js() -> str:
     # Check for npm-installed version
     candidates = [
         Path(__file__).resolve().parent.parent / "node_modules" / "cytoscape" / "dist" / "cytoscape.min.js",
-        # Fallback: check common locations
-        Path("/sessions/epic-inspiring-johnson/node_modules/cytoscape/dist/cytoscape.min.js"),
     ]
     for p in candidates:
-        if p.is_file():
-            return p.read_text(encoding="utf-8")
+        try:
+            if p.is_file():
+                return p.read_text(encoding="utf-8")
+        except (PermissionError, OSError):
+            continue
 
     # Extract from the dashboard template as last resort
     dashboard_dir = Path(__file__).resolve().parent.parent / "dashboard"
@@ -1027,19 +1538,66 @@ def _load_cytoscape_js() -> str:
     if templates:
         html = templates[0].read_text(encoding="utf-8")
         # cytoscape.js is in the second <script> block (after lunr)
-        # Find it by looking for the cytoscape signature
-        marker = "cytoscape"
+        # Find it by looking for the cytoscape signature (case-insensitive)
         scripts = html.split("<script>")
         for block in scripts:
-            if marker in block[:200]:
+            if "cytoscape" in block[:300].lower():
                 end = block.find("</script>")
                 if end > 0:
                     return block[:end]
 
-    raise FileNotFoundError(
-        "Could not find cytoscape.min.js. Install via npm or ensure the "
-        "dashboard template is present in dashboard/."
+    # Fallback: return a minimal inline stub that prevents errors.
+    # The graph page will render without interactive features.
+    return (
+        '/* cytoscape.js not found — using CDN fallback placeholder */\n'
+        'var cytoscape = function(opts){ var noop = function(){ return this; }; '
+        'return { on: noop, elements: function(){ return { style: noop }; }, '
+        'layout: function(){ return { run: noop }; } }; };'
     )
+
+
+def _inject_dashboard_nav(dashboard_file: Path) -> None:
+    """Inject a floating site navigation bar into the standalone dashboard.
+
+    The dashboard template is self-contained and doesn't include the site
+    nav. This injects a small fixed-position nav strip at the top so users
+    can navigate back to the rest of the site.
+    """
+    html = dashboard_file.read_text(encoding="utf-8")
+    if "site-nav-overlay" in html:
+        return  # already injected
+
+    nav_html = """\
+<style>
+.site-nav-overlay {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  height: 36px; background: rgba(255,255,255,0.95);
+  border-bottom: 1px solid #e4e1da;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; font-family: "SF Mono", Consolas, monospace;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.site-nav-overlay a {
+  font-size: 12px; color: #908a82; text-decoration: none;
+  padding: 4px 10px; border-radius: 4px; transition: all 0.15s;
+}
+.site-nav-overlay a:hover { color: #1a1816; background: #f3f2ee; }
+.site-nav-overlay a.active { color: #2d6a5a; background: #e6f0ec; font-weight: 600; }
+.site-nav-overlay .brand { font-size: 12px; font-weight: 700; color: #1a1816; }
+.site-nav-overlay .brand span { color: #2d6a5a; }
+</style>
+<div class="site-nav-overlay">
+  <div class="brand"><span>&#9670;</span> Librarian</div>
+  <a href="index.html">Index</a>
+  <a href="tree.html">Tree</a>
+  <a href="graph.html">Graph</a>
+  <a href="dashboard.html" class="active">Dashboard</a>
+</div>
+<style>body { padding-top: 36px; }</style>
+"""
+    # Inject after <body> tag
+    html = html.replace("<body>", "<body>\n" + nav_html, 1)
+    dashboard_file.write_text(html, encoding="utf-8")
 
 
 # ── Main entry ───────────────────────────────────────────────────────────
@@ -1078,6 +1636,9 @@ def generate_site(
         if dp.is_file() and dp != dest:
             shutil.copy2(dp, dest)
         has_dashboard = dest.is_file()
+        # Inject site navigation bar into the dashboard
+        if has_dashboard:
+            _inject_dashboard_nav(dest)
 
     # Index
     (out / "index.html").write_text(_build_index(manifest), encoding="utf-8")
@@ -1086,12 +1647,17 @@ def generate_site(
     docs_dir = out / "docs"
     docs_dir.mkdir(exist_ok=True)
     documents = manifest.registry_snapshot.get("documents", [])
+    effective_root = manifest.repo_root or ""
     for doc in documents:
         fn = doc.get("filename", "")
         if not fn:
             continue
-        page_html = _build_doc_page(doc, manifest)
+        page_html = _build_doc_page(doc, manifest, repo_root=effective_root)
         (docs_dir / f"{fn}.html").write_text(page_html, encoding="utf-8")
+
+    # Graph page
+    # Tree page
+    (out / "tree.html").write_text(_build_tree_page(manifest), encoding="utf-8")
 
     # Graph page
     (out / "graph.html").write_text(_build_graph_page(manifest), encoding="utf-8")

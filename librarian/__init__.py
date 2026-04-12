@@ -1,6 +1,6 @@
 """Librarian — document governance, version control, and registry management."""
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 from .audit import AuditReport, FolderSuggestion, audit, format_report
 from .dashboard import render as render_dashboard, write_dashboard

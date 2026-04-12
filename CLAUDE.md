@@ -62,7 +62,7 @@ Commands:
 - Phase B: 26 (manifest)
 - Phase C: 66 (oplog 18, evidence 13, diffaudit 35)
 - Phase D: 16 (dashboard)
-- Phase E: 39 (sitegen 23 + sidebar/grouping 16)
+- Phase E: 66 (sitegen 23 + sidebar/grouping 16 + markdown/content 27)
 - Folder suggestions: 8 (audit density analysis)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
@@ -70,8 +70,8 @@ Commands:
 ---
 
 ## Current State
-**Version:** 0.5.0
-**Tests:** 191/191 PASS
+**Version:** 0.6.0
+**Tests:** 218/218 PASS
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -82,6 +82,19 @@ Commands:
 - **Sidebar + grouping** (Session 30): Collapsible tree nav with status/tag/path grouping modes
 - **Folder suggestions** (Session 30): Audit auto-detects crowded directories/tags, suggests reorganization
 - **Design refresh** (Session 30): Unified design tokens across sitegen + dashboard template
+- **Website completion** (Session 31): Doc page content rendering, search/filter, tree page, dashboard nav, bug fixes
+
+### Session 31 Deliverables
+- Zero-dep markdown→HTML converter (`_md_to_html`) — headings, code blocks, lists, tables, blockquotes
+- Doc pages render real file content (prose for .md, syntax blocks for .yaml/.json/.sh)
+- Index page: client-side text search + status filter chips (All/Active/Draft/Superseded)
+- Folder structure page (`tree.html`) — directory cards with file tables
+- Dashboard nav overlay — floating frosted-glass bar injected into standalone dashboard
+- Replaced `<base>` tag with explicit `path_prefix` pattern for correct relative links
+- Cytoscape.js loading hardened — graceful fallback, case-insensitive extraction, PermissionError handling
+- Sidebar JS escaping fix (`\\x27` instead of `\'`)
+- 27 new tests (markdown, content rendering, search/filter, doc page content, tree page)
+- Site generates 14 pages (index, tree, graph, dashboard, 10 doc pages)
 
 ### Next Steps (by priority)
 1. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution

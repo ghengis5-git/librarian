@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL.md — Librarian</title>
+<link rel="stylesheet" href="assets/style.css">
+<base href="../">
+</head>
+<body>
+<header class="site-header">
+  <div class="brand"><span>&#9670;</span> Librarian</div>
+  <nav><a href="index.html">Index</a><a href="graph.html">Graph</a><a href="dashboard.html">Dashboard</a></nav>
+  <div class="header-spacer"></div>
+  <div class="header-seal">seal 11a836c932dd2663...</div>
+</header>
+<div class="site-body">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Documents</div>
+  </div>
+  <div class="group-toggles">
+    <button class="group-btn active" data-group="status" onclick="switchGroup(this, 'status')">Status</button>
+    <button class="group-btn" data-group="tag" onclick="switchGroup(this, 'tag')">Tag</button>
+    <button class="group-btn" data-group="path" onclick="switchGroup(this, 'path')">Path</button>
+  </div>
+  <div class="tree-container" id="tree-container"></div>
+  <script>
+  var TREE_DATA = {
+  "path": {
+    ".": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "docs": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ],
+    "examples": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ]
+  },
+  "status": {
+    "active": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "draft": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ]
+  },
+  "tag": {
+    "architecture": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      }
+    ],
+    "example": [
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      }
+    ],
+    "governance": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      },
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "infrastructure": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      }
+    ],
+    "meta": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-a": [
+      {
+        "filename": "README.md",
+        "status": "draft",
+        "title": "Project README"
+      },
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "phase-b": [
+      {
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "status": "active",
+        "title": "Librarian Architecture"
+      },
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.full.yaml",
+        "status": "active",
+        "title": "Full Config Example"
+      },
+      {
+        "filename": "project_config.minimal.yaml",
+        "status": "active",
+        "title": "Minimal Config Example"
+      },
+      {
+        "filename": "project_config.prism.yaml",
+        "status": "active",
+        "title": "PRISM Config Reference"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "schema": [
+      {
+        "filename": "manifest.schema.json",
+        "status": "active",
+        "title": "Manifest JSON Schema"
+      },
+      {
+        "filename": "project_config.schema.yaml",
+        "status": "active",
+        "title": "Project Config Schema"
+      },
+      {
+        "filename": "registry.schema.yaml",
+        "status": "active",
+        "title": "Registry Schema"
+      }
+    ],
+    "skill-definition": [
+      {
+        "filename": "SKILL.md",
+        "status": "active",
+        "title": "Document Librarian Skill Definition"
+      }
+    ],
+    "untagged": [
+      {
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "active",
+        "title": "Doc Librarian Buildout Plan"
+      }
+    ]
+  }
+};
+  var BASE_PREFIX = "../";
+  function renderTree(mode) {
+    var container = document.getElementById("tree-container");
+    var groups = TREE_DATA[mode] || {};
+    var html = "";
+    var keys = Object.keys(groups).sort();
+    keys.forEach(function(key) {
+      var docs = groups[key];
+      html += '<div class="tree-group">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle('collapsed')">';
+      html += '<svg class="tree-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>';
+      html += '<span class="tree-group-label">' + key + '</span>';
+      html += '<span class="tree-group-count">' + docs.length + '</span>';
+      html += '</div>';
+      html += '<div class="tree-items">';
+      docs.forEach(function(d) {
+        var dotCls = "tree-dot tree-dot--" + (d.status || "");
+        html += '<a class="tree-item" href="' + BASE_PREFIX + 'docs/' + d.filename + '.html">';
+        html += '<span class="' + dotCls + '"></span>';
+        html += d.title || d.filename;
+        html += '</a>';
+      });
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  }
+  function switchGroup(btn, mode) {
+    document.querySelectorAll(".group-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    renderTree(mode);
+  }
+  renderTree("status");
+  </script>
+</aside>
+<main class="main">
+<h1><code>SKILL.md</code></h1>
+<div class="subtitle">Document Librarian Skill Definition</div>
+
+<div class="detail-card">
+<div class="meta-grid">
+
+<span class="meta-key">Filename</span><span class="meta-val"><code>SKILL.md</code></span>
+<span class="meta-key">Title</span><span class="meta-val">Document Librarian Skill Definition</span>
+<span class="meta-key">Version</span><span class="meta-val"><code>1.0</code></span>
+<span class="meta-key">Status</span><span class="meta-val"><span class="badge badge--active">active</span></span>
+<span class="meta-key">Date</span><span class="meta-val">2026-04-11</span>
+<span class="meta-key">Author</span><span class="meta-val">Chris Kahn</span>
+<span class="meta-key">Classification</span><span class="meta-val">PERSONAL / INTERNAL USE ONLY</span>
+<span class="meta-key">Path</span><span class="meta-val"><code>skill/SKILL.md</code></span>
+<span class="meta-key">Format</span><span class="meta-val"><code>md</code></span>
+<span class="meta-key">Tags</span><span class="meta-val"><span class="tag">governance</span> <span class="tag">skill-definition</span> <span class="tag">meta</span> <span class="tag">phase-a</span> </span>
+<span class="meta-key">Infra Exempt</span><span class="meta-val">yes</span>
+<span class="meta-key">SHA-256</span><span class="meta-val"><code>0c4e4baea1fcac5bf87981a16dfb35880c623ee49483da308c2b6c3881f3109f</code></span>
+<span class="meta-key">Size</span><span class="meta-val">29,452 bytes</span>
+
+
+</div>
+</div>
+
+<h3 class="section-title">Description</h3>
+<p>Canonical skill definition for the project-agnostic document librarian. Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed and a Getting Started section added.</p>
+
+<details class="xref-supplements" open>
+<summary class="section-title">Cross-References &amp; Supplements</summary>
+<div class="xref-grid">
+<span class="xref-label">Cross-refs</span><span>none</span>
+<span class="xref-label">Supplements</span><span>none</span>
+</div>
+</details>
+
+<h3 class="section-title">Contents</h3>
+<div class="doc-content prose"><h1>Document Librarian</h1>
+<p>A governance skill that maintains the authoritative catalog of project documentation. It enforces naming conventions, tracks versions, manages cross-references between documents, and ensures no document update orphans dependent files.</p>
+<p>The librarian is project-agnostic. It reads project-specific rules from a <code>project_config</code> block in <code>REGISTRY.yaml</code>. When no <code>project_config</code> is present, it falls back to built-in generic defaults so it works standalone for ad hoc use.</p>
+<h2>Getting Started — Adopting the Librarian in a New Project</h2>
+<p>To adopt the librarian in a new project:</p>
+<ol><li><strong>Copy this skill file</strong> into your project&#x27;s skill directory (or install the standalone <code>librarian</code> CLI — see the project README).</li>
+<li>**Create <code>docs/REGISTRY.yaml</code>** with a <code>project_config</code> block tuned to your project. Start from the schema below and delete the keys you want to fall back to defaults on.</li>
+<li><strong>Install the pre-commit hook</strong> from <code>scripts/</code> into <code>.git/hooks/pre-commit</code>. The hook reads the same <code>project_config</code> and enforces naming convention + registry sync on every commit.</li>
+<li><strong>Run a bootstrap scan</strong> to seed the initial registry from files already in your <code>docs/</code> directory (see section &quot;Initial Registry Bootstrap&quot; below).</li>
+<li><strong>Commit and begin governed operation.</strong> From this point forward, every document operation should flow through the librarian.</li></ol>
+<p>A thin project-specific wrapper is optional. For example, a project can expose a <code>my-project-librarian</code> entry point that loads its own <code>project_config</code> from a well-known path and otherwise delegates to the generic librarian.</p>
+<h2>Configuration Resolution</h2>
+<p>On every invocation, the librarian resolves its operating rules in this order:</p>
+<ol><li>**Read <code>project_config</code> from REGISTRY.yaml** — if the block exists and contains the needed key, use it.</li>
+<li><strong>Fall back to built-in defaults</strong> — if the block is missing, malformed, or a specific key is absent, use the hardcoded defaults documented in this skill file.</li>
+<li><strong>Never fail silently</strong> — if the registry is missing entirely, warn the operator and offer to bootstrap one.</li></ol>
+<p>The built-in defaults are intentionally minimal so they work for any project out of the box. Anything project-specific (author names, classification levels, tags taxonomy) should be set explicitly in <code>project_config</code>.</p>
+<h3>project_config Schema</h3>
+<pre><code class="language-yaml">project_config:
+  project_name: &quot;Example Project&quot;           # Human-readable project name
+  naming_convention: &quot;descriptive-name-YYYYMMDD-VX.Y.ext&quot;
+  naming_rules:
+    separator: &quot;-&quot;                           # Word separator in descriptive-name
+    case: &quot;lowercase&quot;                        # lowercase | preserve
+    forbidden_words:                         # Words banned from descriptive-name
+      - &quot;file&quot;
+      - &quot;download&quot;
+      - &quot;output&quot;
+      - &quot;document&quot;
+    infrastructure_exempt:                   # Files exempt from date-version requirement
+      - &quot;SKILL.md&quot;
+      - &quot;REGISTRY.yaml&quot;
+      - &quot;CLAUDE.md&quot;
+      - &quot;README.md&quot;
+      - &quot;.gitignore&quot;
+  default_author: &quot;Your Name&quot;
+  default_classification: &quot;CONFIDENTIAL&quot;
+  classification_levels:
+    - &quot;CONFIDENTIAL&quot;
+    - &quot;ATTORNEY-CLIENT PRIVILEGED&quot;
+    - &quot;PERSONAL / INTERNAL USE ONLY&quot;
+  tags_taxonomy:
+    domain:
+      - architecture
+      - planning
+      - infrastructure
+      - legal
+      - operational
+    phase:
+      - phase-0
+      - phase-1
+      - phase-2
+      - phase-3
+    type:
+      - strategic-plan
+      - project-plan
+      - technical-spec
+      - addendum
+      - analysis
+      - agreement
+      - report
+      - diagram
+    status_indicators:
+      - needs-update
+      - pending-review
+      - blocked
+  docs_path: &quot;docs/&quot;
+  archive_path: &quot;docs/archive/&quot;
+  diagrams_path: &quot;docs/diagrams/&quot;
+  operator_path: &quot;operator/phase-specs/&quot;
+  staleness_threshold_days: 90
+  git_author_name: &quot;Your Name&quot;
+  git_author_email: &quot;your@email&quot;
+  git_commit_prefixes:
+    docs: &quot;docs:&quot;
+    registry: &quot;registry:&quot;
+    infra: &quot;infra:&quot;
+  os_target: &quot;darwin&quot;                        # darwin | linux | cross-platform</code></pre>
+<h3>Fallback Defaults</h3>
+<p>When <code>project_config</code> is absent, the librarian uses the following hardcoded values. These are intentionally generic:</p>
+<table class="md-table">
+<thead><tr><th>Key</th><th>Default</th></tr></thead>
+<tbody><tr><td><code>project_name</code></td><td>&quot;Untitled Project&quot;</td></tr>
+<tr><td><code>naming_convention</code></td><td><code>descriptive-name-YYYYMMDD-VX.Y.ext</code></td></tr>
+<tr><td><code>separator</code></td><td><code>-</code></td></tr>
+<tr><td><code>case</code></td><td><code>lowercase</code></td></tr>
+<tr><td><code>forbidden_words</code></td><td>file, download, output, document</td></tr>
+<tr><td><code>default_author</code></td><td>(unset — must be configured)</td></tr>
+<tr><td><code>default_classification</code></td><td>CONFIDENTIAL</td></tr>
+<tr><td><code>staleness_threshold_days</code></td><td>90</td></tr>
+<tr><td><code>docs_path</code></td><td><code>docs/</code></td></tr>
+<tr><td><code>os_target</code></td><td><code>darwin</code></td></tr>
+</tbody></table>
+<h2>Why This Skill Exists</h2>
+<p>Projects with 15+ cross-referencing documents drift out of sync without a registry and enforcement layer. Versions get skipped, naming conventions break, and cross-references point to stale content. This skill prevents that.</p>
+<h2>Core Responsibilities</h2>
+<h3>1. Registry Maintenance</h3>
+<p>Maintain <code>REGISTRY.yaml</code> (at the path specified by <code>project_config</code> or at <code>docs/REGISTRY.yaml</code> by default) as the single source of truth for all project documentation.</p>
+<p>Every document entry contains:</p>
+<pre><code class="language-yaml">- filename: &quot;architectural-evolution-addendum-20260411-V1.0.docx&quot;
+  title: &quot;Architectural Evolution Addendum&quot;
+  description: &quot;Three-tier architecture evolution decisions and hybrid role architecture&quot;
+  format: &quot;docx&quot;
+  version: &quot;1.0&quot;
+  date: &quot;2026-04-11&quot;
+  status: &quot;active&quot;           # draft | active | superseded | archived
+  author: &quot;Your Name&quot;
+  classification: &quot;CONFIDENTIAL&quot;
+  locations:
+    disk: true               # file exists on local filesystem
+    chat: false              # file exists in Claude Chat project knowledge
+    cowork: true             # same as disk (Cowork reads from disk)
+  parent: null               # null if standalone, filename if addendum/supplement
+  supplements:               # list of documents this one supplements
+    - &quot;technical-architecture-20260101-V1.2.docx&quot;
+  cross_references:          # sections in other docs that this doc affects
+    - doc: &quot;technical-architecture-20260101-V1.2.docx&quot;
+      sections:
+        - &quot;Section 1.1 Three-Tier Architecture&quot;
+      status: &quot;resolved&quot;
+      resolved_date: &quot;2026-04-11&quot;
+      resolution: &quot;Inline pointer notes added in v1.2 bump&quot;
+  supersedes: null           # filename of document this one replaces, if any
+  superseded_by: null        # filename of document that replaced this one
+  tags:
+    - &quot;architecture&quot;</code></pre>
+<h3>2. Naming Convention Enforcement</h3>
+<p>All project documents follow the pattern specified in <code>project_config.naming_convention</code> (default: <code>descriptive-name-YYYYMMDD-VX.Y.ext</code>).</p>
+<p>Rules:</p>
+<ul><li><code>descriptive-name</code>: uses the configured <code>separator</code> and <code>case</code>. No words from the <code>forbidden_words</code> list.</li>
+<li><code>YYYYMMDD</code>: date of creation or last major revision</li>
+<li><code>VX.Y</code>: version where X = major (rewrites/redesigns), Y = minor (updates/fixes within same scope)</li>
+<li><code>ext</code>: file extension matching the actual format</li></ul>
+<p>When a document is created or renamed, validate against this pattern. If it fails, suggest the correct name before proceeding.</p>
+<p>Examples of correct naming:</p>
+<ul><li><code>scientific-foundations-20260410-V1.0.docx</code></li>
+<li><code>architectural-evolution-addendum-20260411-V1.0.docx</code></li>
+<li><code>architectural-diagrams-20260411-V1.0.html</code></li></ul>
+<p>Examples of incorrect naming:</p>
+<ul><li><code>output.docx</code> (generic name, no date, no version)</li>
+<li><code>Architecture_V2.docx</code> (wrong case, no date, wrong separator)</li>
+<li><code>docs-20260411.docx</code> (generic &quot;docs&quot;, no version)</li></ul>
+<p><strong>Scope of the naming convention.</strong> This naming convention applies to ALL files produced for the project — documents, scripts, HTML files, diagrams, config files. No exceptions. Every file that enters the repo through any tool (Chat download, Cowork creation, Claude Code generation) must comply before it is committed. Scripts follow the same pattern: <code>backup-20260411-V1.0.sh</code>, not <code>backup.sh</code>.</p>
+<p><strong>Infrastructure-file exemption.</strong> Files listed in <code>project_config.naming_rules.infrastructure_exempt</code> (default: <code>SKILL.md</code>, <code>REGISTRY.yaml</code>, <code>CLAUDE.md</code>, <code>README.md</code>, <code>.gitignore</code>) are exempt from the date-version portion of the convention because renaming them breaks tool discovery. These files must still use lowercase-hyphen descriptive names where the framework allows a choice. Rule of thumb: if a tool loads the file by a hard-coded name, the file keeps that name; everything else follows the full convention.</p>
+<h4>Chat Output Gate</h4>
+<p><strong>This is the most important enforcement point.</strong> When operating in Claude Chat, files are created via <code>create_file</code> and delivered via <code>present_files</code>. The naming convention must be enforced at <strong>file creation time</strong>, not after delivery. The librarian&#x27;s naming check runs as a pre-flight on every <code>create_file</code> call for project documents:</p>
+<ol><li>Before writing a file to <code>/mnt/user-data/outputs/</code> or <code>/home/claude/</code>, validate the intended filename against the naming convention.</li>
+<li>If the filename fails validation, rewrite it to comply before creating the file. Do not create the non-compliant file and rename later.</li>
+<li>If the file is infrastructure-exempt, skip the date-version check but still enforce lowercase-hyphen descriptive naming.</li>
+<li>Log the validated filename in the session manifest.</li></ol>
+<p><strong>Why this matters:</strong> Claude Chat&#x27;s <code>present_files</code> step copies files from the working directory to the output directory. The filename set at <code>create_file</code> time is the filename the user sees in Downloads. There is no rename opportunity after <code>present_files</code> runs. If the name is wrong at creation, it&#x27;s wrong in the user&#x27;s Downloads folder, and telling them to rename it manually is a governance failure.</p>
+<h3>3. Version Bump Logic</h3>
+<p><strong>Minor bump (Y increment):</strong> Content updated within existing scope. Same structure, same sections, fixes or additions that don&#x27;t change the document&#x27;s purpose. Example: adding two rows to a table, fixing a typo in a section, updating a cost estimate.</p>
+<p><strong>Major bump (X increment):</strong> Structural rewrite, scope expansion, or fundamental redesign. New sections added, document purpose expanded, significant reorganization. Example: adding an entirely new section to the architecture doc, merging two documents, restructuring the phase plan.</p>
+<p><strong>Date update:</strong> The YYYYMMDD portion updates whenever the version bumps. It reflects when the change was made, not the original creation date.</p>
+<p>When bumping a version:</p>
+<ol><li>Read the current registry entry</li>
+<li>Determine minor vs major based on the change scope</li>
+<li>Update the filename (rename the file)</li>
+<li>Update the registry entry (version, date, any new cross-references)</li>
+<li>Update the version history table inside the document itself</li>
+<li>Check if any other documents reference this one by filename and update those references</li></ol>
+<h3>3a. File Replacement Rules</h3>
+<p>When a file is rebuilt, revised, or corrected within the same session or work period:</p>
+<p><strong>Same scope, content corrected:</strong> Bump the minor version. Example: setup script had incomplete manifest check → fixed → <code>V1.0</code> becomes <code>V1.1</code>. The old version is explicitly superseded.</p>
+<p><strong>Scope expanded (new sections added):</strong> Bump the minor version if the additions are within the original document&#x27;s purpose. Bump the major version if the document&#x27;s scope fundamentally changed. Example: addendum gained a new section after initial creation → that&#x27;s a scope expansion → <code>V1.0</code> becomes <code>V1.1</code> or <code>V2.0</code> depending on how significant the addition is.</p>
+<p><strong>Never reuse the same version for different content.</strong> If V1.0 was delivered to the user and the content changes, the new file MUST be V1.1 or higher. Overwriting V1.0 with different content creates ambiguity — the user cannot tell which V1.0 they have.</p>
+<p><strong>When presenting a replacement file to the user:</strong></p>
+<ol><li>State explicitly: &quot;This replaces [filename V_X.Y] you downloaded earlier&quot;</li>
+<li>Explain what changed between versions</li>
+<li>Recommend deleting the old version from Downloads to avoid confusion</li>
+<li>If multiple files were produced in the session, provide a final manifest listing every file with its FINAL version number and status (current vs superseded)</li></ol>
+<h3>4. Cross-Reference Processing</h3>
+<p>When an addendum or update includes a cross-reference table (a table listing which documents and sections are affected), the librarian:</p>
+<ol><li>Parses the cross-reference table</li>
+<li>For each affected document, checks whether the referenced sections exist</li>
+<li>Generates a checklist of required updates with specific section locations</li>
+<li>Optionally executes the updates with operator approval</li>
+<li>After updates complete, bumps versions on all affected documents</li>
+<li>Updates the registry for all changed documents</li></ol>
+<p><strong>Pointer approach (default).</strong> Cross-reference resolution uses inline pointer notes — a short comment inserted at the relevant section of the target document that says what changed and where to find the full detail (e.g., &quot;See Architectural Evolution Addendum V1.0 §3 for updated three-tier architecture decisions&quot;). This is preferred over full content integration because it preserves single-source-of-truth for the addendum content and avoids content duplication that drifts.</p>
+<p><strong>Full content integration (on request).</strong> When the operator explicitly requests it, the librarian can copy the relevant content from the addendum into the target document&#x27;s section, replacing or augmenting the existing text. This creates a self-contained document but requires the operator to accept the maintenance cost of keeping two copies in sync.</p>
+<p>This is the most important function. Without it, addenda create promises of updates that never happen, and documents drift out of sync.</p>
+<h3>5. Document Status Reports</h3>
+<p>On request, generate a status report showing:</p>
+<ul><li>All documents with current version and last modified date</li>
+<li>Documents with pending cross-reference updates (addenda published but affected docs not yet updated)</li>
+<li>Documents approaching staleness (not updated in &gt; <code>staleness_threshold_days</code> while active phases are progressing)</li>
+<li>Naming convention violations</li>
+<li>Missing registry entries (files in docs/ not in REGISTRY.yaml)</li></ul>
+<h3>6. Archive Management</h3>
+<p>Archive management moves superseded documents out of the active docs tree into the configured <code>archive_path</code> (default: <code>docs/archive/</code>) so that the active listing shows only current documents, while preserving the full historical record. The archive is append-only: files are never deleted.</p>
+<p><strong>When to archive.</strong> Move a document to the archive when ALL of the following hold:</p>
+<ol><li>Its <code>status</code> in REGISTRY.yaml is <code>superseded</code></li>
+<li>Its successor is present on disk, registered, and has been stable for at least one full session</li>
+<li>No active document has a pending cross-reference pointing at the superseded file</li></ol>
+<p>Do NOT archive documents that are <code>active</code>, <code>draft</code>, or <code>not-in-repo</code>, referenced by any pending cross-reference, or the current target of an in-flight version bump.</p>
+<p><strong>How archived status works with the registry.</strong> When archiving a file, update its registry entry:</p>
+<ul><li>Add a <code>path</code> field pointing at the new location: <code>path: &quot;docs/archive/&lt;filename&gt;&quot;</code></li>
+<li>Add a <code>date_archived</code> field with the ISO date of the archive move</li>
+<li>Keep <code>status: &quot;superseded&quot;</code> — do not change it to <code>&quot;archived&quot;</code> (reserved for legal/compliance retention holds)</li>
+<li>Leave <code>superseded_by</code> unchanged</li>
+<li><code>locations.disk</code> and <code>locations.cowork</code> remain <code>true</code> — the file is still on disk, just in a subfolder</li></ul>
+<p><strong>Archive move workflow:</strong></p>
+<ol><li>Run a registry scan for entries with <code>status: superseded</code> and no <code>path</code> field (or a <code>path</code> outside the archive)</li>
+<li>For each candidate, verify conditions 1–3 above</li>
+<li><code>git mv docs/&lt;filename&gt; docs/archive/&lt;filename&gt;</code> — use git mv, not a plain mv</li>
+<li>Update the registry entry per the rules above</li>
+<li>Commit per the Git Commit Workflow (section 9) — archive moves get their own commit</li></ol>
+<p><strong>Files are never deleted.</strong> The archive is a permanent record. If a document must be legally destroyed (GDPR, litigation, regulatory retention expiry), that is a separate <code>status: destroyed</code> workflow that is OUT of scope for this skill — escalate to the project owner directly.</p>
+<h3>7. Environment Detection</h3>
+<p>The librarian operates in three environments with different capabilities. It detects which environment it&#x27;s in and adjusts its workflow accordingly.</p>
+<table class="md-table">
+<thead><tr><th>Capability</th><th>Claude Chat</th><th>Cowork</th><th>Claude Code</th></tr></thead>
+<tbody><tr><td>Filesystem access</td><td><code>/mnt/user-data/</code> only</td><td>Full (<code>~/projects/...</code>)</td><td>Full (<code>~/projects/...</code>)</td></tr>
+<tr><td>Git operations</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Multi-file cascade</td><td>Download loop</td><td>Direct in-place</td><td>Direct in-place</td></tr>
+<tr><td>Registry read/write</td><td>Must be uploaded/downloaded</td><td>Direct</td><td>Direct</td></tr>
+<tr><td>Naming enforcement</td><td>At <code>create_file</code> time (Chat Output Gate)</td><td>At write time</td><td>At write time</td></tr>
+<tr><td>File delivery</td><td><code>present_files</code> → Downloads</td><td>In-place on disk</td><td>In-place on disk</td></tr>
+</tbody></table>
+<p><strong>Detection logic:</strong></p>
+<ul><li>If <code>/mnt/user-data/uploads/</code> exists → Claude Chat</li>
+<li>If <code>git rev-parse --git-dir</code> succeeds in the project directory → Cowork or Claude Code with git</li>
+<li>If <code>CLAUDE.md</code> is loaded as project context → Claude Code</li></ul>
+<p><strong>Chat-specific constraints:</strong></p>
+<ul><li>Cannot rename files after <code>present_files</code>. Name must be correct at <code>create_file</code> time.</li>
+<li>Cannot do multi-document cascades in a single operation. Each file requires a separate download-upload cycle.</li>
+<li>Registry updates must be delivered as a downloadable file for the operator to install.</li>
+<li>**<code>.md</code> files do not deliver as downloads in Chat.** Claude Chat renders markdown inline in the conversation instead of attaching it to <code>present_files</code> output. See the &quot;Chat <code>.md</code> → <code>.txt</code> Delivery Workaround&quot; subsection below for the repackage convention.</li>
+<li><strong>No git access.</strong> Chat cannot stage, commit, or inspect the repository. Any task that requires a commit, <code>git mv</code>, <code>git log</code>, or history inspection must be routed out of Chat.</li>
+<li><strong>No shell iteration.</strong> Chat cannot run shell scripts, so any task that requires iterating on a bash hook, a lint script, or a test harness must be routed out of Chat.</li></ul>
+<p><strong>When to route a task out of Claude Chat</strong> — stop and tell the operator to run the task in Cowork or Claude Code if <strong>any</strong> of the following are true. These are hard triggers, not guidelines:</p>
+<ol><li>The task modifies <strong>3 or more</strong> existing files on disk (cascading update).</li>
+<li>The task produces or updates a **<code>.md</code> document** (Chat can&#x27;t deliver it cleanly — see workaround below).</li>
+<li>The task requires a <strong>git operation</strong> (commit, rename via <code>git mv</code>, branch inspection, history read).</li>
+<li>The task requires <strong>iterating on a shell script</strong> (hook, lint rule, test runner, build step).</li>
+<li>The task requires <strong>running tests</strong>.</li>
+<li>The task requires <strong>reading or writing a SQLite or other binary data store</strong> (the Chat sandbox lacks the client libraries to iterate safely).</li>
+<li>The task involves <strong>archive moves</strong> (<code>docs/</code> → <code>docs/archive/</code>), because the cascade of registry + cross-reference updates exceeds the cycle budget of download-upload in Chat.</li></ol>
+<p>When routing out, always provide the operator with: (a) the exact shell commands to run, (b) the target environment (Cowork preferred for librarian work, Claude Code for code changes), and (c) the session handoff summary the next agent will need.</p>
+<p>**Chat <code>.md</code> → <code>.txt</code> Delivery Workaround:**</p>
+<p>When the librarian must produce a <code>.md</code> document from within Claude Chat, Chat will render the file inline in the conversation rather than delivering it via <code>present_files</code> to Downloads. This is a platform constraint, not a file-naming bug. The workaround is:</p>
+<ol><li>Write the document content to a file with the correct stem per naming convention, but with a <code>.txt</code> extension instead of <code>.md</code>. Example: <code>phase-handoff-20260411-V1.0.txt</code>.</li>
+<li>Deliver the <code>.txt</code> file via <code>present_files</code> in the normal way.</li>
+<li>In the session manifest, record an explicit note for each affected file:</li></ol>
+<p>   &gt; <strong>DELIVERY NOTE:</strong> Delivered as <code>.txt</code> due to Chat markdown rendering. **Rename to <code>.md</code> before installing at <code>docs/&lt;filename&gt;.md</code>.** The stem and version are correct.</p>
+<ol><li>Never edit the registry entry in Chat for a <code>.md</code> document delivered this way — registry changes must wait until the operator has installed the renamed <code>.md</code> file in Cowork/Code, where the librarian can then update <code>REGISTRY.yaml</code> in place.</li>
+<li>Flag any task that would produce more than one <code>.md</code> document as a route-out trigger (rule 2 above) rather than attempting the <code>.txt</code> workaround at scale — the rename burden falls on the operator and compounds with every file.</li></ol>
+<p><strong>Why this workaround exists:</strong> Chat&#x27;s preview layer treats <code>.md</code> as a content type to display, not a file to deliver. Forcing <code>.txt</code> bypasses the preview step. The file content is identical; only the extension is adjusted for transport. This is the only governed exception to the naming convention&#x27;s extension-must-match-content rule, and it is explicitly scoped to Chat delivery only. On disk, in the repo, files are always named with their semantic extension (<code>.md</code>, <code>.html</code>, <code>.py</code>, etc.).</p>
+<p><strong>Cowork/Code advantages:</strong></p>
+<ul><li>Direct filesystem access means cascading updates happen in-place.</li>
+<li>Git operations (commit, mv, log) are available for version tracking.</li>
+<li>Registry updates are written directly to disk.</li>
+<li>Shell scripts and tests run natively — the librarian can iterate on a hook, run the project&#x27;s test suite, and commit in a single session.</li>
+<li><code>.md</code> files are delivered by writing them to their final path, no extension workaround needed.</li></ul>
+<h3>8. Environment Verification</h3>
+<p>Scripts default to the OS specified in <code>project_config.os_target</code> (default: <code>darwin</code> for macOS Apple Silicon). Every script must include:</p>
+<ul><li><strong>Shebang:</strong> <code>#!/bin/bash</code></li>
+<li><strong>OS detection:</strong> <code>OS=$(uname -s)</code> at the top, with the configured OS as the default/expected path</li>
+<li><strong>No GNU-specific flags</strong> when targeting darwin: <code>sed -i &#x27;&#x27;</code>, <code>date -j -f</code>, no <code>--exclude</code> on <code>du</code></li>
+<li><strong>No Linux assumptions</strong> when targeting darwin: no <code>/proc</code>, no <code>apt</code>/<code>yum</code></li>
+<li><strong>Test on the target OS first, add cross-platform compatibility second if needed.</strong></li></ul>
+<h3>9. Git Commit Workflow</h3>
+<p>After any document operation that modifies files on disk (version bump, rename, new file, archive move, registry update), commit the changes:</p>
+<ol><li>Stage only the files that were modified in this operation</li>
+<li>Write a descriptive commit message using the prefixes from <code>project_config.git_commit_prefixes</code> (default: <code>docs:</code>, <code>registry:</code>, <code>infra:</code>)</li>
+<li>Include in the commit message: what changed, which documents were affected, version numbers before/after</li>
+<li>Use the configured git author identity from <code>project_config</code></li>
+<li>Never batch unrelated changes into one commit</li>
+<li>Never commit untracked files unless explicitly part of the current task</li>
+<li>Report the commit hash in the task completion summary</li></ol>
+<h2>Workflow Integration</h2>
+<h3>Session Manifest Requirement</h3>
+<p>At the end of any session that produces multiple documents, generate a final manifest table listing:</p>
+<ul><li>Every file produced in the session</li>
+<li>Its final version number</li>
+<li>Whether it is CURRENT (download this) or SUPERSEDED (delete this)</li>
+<li>Where it installs in the repo</li></ul>
+<p>This prevents the most common failure mode: the user downloads six files across a two-hour session, three of which were replaced by later versions, and has no way to tell which are current.</p>
+<p><strong>Manifest naming-convention enforcement.</strong> Every file in the manifest must comply with the naming convention. If Claude Chat produces a file with a non-compliant name (e.g. <code>SKILL.md</code>, <code>REGISTRY.yaml</code>), the manifest must note the compliant rename that will be applied when the file is installed in the repo. Infrastructure-exempt files note the exemption reason.</p>
+<h3>When Another Skill Produces a Document</h3>
+<p>If the docx skill, pdf skill, pptx skill, or any other skill creates a project document:</p>
+<ol><li>Validate the filename against the naming convention</li>
+<li>Create or update the registry entry</li>
+<li>Check if the new document cross-references existing documents</li>
+<li>Flag any documents that may need version bumps as a result</li>
+<li>Confirm with the operator before executing dependent updates</li></ol>
+<h3>When Processing an Addendum</h3>
+<p>Addenda are the primary trigger for cascading updates. When an addendum is created:</p>
+<ol><li>Parse all cross-reference tables in the addendum</li>
+<li>Build a complete update checklist across all affected documents</li>
+<li>Present the checklist to the operator for review</li>
+<li>Execute approved updates document by document (pointer approach by default)</li>
+<li>Bump versions on all updated documents</li>
+<li>Update the registry</li>
+<li>Verify no circular references or orphaned cross-references remain</li></ol>
+<h3>When Asked &quot;What Needs Updating?&quot;</h3>
+<ol><li>Read the registry</li>
+<li>Scan for addenda whose cross-reference tables have not been fully resolved</li>
+<li>Check file modification dates against registry dates (detect unregistered changes)</li>
+<li>Report findings with specific action items</li></ol>
+<h2>Registry File Location</h2>
+<p>The registry lives at the path specified in <code>project_config</code> (default: <code>docs/REGISTRY.yaml</code>). It is version-controlled alongside all other documentation. The registry itself is infrastructure-exempt from the naming convention.</p>
+<h2>Initial Registry Bootstrap</h2>
+<p>When first deployed against a new project, the librarian scans the docs directory recursively, identifies all existing documents, and generates the initial REGISTRY.yaml by:</p>
+<ol><li>Listing all files with recognized extensions (.docx, .md, .html, .pdf, .pptx)</li>
+<li>Parsing filenames for version and date information</li>
+<li>Reading document headers/titles where possible</li>
+<li>Asking the operator to confirm or correct entries</li>
+<li>Writing the initial registry with a <code>project_config</code> block seeded from operator answers</li></ol>
+<h2>Document Classification Levels</h2>
+<p>All project documents carry a classification field. The valid levels come from <code>project_config.classification_levels</code> (default: CONFIDENTIAL, ATTORNEY-CLIENT PRIVILEGED, PERSONAL / INTERNAL USE ONLY). The default for new documents comes from <code>project_config.default_classification</code> (default: CONFIDENTIAL).</p>
+<p>The librarian preserves classification markings when updating documents and flags any document that lacks a classification.</p>
+<h2>Error Handling</h2>
+<ul><li>If a file exists in the docs directory but not in the registry: flag as &quot;unregistered&quot; and offer to add it</li>
+<li>If a registry entry points to a file that doesn&#x27;t exist: flag as &quot;missing file&quot; and offer to remove the entry or locate the file</li>
+<li>If two documents have the same descriptive name but different dates/versions: flag potential duplicate and ask operator to resolve</li>
+<li>If a cross-reference points to a section that doesn&#x27;t exist in the target document: flag as &quot;broken reference&quot; and ask operator whether the section was renamed or removed</li>
+<li>If <code>project_config</code> is malformed: warn the operator, list the malformed keys, and proceed with fallback defaults for those keys</li></ul>
+<h2>Tags Taxonomy</h2>
+<p>Use tags from <code>project_config.tags_taxonomy</code> for categorization. A minimal default taxonomy:</p>
+<ul><li><strong>Domain:</strong> architecture, planning, infrastructure, legal, operational</li>
+<li><strong>Phase:</strong> phase-0 through phase-5</li>
+<li><strong>Type:</strong> strategic-plan, project-plan, technical-spec, addendum, analysis, agreement, report, diagram</li>
+<li><strong>Status indicators:</strong> needs-update, pending-review, blocked</li></ul>
+<p>Projects should extend this taxonomy in their own <code>project_config.tags_taxonomy</code> to cover domain-specific tags.</p>
+<h2>Integration with CLAUDE.md</h2>
+<p>When running in Claude Code, the librarian reads <code>CLAUDE.md</code> for current project state (active phase, recent commits, known issues) to contextualize document updates. For example, if CLAUDE.md shows Phase 4 is complete, the librarian can flag Phase 4 documents that haven&#x27;t been updated with completion status.</p>
+<h2>Integration with Cowork</h2>
+<p>When running in Cowork, the librarian has direct filesystem access to the project docs directory. It reads and writes files in place, uses git for version history, and can execute multi-document update cascades without the download-upload loop required in Claude Chat.</p>
+<h2>Integration with Claude Chat</h2>
+<p>When running in Claude Chat, the librarian operates under the constraints described in section 7 (Environment Detection). Key behavioral differences:</p>
+<ul><li>All naming validation happens at <code>create_file</code> time via the Chat Output Gate</li>
+<li>Multi-file operations are flagged with a recommendation to switch to Cowork/Code</li>
+<li>Registry file must be delivered as a download for the operator to install on disk</li>
+<li>The dashboard artifact (if available) provides a visual overview without requiring filesystem access</li></ul>
+<h2>Version History</h2>
+<table class="md-table">
+<thead><tr><th>Version</th><th>Date</th><th>Notes</th></tr></thead>
+<tbody><tr><td>V1.0</td><td>2026-04-11</td><td>Initial standalone librarian skill. Ported from <code>prism-librarian</code> — removed PRISM-specific defaults, genericized examples, added &quot;Getting Started&quot; section and generic <code>project_config</code> schema.</td></tr>
+</tbody></table></div>
+
+<a class="back-link" href="../index.html">&larr; Back to index</a>
+
+<footer>
+<span>Librarian</span>
+<span>Generated 2026-04-12T14:11:30Z</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

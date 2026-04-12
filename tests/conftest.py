@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -48,6 +49,14 @@ SAMPLE_REGISTRY = {
         "last_updated": "2026-01-01",
     },
 }
+
+
+@pytest.fixture(autouse=True)
+def _stub_cytoscape():
+    """Provide a minimal cytoscape stub so graph-page tests pass without node_modules."""
+    stub = "/* cytoscape stub */ var cytoscape = function(opts){ return { on: function(){}, elements: function(){ return { style: function(){} }; }, layout: function(){ return { run: function(){} }; } }; };"
+    with patch("librarian.sitegen._load_cytoscape_js", return_value=stub):
+        yield
 
 
 @pytest.fixture
