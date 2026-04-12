@@ -8,6 +8,7 @@ from datetime import date
 from pathlib import Path
 
 from .audit import audit, format_report
+from .manifest import generate as generate_manifest, write_manifest
 from .naming import parse_filename
 from .registry import Registry
 from .versioning import bump_filename
@@ -119,6 +120,36 @@ def cmd_bump(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_manifest(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+
+    manifest = generate_manifest(
+        reg,
+        repo_root,
+        include_snapshot=not args.no_snapshot,
+        include_hashes=not args.no_hashes,
+        include_graph=not args.no_graph,
+    )
+
+    if args.output:
+        out = write_manifest(manifest, args.output)
+        print(f"Manifest written to: {out}")
+    else:
+        print(manifest.to_json())
+
+    # Summary to stderr so it does not pollute piped JSON
+    import sys as _sys
+    _sys.stderr.write(
+        f"\n  Registered: {manifest.total_registered}"
+        f"  |  On disk: {manifest.total_on_disk}"
+        f"  |  Hashed: {manifest.total_hashed}"
+        f"  |  Edges: {manifest.total_edges}\n"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="librarian", description="Document governance CLI")
     p.add_argument("--repo", help="repo root (default: cwd)")
@@ -146,6 +177,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_bump.add_argument("filename", help="current filename to bump")
     p_bump.add_argument("--major", action="store_true", help="bump major, reset minor to 0")
     p_bump.set_defaults(func=cmd_bump)
+
+    p_manifest = sub.add_parser("manifest", help="Generate manifest (JSON + SHA-256 + graph)")
+    p_manifest.add_argument("-o", "--output", help="write to file instead of stdout")
+    p_manifest.add_argument("--no-snapshot", action="store_true", help="omit registry snapshot")
+    p_manifest.add_argument("--no-hashes", action="store_true", help="omit SHA-256 file hashes")
+    p_manifest.add_argument("--no-graph", action="store_true", help="omit dependency graph")
+    p_manifest.set_defaults(func=cmd_manifest)
 
     return p
 
