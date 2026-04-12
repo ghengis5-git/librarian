@@ -1,0 +1,6 @@
+# Minimal project_config — only the required field.
+# All other values fall back to built-in defaults.
+# Place this block at the top of your REGISTRY.yaml.
+
+project_config:
+  project_name: "My Project"

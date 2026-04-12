@@ -1,0 +1,81 @@
+# PRISM project_config — real-world reference from the first librarian consumer.
+# This is the exact configuration used by Project PRISM (as of Session 28).
+
+project_config:
+  project_name: "Project PRISM"
+  naming_convention: "descriptive-name-YYYYMMDD-VX.Y.ext"
+  naming_rules:
+    separator: "-"
+    case: "lowercase"
+    forbidden_words:
+      - "file"
+      - "download"
+      - "output"
+      - "document"
+    infrastructure_exempt:
+      - "SKILL.md"
+      - "REGISTRY.yaml"
+      - "CLAUDE.md"
+      - "README.md"
+      - ".gitignore"
+  tracked_dirs:
+    - "docs/"
+    # Note: operator/ and skills/ are not yet in tracked_dirs.
+    # Files in operator/phase-specs/ show as "missing" in audits
+    # because they are registered but live outside tracked dirs.
+    # This is a known deferred config fix.
+  docs_path: "docs/"
+  archive_path: "docs/archive/"
+  diagrams_path: "docs/diagrams/"
+  operator_path: "operator/phase-specs/"
+  default_author: "Christopher A. Kahn"
+  default_classification: "CONFIDENTIAL"
+  classification_levels:
+    - "CONFIDENTIAL"
+    - "ATTORNEY-CLIENT PRIVILEGED"
+    - "PERSONAL / INTERNAL USE ONLY"
+  tags_taxonomy:
+    domain:
+      - architecture
+      - planning
+      - infrastructure
+      - legal
+      - ip
+      - ethics
+      - scientific
+      - operational
+      - calibration
+      - governance
+    phase:
+      - phase-0
+      - phase-1
+      - phase-2
+      - phase-3
+      - phase-4
+      - phase-5
+      - post-v1
+      - quick-wins
+    type:
+      - strategic-plan
+      - project-plan
+      - technical-spec
+      - addendum
+      - analysis
+      - agreement
+      - report
+      - diagram
+      - manifest
+    status_indicators:
+      - needs-update
+      - pending-review
+      - blocked
+  staleness_threshold_days: 90
+  git_author_name: "Chris Kahn"
+  git_author_email: "research+ai@brokenwire.org"
+  git_commit_prefixes:
+    docs: "docs:"
+    registry: "registry:"
+    infra: "infra:"
+    skill: "skill:"
+    refactor: "refactor:"
+  os_target: "darwin"

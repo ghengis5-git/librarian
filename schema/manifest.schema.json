@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/librarian/manifest.schema.json",
+  "title": "Librarian Manifest",
+  "description": "Combined manifest output from `python -m librarian manifest`. Contains three sub-manifests: portable registry snapshot, SHA-256 cryptographic hashes, and dependency graph.",
+  "type": "object",
+  "required": ["meta", "summary", "registry_snapshot", "file_hashes", "manifest_sha256", "dependency_edges"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Generation metadata.",
+      "required": ["generated_at", "generator_version", "repo_root", "registry_path"],
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC timestamp of manifest generation (ISO 8601)."
+        },
+        "generator_version": {
+          "type": "string",
+          "description": "Librarian package version that produced this manifest."
+        },
+        "repo_root": {
+          "type": "string",
+          "description": "Absolute path to the project root at generation time."
+        },
+        "registry_path": {
+          "type": "string",
+          "description": "Absolute path to the REGISTRY.yaml consumed."
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregate counts for quick inspection.",
+      "required": ["total_registered", "total_on_disk", "total_hashed", "total_edges"],
+      "properties": {
+        "total_registered": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of document entries in REGISTRY.yaml."
+        },
+        "total_on_disk": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of registered documents found on disk."
+        },
+        "total_hashed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of files successfully hashed (equals total_on_disk when all files exist)."
+        },
+        "total_edges": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of dependency edges in the graph."
+        }
+      }
+    },
+    "registry_snapshot": {
+      "type": "object",
+      "description": "Type 1: full REGISTRY.yaml content as JSON. Omitted (empty object) when --no-snapshot is passed.",
+      "properties": {
+        "project_config": { "type": "object" },
+        "documents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/document_entry" }
+        },
+        "registry_meta": { "type": "object" }
+      }
+    },
+    "file_hashes": {
+      "type": "array",
+      "description": "Type 2: SHA-256 hash of every registered file. Empty array when --no-hashes is passed.",
+      "items": { "$ref": "#/$defs/file_hash" }
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "description": "Tamper-evident seal: SHA-256 of the sorted 'filename:hash' lines for all existing files. Empty string when hashes are omitted."
+    },
+    "dependency_edges": {
+      "type": "array",
+      "description": "Type 3: cross-reference, supplement, and supersedes edges. Empty array when --no-graph is passed.",
+      "items": { "$ref": "#/$defs/dependency_edge" }
+    }
+  },
+  "$defs": {
+    "document_entry": {
+      "type": "object",
+      "description": "A single document registration from REGISTRY.yaml.",
+      "required": ["filename", "status"],
+      "properties": {
+        "filename": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "format": { "type": "string" },
+        "version": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "active", "superseded", "archived"]
+        },
+        "author": { "type": "string" },
+        "classification": { "type": "string" },
+        "path": { "type": "string" },
+        "supplements": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "cross_references": { "type": "array" },
+        "supersedes": {},
+        "superseded_by": {}
+      }
+    },
+    "file_hash": {
+      "type": "object",
+      "description": "SHA-256 hash result for one registered file.",
+      "required": ["filename", "sha256", "size_bytes", "exists"],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "description": "Registered filename (basename only)."
+        },
+        "sha256": {
+          "type": "string",
+          "description": "Hex-encoded SHA-256 hash. Empty string if file does not exist on disk."
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "File size in bytes. Zero if file does not exist."
+        },
+        "exists": {
+          "type": "boolean",
+          "description": "Whether the file was found on disk at generation time."
+        }
+      }
+    },
+    "dependency_edge": {
+      "type": "object",
+      "description": "One directional edge in the document dependency graph.",
+      "required": ["source", "target", "sections", "status"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Filename of the document that declares the reference."
+        },
+        "target": {
+          "type": "string",
+          "description": "Filename of the referenced document."
+        },
+        "sections": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific sections in the target document that the reference points to."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["resolved", "pending", "unknown", "supplement", "supersedes"],
+          "description": "Edge status. 'resolved'/'pending'/'unknown' for cross-references; 'supplement' for supplements relationships; 'supersedes' for version chain edges."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+# Full project_config — every available field with comments.
+# Copy this into your REGISTRY.yaml and customize.
+
+project_config:
+
+  # ---- Identity
+  project_name: "My Project"
+
+  # ---- Naming convention
+  naming_convention: "descriptive-name-YYYYMMDD-VX.Y.ext"
+  naming_rules:
+    separator: "-"                           # word separator in descriptive-name
+    case: "lowercase"                        # lowercase | preserve
+    forbidden_words:                         # words banned from descriptive-name
+      - "file"
+      - "download"
+      - "output"
+      - "document"
+    infrastructure_exempt:                   # files exempt from date-version rule
+      - "SKILL.md"
+      - "REGISTRY.yaml"
+      - "CLAUDE.md"
+      - "README.md"
+      - ".gitignore"
+
+  # ---- Directories
+  tracked_dirs:                              # dirs the audit scans (relative, trailing /)
+    - "docs/"
+  docs_path: "docs/"                         # primary docs directory
+  archive_path: "docs/archive/"              # where superseded files go
+  diagrams_path: "docs/diagrams/"            # dashboards, HTML diagrams
+  operator_path: "operator/phase-specs/"     # operational documents
+
+  # ---- Defaults for new documents
+  default_author: "Your Name"
+  default_classification: "INTERNAL"
+  classification_levels:
+    - "PUBLIC"
+    - "INTERNAL"
+    - "CONFIDENTIAL"
+
+  # ---- Tags taxonomy (not enforced, advisory)
+  tags_taxonomy:
+    domain:
+      - architecture
+      - planning
+      - infrastructure
+    phase:
+      - phase-1
+      - phase-2
+      - phase-3
+    type:
+      - technical-spec
+      - project-plan
+      - report
+    status_indicators:
+      - needs-update
+      - pending-review
+      - blocked
+
+  # ---- Staleness detection
+  staleness_threshold_days: 90               # days before flagging active docs as stale
+
+  # ---- Git integration
+  git_author_name: "Your Name"
+  git_author_email: "you@example.com"
+  git_commit_prefixes:
+    docs: "docs:"
+    registry: "registry:"
+    infra: "infra:"
+
+  # ---- Platform
+  os_target: "darwin"                        # darwin | linux | cross-platform

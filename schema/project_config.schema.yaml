@@ -1,0 +1,164 @@
+# project_config schema — defines the configuration block that lives inside
+# REGISTRY.yaml under the top-level `project_config` key.
+#
+# This schema documents what the librarian code reads at runtime.
+# It is NOT enforced via a validator (yet) — it serves as the authoritative
+# reference for anyone writing a project_config block.
+
+project_config:
+  type: object
+  description: >-
+    Project-specific configuration for the librarian.  Lives inside
+    REGISTRY.yaml as the top-level `project_config` key.
+  required:
+    - project_name
+  properties:
+
+    # -------------------------------------------------------- identity
+    project_name:
+      type: string
+      description: Human-readable project name.  Displayed in audit output.
+      example: "Project PRISM"
+
+    # -------------------------------------------------------- naming
+    naming_convention:
+      type: string
+      description: >-
+        The naming pattern enforced by the librarian.  The code parses this
+        as a human-readable hint — actual enforcement uses the regex in
+        librarian/naming.py.
+      default: "descriptive-name-YYYYMMDD-VX.Y.ext"
+
+    naming_rules:
+      type: object
+      properties:
+        separator:
+          type: string
+          description: Word separator in the descriptive-name portion.
+          default: "-"
+        case:
+          type: string
+          enum: [lowercase, preserve]
+          description: Case rule for the descriptive-name portion.
+          default: lowercase
+        forbidden_words:
+          type: array
+          items: { type: string }
+          description: Words banned from the descriptive-name portion.
+          default: [file, download, output, document]
+        infrastructure_exempt:
+          type: array
+          items: { type: string }
+          description: >-
+            Filenames exempt from the date-version portion of the naming
+            convention.  These files keep their framework-required names.
+          default: [SKILL.md, REGISTRY.yaml, CLAUDE.md, README.md, .gitignore]
+
+    # -------------------------------------------------------- paths
+    tracked_dirs:
+      type: array
+      items: { type: string }
+      description: >-
+        Directories the librarian scans during audit.  Paths are relative
+        to the repo root and must end with a slash.
+      default: ["docs/"]
+
+    docs_path:
+      type: string
+      description: Primary documentation directory.
+      default: "docs/"
+
+    archive_path:
+      type: string
+      description: Where superseded documents are moved during archival.
+      default: "docs/archive/"
+
+    diagrams_path:
+      type: string
+      description: Where diagram and dashboard files live.
+      default: "docs/diagrams/"
+
+    operator_path:
+      type: string
+      description: Operational documents (phase specs, session logs).
+      default: "operator/phase-specs/"
+
+    # -------------------------------------------------------- defaults
+    default_author:
+      type: string
+      description: Author name used when registering new documents without --author.
+      default: "unknown"
+
+    default_classification:
+      type: string
+      description: Classification level for new documents without --classification.
+      default: "INTERNAL"
+
+    classification_levels:
+      type: array
+      items: { type: string }
+      description: Valid classification levels for this project.
+      default: [CONFIDENTIAL, "PERSONAL / INTERNAL USE ONLY"]
+
+    # -------------------------------------------------------- tags
+    tags_taxonomy:
+      type: object
+      description: >-
+        Controlled vocabulary for document tags.  Organized by category.
+        Not enforced at runtime (tags are free-form), but the audit can
+        warn on tags not in the taxonomy.
+      properties:
+        domain:
+          type: array
+          items: { type: string }
+        phase:
+          type: array
+          items: { type: string }
+        type:
+          type: array
+          items: { type: string }
+        status_indicators:
+          type: array
+          items: { type: string }
+
+    # -------------------------------------------------------- staleness
+    staleness_threshold_days:
+      type: integer
+      minimum: 1
+      description: >-
+        Days before an active document is flagged as potentially stale.
+        Used by the audit's staleness check.
+      default: 90
+
+    # -------------------------------------------------------- git
+    git_author_name:
+      type: string
+      description: Git author name for librarian-initiated commits.
+
+    git_author_email:
+      type: string
+      format: email
+      description: Git author email for librarian-initiated commits.
+
+    git_commit_prefixes:
+      type: object
+      description: Commit message prefixes by operation type.
+      properties:
+        docs:
+          type: string
+          default: "docs:"
+        registry:
+          type: string
+          default: "registry:"
+        infra:
+          type: string
+          default: "infra:"
+
+    # -------------------------------------------------------- platform
+    os_target:
+      type: string
+      enum: [darwin, linux, cross-platform]
+      description: >-
+        Target OS for script generation.  Affects shebang lines, sed flags,
+        date command syntax.
+      default: darwin
