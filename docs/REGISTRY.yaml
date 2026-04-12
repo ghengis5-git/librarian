@@ -1,386 +1,348 @@
-# Librarian Document Registry
-# Maintained by: librarian skill
-# Location: docs/REGISTRY.yaml
-# Last updated: 2026-04-11 (Phase B — manifest system + schemas + architecture)
-#
-# This file is the single source of truth for all documentation in this
-# repository. Every tracked document must have an entry here. Run the
-# librarian's audit function to detect unregistered files.
-#
-# ============================================================
-# ABOUT THIS REGISTRY
-# ============================================================
-# This is the REGISTRY.yaml for the Librarian project itself —
-# the standalone, project-agnostic document governance skill that was
-# extracted from Project PRISM's in-repo prism-librarian skill.
-#
-# The librarian dogfoods its own governance rules from commit #1:
-# this file is the registry for THIS repo, not a template. The
-# templates and schema documentation for adopting the librarian
-# in OTHER projects live in skill/SKILL.md under the "Getting
-# Started" and "project_config Schema" sections.
-#
-# To adopt the librarian in a different project, copy skill/SKILL.md
-# into that project's skill directory and create a new REGISTRY.yaml
-# with a project_config block tuned to that project.
-# ============================================================
-
-# ============================================================
-# PROJECT CONFIGURATION
-# ============================================================
-# Project-specific rules consumed by the librarian skill.
-# The skill reads this block on every invocation. If a key is missing,
-# the skill falls back to its hardcoded generic defaults (documented
-# in skill/SKILL.md under "Fallback Defaults").
-# ============================================================
-
 project_config:
-  project_name: "Librarian"
-  naming_convention: "descriptive-name-YYYYMMDD-VX.Y.ext"
+  project_name: Librarian
+  naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
   naming_rules:
-    separator: "-"
-    case: "lowercase"
+    separator: '-'
+    case: lowercase
     forbidden_words:
-      - "file"
-      - "download"
-      - "output"
-      - "document"
+    - file
+    - download
+    - output
+    - document
     infrastructure_exempt:
-      - "SKILL.md"
-      - "REGISTRY.yaml"
-      - "CLAUDE.md"
-      - "README.md"
-      - ".gitignore"
-      - ".python-version"
-      - "manifest.schema.json"
-      - "project_config.schema.yaml"
-      - "registry.schema.yaml"
-      - "project_config.minimal.yaml"
-      - "project_config.full.yaml"
-      - "project_config.prism.yaml"
-  default_author: "Chris Kahn"
-  default_classification: "PERSONAL / INTERNAL USE ONLY"
+    - SKILL.md
+    - REGISTRY.yaml
+    - CLAUDE.md
+    - README.md
+    - .gitignore
+    - .python-version
+    - manifest.schema.json
+    - project_config.schema.yaml
+    - registry.schema.yaml
+    - project_config.minimal.yaml
+    - project_config.full.yaml
+    - project_config.prism.yaml
+  default_author: Chris Kahn
+  default_classification: PERSONAL / INTERNAL USE ONLY
   classification_levels:
-    - "PERSONAL / INTERNAL USE ONLY"
-    - "CONFIDENTIAL"
-    - "PUBLIC"
+  - PERSONAL / INTERNAL USE ONLY
+  - CONFIDENTIAL
+  - PUBLIC
   tags_taxonomy:
     domain:
-      - governance
-      - infrastructure
-      - architecture
-      - operational
-      - meta
+    - governance
+    - infrastructure
+    - architecture
+    - operational
+    - meta
     phase:
-      - phase-a
-      - phase-b
-      - phase-c
-      - phase-d
-      - phase-e
-      - phase-f
+    - phase-a
+    - phase-b
+    - phase-c
+    - phase-d
+    - phase-e
+    - phase-f
     type:
-      - skill-definition
-      - technical-spec
-      - schema
-      - tool
-      - example
-      - project-plan
-      - report
+    - skill-definition
+    - technical-spec
+    - schema
+    - tool
+    - example
+    - project-plan
+    - report
     status_indicators:
-      - needs-update
-      - pending-review
-      - blocked
+    - needs-update
+    - pending-review
+    - blocked
   tracked_dirs:
-    - "docs/"
-    - "skill/"
-    - "schema/"
-    - "examples/"
-  docs_path: "docs/"
-  archive_path: "docs/archive/"
-  diagrams_path: "docs/diagrams/"
-  operator_path: "docs/phase-specs/"
+  - docs/
+  - skill/
+  - schema/
+  - examples/
+  docs_path: docs/
+  archive_path: docs/archive/
+  diagrams_path: docs/diagrams/
+  operator_path: docs/phase-specs/
   staleness_threshold_days: 90
-  git_author_name: "Chris Kahn"
-  git_author_email: "research+ai@brokenwire.org"
+  git_author_name: Chris Kahn
+  git_author_email: research+ai@brokenwire.org
   git_commit_prefixes:
-    docs: "docs:"
-    registry: "registry:"
-    infra: "infra:"
-    skill: "skill:"
-    refactor: "refactor:"
-  os_target: "darwin"
-
+    docs: 'docs:'
+    registry: 'registry:'
+    infra: 'infra:'
+    skill: 'skill:'
+    refactor: 'refactor:'
+  os_target: darwin
 documents:
-
-  # ============================================================
-  # SKILL DEFINITION
-  # ============================================================
-
-  - filename: "SKILL.md"
-    path: "skill/SKILL.md"
-    title: "Document Librarian Skill Definition"
-    description: "Canonical skill definition for the project-agnostic document librarian. Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed and a Getting Started section added."
-    format: "md"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements: []
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version suffix not applied."
-    tags:
-      - governance
-      - skill-definition
-      - meta
-      - phase-a
-
-  # ============================================================
-  # PROJECT INFRASTRUCTURE
-  # ============================================================
-
-  - filename: "README.md"
-    path: "README.md"
-    title: "Project README"
-    description: "Top-level project README. Overview, installation instructions, and usage examples for the standalone librarian."
-    format: "md"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "draft"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements: []
-    cross_references:
-      - doc: "SKILL.md"
-        sections:
-          - "Getting Started — Adopting the Librarian in a New Project"
-        status: "pending"
-        note: "README should link to the Getting Started section once written"
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Filename is hardcoded by git/GitHub conventions (README.md). Date-version suffix not applied."
-    tags:
-      - infrastructure
-      - meta
-      - phase-a
-
-  # ============================================================
-  # SCHEMAS (Phase B)
-  # ============================================================
-
-  - filename: "manifest.schema.json"
-    path: "schema/manifest.schema.json"
-    title: "Manifest JSON Schema"
-    description: "JSON Schema (draft 2020-12) defining the output format of `python -m librarian manifest`. Covers all three sub-manifests: registry snapshot, SHA-256 file hashes, and dependency graph edges."
-    format: "json"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements: []
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Schema filenames follow JSON Schema conventions. Date-version suffix not applied."
-    tags:
-      - schema
-      - governance
-      - phase-b
-
-  - filename: "project_config.schema.yaml"
-    path: "schema/project_config.schema.yaml"
-    title: "Project Config Schema"
-    description: "YAML schema documenting every field in the project_config block of REGISTRY.yaml. Authoritative reference for projects adopting the librarian."
-    format: "yaml"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements:
-      - "SKILL.md"
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Schema filenames follow descriptive conventions. Date-version suffix not applied."
-    tags:
-      - schema
-      - governance
-      - phase-b
-
-  - filename: "registry.schema.yaml"
-    path: "schema/registry.schema.yaml"
-    title: "Registry Schema"
-    description: "YAML schema documenting the full structure of REGISTRY.yaml including project_config, documents array, and registry_meta."
-    format: "yaml"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements:
-      - "SKILL.md"
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Schema filenames follow descriptive conventions. Date-version suffix not applied."
-    tags:
-      - schema
-      - governance
-      - phase-b
-
-  # ============================================================
-  # EXAMPLES (Phase B)
-  # ============================================================
-
-  - filename: "project_config.minimal.yaml"
-    path: "examples/project_config.minimal.yaml"
-    title: "Minimal Config Example"
-    description: "Bare-minimum project_config with only the required field (project_name). All other values fall back to built-in defaults."
-    format: "yaml"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements:
-      - "project_config.schema.yaml"
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Example config filenames are descriptive identifiers. Date-version suffix not applied."
-    tags:
-      - example
-      - phase-b
-
-  - filename: "project_config.full.yaml"
-    path: "examples/project_config.full.yaml"
-    title: "Full Config Example"
-    description: "Complete project_config with every available field and explanatory comments. Copy-paste starting point for new projects."
-    format: "yaml"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements:
-      - "project_config.schema.yaml"
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Example config filenames are descriptive identifiers. Date-version suffix not applied."
-    tags:
-      - example
-      - phase-b
-
-  - filename: "project_config.prism.yaml"
-    path: "examples/project_config.prism.yaml"
-    title: "PRISM Config Reference"
-    description: "Real-world project_config from Project PRISM (the first librarian consumer). Shows a production configuration with custom classification levels, extended tags taxonomy, and multi-prefix git commit conventions."
-    format: "yaml"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements:
-      - "project_config.schema.yaml"
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: true
-    exemption_reason: "Example config filenames are descriptive identifiers. Date-version suffix not applied."
-    tags:
-      - example
-      - phase-b
-
-  # ============================================================
-  # ARCHITECTURE DOCUMENTATION (Phase B)
-  # ============================================================
-
-  - filename: "librarian-architecture-20260411-V1.0.md"
-    path: "docs/librarian-architecture-20260411-V1.0.md"
-    title: "Librarian Architecture"
-    description: "System architecture document covering package structure, module responsibilities, data flow, SHA-256 design decisions, CLI design, consumer integration, and test architecture as of v0.2.0."
-    format: "md"
-    version: "1.0"
-    date: "2026-04-11"
-    status: "active"
-    author: "Chris Kahn"
-    classification: "PERSONAL / INTERNAL USE ONLY"
-    locations:
-      disk: true
-      chat: false
-      cowork: true
-    parent: null
-    supplements: []
-    cross_references: []
-    supersedes: null
-    superseded_by: null
-    infrastructure_exempt: false
-    tags:
-      - architecture
-      - governance
-      - phase-b
-
-# ============================================================
-# REGISTRY METADATA
-# ============================================================
-
+- filename: SKILL.md
+  path: skill/SKILL.md
+  title: Document Librarian Skill Definition
+  description: Canonical skill definition for the project-agnostic document librarian.
+    Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed
+    and a Getting Started section added.
+  format: md
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements: []
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version
+    suffix not applied.
+  tags:
+  - governance
+  - skill-definition
+  - meta
+  - phase-a
+- filename: README.md
+  path: README.md
+  title: Project README
+  description: Top-level project README. Overview, installation instructions, and
+    usage examples for the standalone librarian.
+  format: md
+  version: '1.0'
+  date: '2026-04-11'
+  status: draft
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements: []
+  cross_references:
+  - doc: SKILL.md
+    sections:
+    - Getting Started — Adopting the Librarian in a New Project
+    status: pending
+    note: README should link to the Getting Started section once written
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Filename is hardcoded by git/GitHub conventions (README.md). Date-version
+    suffix not applied.
+  tags:
+  - infrastructure
+  - meta
+  - phase-a
+- filename: manifest.schema.json
+  path: schema/manifest.schema.json
+  title: Manifest JSON Schema
+  description: 'JSON Schema (draft 2020-12) defining the output format of `python
+    -m librarian manifest`. Covers all three sub-manifests: registry snapshot, SHA-256
+    file hashes, and dependency graph edges.'
+  format: json
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements: []
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Schema filenames follow JSON Schema conventions. Date-version
+    suffix not applied.
+  tags:
+  - schema
+  - governance
+  - phase-b
+- filename: project_config.schema.yaml
+  path: schema/project_config.schema.yaml
+  title: Project Config Schema
+  description: YAML schema documenting every field in the project_config block of
+    REGISTRY.yaml. Authoritative reference for projects adopting the librarian.
+  format: yaml
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - SKILL.md
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Schema filenames follow descriptive conventions. Date-version
+    suffix not applied.
+  tags:
+  - schema
+  - governance
+  - phase-b
+- filename: registry.schema.yaml
+  path: schema/registry.schema.yaml
+  title: Registry Schema
+  description: YAML schema documenting the full structure of REGISTRY.yaml including
+    project_config, documents array, and registry_meta.
+  format: yaml
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - SKILL.md
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Schema filenames follow descriptive conventions. Date-version
+    suffix not applied.
+  tags:
+  - schema
+  - governance
+  - phase-b
+- filename: project_config.minimal.yaml
+  path: examples/project_config.minimal.yaml
+  title: Minimal Config Example
+  description: Bare-minimum project_config with only the required field (project_name).
+    All other values fall back to built-in defaults.
+  format: yaml
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - project_config.schema.yaml
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Example config filenames are descriptive identifiers. Date-version
+    suffix not applied.
+  tags:
+  - example
+  - phase-b
+- filename: project_config.full.yaml
+  path: examples/project_config.full.yaml
+  title: Full Config Example
+  description: Complete project_config with every available field and explanatory
+    comments. Copy-paste starting point for new projects.
+  format: yaml
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - project_config.schema.yaml
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Example config filenames are descriptive identifiers. Date-version
+    suffix not applied.
+  tags:
+  - example
+  - phase-b
+- filename: project_config.prism.yaml
+  path: examples/project_config.prism.yaml
+  title: PRISM Config Reference
+  description: Real-world project_config from Project PRISM (the first librarian consumer).
+    Shows a production configuration with custom classification levels, extended tags
+    taxonomy, and multi-prefix git commit conventions.
+  format: yaml
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - project_config.schema.yaml
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: true
+  exemption_reason: Example config filenames are descriptive identifiers. Date-version
+    suffix not applied.
+  tags:
+  - example
+  - phase-b
+- filename: librarian-architecture-20260411-V1.0.md
+  path: docs/librarian-architecture-20260411-V1.0.md
+  title: Librarian Architecture
+  description: System architecture document covering package structure, module responsibilities,
+    data flow, SHA-256 design decisions, CLI design, consumer integration, and test
+    architecture as of v0.2.0.
+  format: md
+  version: '1.0'
+  date: '2026-04-11'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements: []
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - architecture
+  - governance
+  - phase-b
+- filename: librarian-buildout-plan-20260411-V1.2.md
+  title: Doc Librarian Buildout Plan
+  description: Six-phase roadmap (A-F) to evolve librarian from PRISM skill to standalone
+    open-source tool
+  status: active
+  version: V1.2
+  created: '2026-04-12'
+  updated: '2026-04-12'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags: []
+  path: docs/librarian-buildout-plan-20260411-V1.2.md
+  infrastructure_exempt: false
 registry_meta:
-  version_convention_note: >-
-    This project was created 2026-04-11 with the canonical dot form (VX.Y)
-    from day one. No legacy transition rules apply.
+  version_convention_note: This project was created 2026-04-11 with the canonical
+    dot form (VX.Y) from day one. No legacy transition rules apply.
   total_documents: 10
   active: 9
   draft: 1
@@ -389,13 +351,11 @@ registry_meta:
   archived: 0
   in_docs_archive: 0
   pending_cross_reference_updates: 1
-  last_audit: "2026-04-11"
-  last_audit_note: >-
-    2026-04-11 (Phase B): 8 new documents added — 3 schemas, 3 examples,
-    1 architecture doc. tracked_dirs expanded to include schema/ and
-    examples/. Infrastructure-exempt list expanded for schema and example
-    filenames. Total: 2 -> 10 documents, 1 -> 9 active, 1 draft (README).
-    Pending cross-ref from README -> SKILL.md still open.
+  last_audit: '2026-04-11'
+  last_audit_note: '2026-04-11 (Phase B): 8 new documents added — 3 schemas, 3 examples,
+    1 architecture doc. tracked_dirs expanded to include schema/ and examples/. Infrastructure-exempt
+    list expanded for schema and example filenames. Total: 2 -> 10 documents, 1 ->
+    9 active, 1 draft (README). Pending cross-ref from README -> SKILL.md still open.'
   naming_violations: 0
   naming_violation_details: []
   total_on_disk: 10
@@ -403,3 +363,4 @@ registry_meta:
   locations_in_cowork: 10
   locations_disk_only: 0
   locations_chat_only: 0
+  last_updated: '2026-04-12'
