@@ -339,22 +339,93 @@ documents:
   tags: []
   path: docs/librarian-buildout-plan-20260411-V1.2.md
   infrastructure_exempt: false
+  supersedes: librarian-buildout-plan-20260411-V1.1.md
+- filename: librarian-buildout-plan-20260411-V1.1.md
+  path: docs/librarian-buildout-plan-20260411-V1.1.md
+  title: Doc Librarian Buildout Plan (V1.1)
+  description: Interim buildout plan. Superseded by V1.2.
+  format: md
+  version: '1.1'
+  date: '2026-04-11'
+  status: superseded
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  superseded_by: librarian-buildout-plan-20260411-V1.2.md
+  supersedes: librarian-buildout-plan-20260411-V1.0.md
+  tags: []
+- filename: librarian-buildout-plan-20260411-V1.0.md
+  path: docs/librarian-buildout-plan-20260411-V1.0.md
+  title: Doc Librarian Buildout Plan (V1.0)
+  description: Original buildout plan. Superseded by V1.1.
+  format: md
+  version: '1.0'
+  date: '2026-04-11'
+  status: superseded
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  superseded_by: librarian-buildout-plan-20260411-V1.1.md
+  tags: []
+- filename: librarian-dashboard-20260412-V3.0.html
+  path: docs/diagrams/librarian-dashboard-20260412-V3.0.html
+  title: Librarian Interactive Dashboard
+  description: Interactive HTML dashboard with search, dependency graph, filter chips,
+    and timeline. Generated from manifest.
+  format: html
+  version: '3.0'
+  date: '2026-04-12'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  infrastructure_exempt: true
+  exemption_reason: Generated dashboard artifact. Versioned by output, not by naming convention.
+  tags:
+  - dashboard
+  - phase-d
+- filename: phase-d-implementation-plan-20260412-V1.0.md
+  path: docs/phase-d-implementation-plan-20260412-V1.0.md
+  title: Phase D Implementation Plan
+  description: Implementation plan for the interactive dashboard (Phase D).
+  format: md
+  version: '1.0'
+  date: '2026-04-12'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - planning
+  - phase-d
+- filename: librarian-manifest-20260412-V1.0.json
+  path: examples/manifests/librarian-manifest-20260412-V1.0.json
+  title: Librarian Example Manifest
+  description: Example manifest generated from the librarian's own registry. Demonstrates
+    the manifest format with SHA-256 hashes and dependency graph.
+  format: json
+  version: '1.0'
+  date: '2026-04-12'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  infrastructure_exempt: true
+  exemption_reason: Example manifest filenames are descriptive identifiers.
+  tags:
+  - example
+  - phase-b
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 10
-  active: 9
+  total_documents: 16
+  active: 13
   draft: 1
-  superseded: 0
+  superseded: 2
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0
-  pending_cross_reference_updates: 1
-  last_audit: '2026-04-11'
-  last_audit_note: '2026-04-11 (Phase B): 8 new documents added — 3 schemas, 3 examples,
-    1 architecture doc. tracked_dirs expanded to include schema/ and examples/. Infrastructure-exempt
-    list expanded for schema and example filenames. Total: 2 -> 10 documents, 1 ->
-    9 active, 1 draft (README). Pending cross-ref from README -> SKILL.md still open.'
+  pending_cross_reference_updates: 0
+  last_audit: '2026-04-12'
+  last_audit_note: '2026-04-12: Registered all unregistered files (superseded buildout
+    plans, dashboard, phase-d plan, example manifest). Created README.md. Renamed
+    phase-d-implementation-plan.md to follow naming convention. Removed all references
+    to former consumer project.'
   naming_violations: 0
   naming_violation_details: []
   total_on_disk: 10

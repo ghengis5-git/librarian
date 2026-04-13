@@ -97,10 +97,16 @@ def audit(
         report.unregistered.append(name)
 
     # Missing: in registry but not on disk (superseded entries excluded —
-    # they may be archived or intentionally removed)
+    # they may be archived or intentionally removed).  Also check the
+    # registered *path* for files that live outside tracked_dirs (e.g.
+    # README.md at the project root).
     for name in sorted(report.registered - report.on_disk):
         doc = registry.get_document(name)
         if doc and doc.get("status") == "superseded":
+            continue
+        # Check if the file actually exists via its registered path
+        doc_path = doc.get("path", "") if doc else ""
+        if doc_path and (repo_root / doc_path).exists():
             continue
         report.missing.append(name)
 
