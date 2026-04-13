@@ -396,8 +396,11 @@ if [ -f "$REGISTRY" ]; then
         done
         $is_exempt && continue
 
-        # Check registry
-        if ! grep -q "\"$filename\"" "$REGISTRY" 2>/dev/null; then
+        # Check registry — match against both 'filename:' key and 'path:' key
+        # REGISTRY.yaml stores filenames as unquoted YAML values:
+        #   filename: my-doc-20260412-V1.0.md
+        #   path: docs/my-doc-20260412-V1.0.md
+        if ! grep -qE "(filename|path):.*$filename" "$REGISTRY" 2>/dev/null; then
             warn "$filepath — not found in REGISTRY.yaml"
             unregistered=$((unregistered + 1))
         fi

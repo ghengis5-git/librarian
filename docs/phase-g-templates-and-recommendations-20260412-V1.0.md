@@ -127,9 +127,125 @@ librarian/
 
 ### Template format
 
-Templates are markdown files with YAML frontmatter and lightweight Jinja2-style variable
-substitution. No Jinja2 dependency — the librarian uses `str.replace()` on a small set
-of known variables. This preserves the zero-dependency constraint.
+Templates are markdown files with YAML frontmatter and a **mini template engine** built
+into the librarian. The engine handles variable substitution AND conditional blocks,
+with zero external dependencies (~100 lines of Python).
+
+**Why not Jinja2?** The librarian's zero-dependency constraint is a core design decision.
+Jinja2 is ~30,000 lines and pulls in MarkupSafe. The librarian's template needs are
+narrow: variables, conditionals, and optional sections. A purpose-built mini engine
+covers these without breaking the dependency constraint.
+
+**Why not plain `str.replace()`?** Templates need conditionals. A security assessment
+template for a DoD project needs different sections than one for a SaaS startup. A
+compliance checklist under ISO 27001 needs different controls than one under HIPAA.
+Without conditionals, you'd need separate templates for every permutation — template
+count would explode from ~70 to ~300+.
+
+#### Mini template engine syntax
+
+```
+{{variable}}                          — variable substitution (same as before)
+{% if condition %}                    — conditional block start
+{% elif condition %}                  — else-if branch
+{% else %}                            — else branch
+{% endif %}                           — conditional block end
+{% for item in list %}                — iteration over a list
+{% endfor %}                          — end iteration
+```
+
+**Condition resolution:** Conditions evaluate against a context dict built from
+`project_config`. Supported operators: truthiness (`{% if hipaa %}`), equality
+(`{% if preset == "government" %}`), and membership (`{% if "hipaa" in compliance %}`).
+No arbitrary Python expressions — the engine is intentionally limited.
+
+#### Conditional use cases
+
+**Compliance-driven sections:**
+```markdown
+{% if "hipaa" in compliance %}
+## HIPAA Privacy Impact Assessment
+
+| PHI Category | Collection Method | Storage | Access Controls |
+|---|---|---|---|
+| | | | |
+{% endif %}
+
+{% if "dod_5200" in compliance %}
+## Classification Guide
+
+**Classification Authority:** {{classification_authority}}
+**Declassification:** {{declassification_date}}
+{% endif %}
+```
+
+**Preset-driven structure:**
+```markdown
+{% if preset == "government" %}
+## Distribution Statement
+
+Distribution A: Approved for public release; distribution unlimited.
+{% elif preset == "finance" %}
+## Distribution Notice
+
+Internal Use Only — Not for Public Distribution.
+SEC Rule 17a-4 / FINRA Rule 4511 retention applies.
+{% endif %}
+```
+
+**ISO/regulatory hybrid sections:**
+```markdown
+{% if "iso_9001" in compliance %}
+## Document Control (ISO 9001 §7.5)
+
+| Control | Requirement | Status |
+|---|---|---|
+| Approval | Authorized signatory required | |
+| Review cycle | {{review_cycle_days}} days | |
+| Distribution | Controlled copy register | |
+{% endif %}
+
+{% if "iso_27001" in compliance %}
+## Information Security Controls (ISO 27001 Annex A)
+
+| Control ID | Control | Applicable | Justification |
+|---|---|---|---|
+| A.5.1 | Information security policies | | |
+| A.6.1 | Internal organization | | |
+{% endif %}
+```
+
+#### Context dict (passed to engine at render time)
+
+```python
+context = {
+    # Standard variables
+    "title": "...",
+    "version": "V1.0",
+    "date": "20260412",
+    "author": "Chris Kahn",
+    "classification": "CONFIDENTIAL",
+    "status": "draft",
+    "year": "2026",
+    "project_name": "My Project",
+    "librarian_version": "0.7.0",
+
+    # Config-derived (drives conditionals)
+    "preset": "software",                    # from project_config
+    "compliance": ["hipaa", "iso_27001"],    # from compliance toggles
+    "hipaa": True,                           # convenience flags
+    "dod_5200": False,
+    "iso_9001": False,
+    "iso_27001": True,
+    "sec_finra": False,
+
+    # Document metadata
+    "review_cycle_days": 365,
+    "retention_period_days": 2190,
+    "classification_authority": "",
+    "declassification_date": "",
+}
+```
 
 ```markdown
 ---
@@ -444,31 +560,95 @@ populated from the template's `suggested_tags`. Cross-references get populated f
 
 ## Implementation plan
 
-### G.1 — Template infrastructure (1 session)
+### G.1 — Template infrastructure + mini engine (1 session)
 
 **Deliverables:**
 - `librarian/templates/` package with `__init__.py` and `_base.py`
 - `DocumentTemplate` dataclass with `from_file()` classmethod
-- Variable substitution engine (no Jinja2 — `str.replace()` loop)
+- **Mini template engine** (~100 lines in `_base.py`):
+  - `{{variable}}` substitution from context dict
+  - `{% if condition %}` / `{% elif %}` / `{% else %}` / `{% endif %}` conditional blocks
+  - `{% for item in list %}` / `{% endfor %}` iteration
+  - Condition operators: truthiness, `==` equality, `in` membership
+  - No arbitrary Python eval — intentionally limited for security and simplicity
 - Template discovery: scan built-in dirs + custom dir, deduplicate
 - `universal/` templates: readme, project-plan, changelog, meeting-notes
 - `scaffold` CLI subcommand (core flow: resolve → render → write → register)
 - `scaffold --list` and `scaffold --list-all`
-- Tests: template parsing, variable substitution, naming convention application,
+- Context builder: reads `project_config` and compliance flags, builds the dict
+  that feeds the engine (preset, compliance list, convenience booleans, metadata)
+- Tests: template parsing, variable substitution, **conditional rendering**,
+  **nested conditionals**, **for loops**, naming convention application,
   file creation, registry insertion, list output
-- Target: ~25 tests
+- Target: ~35 tests
 
-### G.2 — Preset template packs (1 session)
+### G.2 — Preset template packs (split into 4 sub-sessions)
+
+Template quality matters more than template count. Each sub-session focuses on
+presets that share domain knowledge, so section structures are realistic and
+cross-references between templates are internally consistent.
+
+#### G.2a — Software + Scientific (1 session)
 
 **Deliverables:**
-- Template files for all 8 preset-specific directories (software through government)
-- Cross-cutting templates: security/ (7 templates) and compliance/ (6 templates)
-- Each template has realistic section structures, not just placeholder headings
-- `PRESET_EXPECTATIONS` dict wired into each preset
-- `scaffold --dry-run` support
-- Tests: template count per preset, expected sections present, cross-ref validity
-  (every `typical_cross_refs` target exists as a template_id somewhere)
-- Target: ~20 tests
+- `software/` templates (8): architecture-decision-record, technical-architecture,
+  api-specification, runbook, security-assessment, incident-postmortem, test-plan,
+  release-notes
+- `scientific/` templates (6): scientific-foundation, experiment-protocol,
+  literature-review, data-management-plan, irb-application, lab-notebook-entry
+- Each template uses conditionals for compliance-variant sections
+  (e.g., security-assessment has `{% if "iso_27001" in compliance %}` blocks)
+- `PRESET_EXPECTATIONS["software"]` and `PRESET_EXPECTATIONS["scientific"]`
+- Tests: template count, sections present, cross-ref validity, conditional rendering
+- Target: ~12 tests
+
+#### G.2b — Business + Legal (1 session)
+
+**Deliverables:**
+- `business/` templates (8): strategic-plan, cost-analysis, competitor-analysis,
+  project-management-plan, business-case, risk-assessment, stakeholder-analysis,
+  executive-summary
+- `legal/` templates (6): legal-review, patent-review, ip-landscape,
+  contract-summary, regulatory-compliance-checklist, nda-tracker
+- IP-related templates have `{% if "ip_protection" in compliance %}` blocks
+  for patent and trade secret sections
+- `PRESET_EXPECTATIONS["business"]` and `PRESET_EXPECTATIONS["legal"]`
+- Tests: template count, sections present, cross-ref validity
+- Target: ~12 tests
+
+#### G.2c — Healthcare + Finance + Government (1 session)
+
+**Deliverables:**
+- `healthcare/` templates (6): clinical-protocol, hipaa-risk-assessment,
+  quality-improvement-plan, policy-document, incident-report, credentialing-checklist
+- `finance/` templates (6): due-diligence-report, investment-memo,
+  compliance-review, audit-finding, risk-assessment, regulatory-filing-checklist
+- `government/` templates (6): policy-directive, standard-operating-procedure,
+  memorandum, acquisition-plan, security-plan, after-action-report
+- Healthcare templates use `{% if "hipaa" in compliance %}` heavily
+- Government templates use `{% if "dod_5200" in compliance %}` for classification
+- Finance templates use `{% if "sec_finra" in compliance %}` for retention
+- `PRESET_EXPECTATIONS` for all three presets
+- Tests: template count, sections present, conditional rendering per compliance flag
+- Target: ~15 tests
+
+#### G.2d — Cross-cutting packs: Security + Compliance (1 session)
+
+**Deliverables:**
+- `security/` templates (7): threat-model, vulnerability-assessment,
+  penetration-test-report, security-architecture-review, incident-response-plan,
+  access-control-matrix, data-classification-policy
+- `compliance/` templates (6): sox-controls-matrix, gdpr-dpia, pci-dss-checklist,
+  iso27001-statement-of-applicability, audit-readiness-checklist,
+  vendor-risk-assessment
+- These are **cross-cutting** — available to any preset, not just one
+- Heavy use of conditionals: each compliance template adapts based on which
+  compliance flags are active (e.g., the audit-readiness-checklist includes
+  ISO sections only when `{% if "iso_9001" in compliance or "iso_27001" in compliance %}`)
+- `scaffold --dry-run` support (deferred from G.2a to keep early sessions focused)
+- Tests: cross-cutting resolution (templates available from any preset),
+  conditional rendering across multiple compliance combos
+- Target: ~12 tests
 
 ### G.3 — Recommendations engine (1 session)
 
@@ -498,8 +678,8 @@ populated from the template's `suggested_tags`. Cross-references get populated f
 - Full regression: all existing 329 tests pass + ~20 new tests
 - Target: ~20 new tests
 
-### Total estimated new tests: ~95
-### Total test target: ~424
+### Total estimated new tests: ~136
+### Total test target: ~465
 
 ## What this does NOT include
 
@@ -538,7 +718,7 @@ itself stays governance-only.
 
 - Phase A–E complete ✅ (foundation, manifest, audit, dashboard, site)
 - Phase F (plugin packaging) is NOT required. Templates ship with the Python package.
-- No new external dependencies. Template rendering uses `str.replace()`, not Jinja2.
+- No new external dependencies. Template rendering uses a built-in mini engine, not Jinja2.
 
 ## Risks
 
@@ -567,7 +747,8 @@ which file wins.
    a project that has all expected documents
 4. Custom templates in a project's `templates/` directory override built-in ones
 5. All existing 329 tests continue to pass
-6. ~95 new tests cover template parsing, scaffolding, recommendations, and integration
+6. ~136 new tests cover template parsing, mini engine, scaffolding, recommendations,
+   and integration (~465 total)
 
 ## Cross-references
 
@@ -583,3 +764,4 @@ which file wins.
 | Version | Date | Author | Notes |
 |---|---|---|---|
 | V1.0 | 2026-04-12 | Christopher A. Kahn | Initial plan. Defines template system, scaffold CLI, recommendations engine, and 4-sub-phase implementation roadmap. |
+| V1.1 | 2026-04-12 | Christopher A. Kahn | Added mini template engine with conditionals (`{% if %}`, `{% for %}`). Split G.2 into 4 sub-sessions (G.2a–G.2d) by domain affinity. Updated test targets from ~95 to ~136. |
