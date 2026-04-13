@@ -40,9 +40,9 @@ echo ""
 if grep -q "evidence_signing:" docs/REGISTRY.yaml 2>/dev/null; then
     echo "evidence_signing already present in REGISTRY.yaml — verify it says 'gpg'"
 else
-    # Insert after project_name line
-    sed -i.bak '/^  project_name:/a\
-  evidence_signing: gpg' docs/REGISTRY.yaml && rm -f docs/REGISTRY.yaml.bak
+    # Insert after project_name line (BSD sed on macOS needs -i '')
+    sed -i '' '/^  project_name:/a\
+  evidence_signing: gpg' docs/REGISTRY.yaml
     echo "Added evidence_signing: gpg to docs/REGISTRY.yaml"
 fi
 

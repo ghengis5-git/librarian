@@ -171,14 +171,19 @@ def _git_signing_configured(repo_root: Path) -> dict[str, str]:
 def _git_verify_commit(repo_root: Path, commit_hash: str) -> dict[str, Any]:
     """Verify a git commit's signature. Returns signature details.
 
-    Uses ``git log --show-signature -1`` which works for both GPG and SSH.
+    Uses two separate git calls:
+    1. ``git log -1 --format=%G?|%GS|%GK|%GT`` for structured fields
+    2. The signature banner is ignored (it appears on stderr or mixed
+       into stdout before the format output with --show-signature).
+
+    Works for both GPG and SSH signatures.
     """
     if not commit_hash:
         return {"signed": False, "reason": "no commit hash"}
 
     try:
         result = subprocess.run(
-            ["git", "log", "--show-signature", "-1", "--format=%G?%n%GS%n%GK%n%GT", commit_hash],
+            ["git", "log", "-1", "--format=%G?|%GS|%GK|%GT", commit_hash],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -190,14 +195,21 @@ def _git_verify_commit(repo_root: Path, commit_hash: str) -> dict[str, Any]:
     if result.returncode != 0:
         return {"signed": False, "reason": f"git log failed: {result.stderr.strip()[:200]}"}
 
-    lines = result.stdout.strip().splitlines()
-    if len(lines) < 4:
-        return {"signed": False, "reason": "unexpected git output format"}
+    # Output is a single line: "G|signer|key_id|trust_model"
+    # Take the last non-empty line to skip any banner text
+    raw_lines = result.stdout.strip().splitlines()
+    if not raw_lines:
+        return {"signed": False, "reason": "empty git output"}
 
-    status_code = lines[0].strip()   # G=good, B=bad, U=untrusted, N=none, E=expired, X=expired good
-    signer = lines[1].strip()        # signer identity
-    key_id = lines[2].strip()        # key fingerprint
-    trust_model = lines[3].strip()   # trust model (gpg or ssh)
+    output_line = raw_lines[-1].strip()
+    parts = output_line.split("|", 3)
+    if len(parts) < 4:
+        return {"signed": False, "reason": f"unexpected git format: {output_line[:80]}"}
+
+    status_code = parts[0].strip()
+    signer = parts[1].strip()
+    key_id = parts[2].strip()
+    trust_model = parts[3].strip()
 
     if status_code == "N":
         return {"signed": False, "reason": "commit is not signed"}

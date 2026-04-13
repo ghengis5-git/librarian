@@ -1,5 +1,6 @@
 project_config:
   project_name: Librarian
+  evidence_signing: ssh
   naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
   naming_rules:
     separator: '-'

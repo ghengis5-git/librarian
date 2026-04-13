@@ -138,11 +138,11 @@ Commands:
 ---
 
 ## Test Suite
-- **540 tests** across 13 test files
+- **578 tests** across 13 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Config: 56 (presets 8, templates 6, loading 7, naming-config 10, configurable-naming 9, parse 4, CLI init 5, CLI config 3, merge 4)
 - Phase B: 26 (manifest)
-- Phase C: 66 (oplog 18, evidence 13, diffaudit 35)
+- Phase C: 90 (oplog 31, evidence 24, diffaudit 35)
 - Phase D: 16 (dashboard)
 - Phase E: 74 (sitegen 23 + sidebar/grouping 16 + markdown/content 27 + tree diagram 8)
 - Settings page: 9 (compliance standards, preview panel, gear icon)
@@ -156,6 +156,9 @@ Commands:
 - Phase G.2d Security+Compliance cross-cutting: 28 (security count/ids/sections/xrefs/conditionals 7, compliance count/ids/sections/xrefs/conditionals 7, cross-cutting resolution parametrized 14)
 - Phase G.3 Recommendations: 39 (preset expectations 4, compliance templates 2, rule 1 baseline 8, rule 2 cross-ref 3, rule 3 maturity 3, rule 4 compliance 5, dedup 2, report 3, formatter 6, CLI integration 3)
 - Phase G.4 Templates page + integration: 32 (catalog page 12, nav links 4, index recommendations 5, dashboard overlay 1, CSS 2, settings template browser 3, custom template override 5)
+- Security hardening: 14 (XSS safe_url 10, manifest path traversal 3, template recursion depth 1)
+- Oplog hash chaining: 12 (genesis/linking/three-entry/compat/v1-json/passthrough 6, verify chain 5, format indicator 1)
+- Evidence signing: 12 (default off 2, signing config 8, verify returns 1, signed pack mock 1)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
@@ -163,7 +166,7 @@ Commands:
 
 ## Current State
 **Version:** 0.7.0
-**Tests:** 540/540 PASS
+**Tests:** 578/578 PASS
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -311,6 +314,20 @@ Commands:
 - **README.md updated**: Added scaffold to CLI commands table, new Document Templates section with usage examples, updated test count to 540
 - **8 new tests** (540 total): settings template browser (3), custom template override/add/none/nonexistent/scaffold-cli (5)
 
+### Session 43 Deliverables (Security hardening + oplog chaining + evidence signing)
+- **Security review document**: `docs/security-review-20260413-V1.0.md` — 8-item finding catalog with severity/effort/remediation
+- **XSS prevention** (`sitegen.py`): `_safe_url()` blocks javascript:/data: URIs in links and images; `esc()` JS function escapes single quotes with `&#39;`; tree page onclick handlers use `&#39;` instead of `\x27`
+- **Path traversal prevention** (`manifest.py`): `.resolve()` + `.relative_to()` on explicit `path` fields; TOCTOU fix replacing `is_file()` with try/except
+- **Template recursion guard** (`templates/_base.py`): `_MAX_CONDITION_DEPTH = 20` prevents stack overflow from deeply nested conditionals
+- **Custom template path hardening** (`templates/__init__.py`): `.resolve()` before loading custom template directories
+- **Oplog hash chaining** (`oplog.py`): SHA-256 chain with `prev_hash` field, genesis sentinel, `fcntl.flock()` write exclusivity, `verify_chain()` integrity checker, backward-compatible with v1 logs, chain indicator (⛓) in formatted output
+- **Evidence signing feature flag** (`evidence.py`): `evidence_signing: off|gpg|ssh` in `project_config`. Captures git commit signature via `git log --format=%G?|%GS|%GK|%GT`. `SigningError` with setup instructions. No network calls.
+- **SSH signing parser fix** (`evidence.py`): Pipe-delimited format without `--show-signature` (which mixed banner text into stdout). Takes last non-empty line.
+- **`setup-signing.sh`**: Automated GPG/SSH signing configuration script; fixed macOS BSD sed compatibility
+- **Config update**: `evidence_signing: "off"` added to DEFAULTS; `evidence_signing: ssh` set in project REGISTRY.yaml
+- **Updated exports** (`__init__.py`): `SigningError`, `verify_chain` added to public API
+- **38 new tests** (578 total): XSS safe_url (10), path traversal (3), recursion depth (1), oplog chaining (6), verify chain (5), format indicator (1), evidence signing config (8), default off (2), verify signature (1), signed pack mock (1)
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -349,9 +366,11 @@ The `doc-librarian` skill applies to this repo too.
 
 ## Git Identity
 ```bash
-git -c user.name="Chris Kahn" -c user.email="research+ai@brokenwire.org" commit ...
+git -c user.name="Chris Kahn" -c user.email="ghengis5@gmail.com" commit ...
 ```
 **Never write to git config.** Always pass identity via `-c` flags.
+**SSH commit signing** is configured locally (`gpg.format=ssh`, `user.signingkey=~/.ssh/id_ed25519`).
+Commits should be signed automatically. If not, pass `-S` flag explicitly.
 
 ### Commit Prefixes
 - `feat:` — new modules or capabilities
