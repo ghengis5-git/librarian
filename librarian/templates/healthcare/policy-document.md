@@ -1,0 +1,177 @@
+---
+template_id: policy-document
+display_name: Policy Document
+preset: healthcare
+description: >-
+  Organizational policy document for healthcare settings. Covers purpose, scope,
+  definitions, policy statements, procedures, responsibilities, compliance references,
+  and review schedule. Structured for Joint Commission and CMS readiness.
+suggested_tags: [policy, governance, administrative]
+suggested_folder: policies/
+typical_cross_refs:
+  - clinical-protocol
+  - hipaa-risk-assessment
+  - quality-improvement-plan
+recommended_with:
+  - clinical-protocol
+requires: []
+sections:
+  - Purpose
+  - Scope
+  - Definitions
+  - Policy Statements
+  - Procedures
+  - Roles & Responsibilities
+  - Compliance & Regulatory References
+  - Exceptions
+  - Related Documents
+  - Review History
+---
+
+# Policy: {{title}}
+
+**Policy ID:** *[POL-XXX]*
+**Effective Date:** {{date}}
+**Version:** {{version}}
+**Author:** {{author}}
+**Status:** {{status}}
+**Approved By:** *[Name/Title]*
+**Review Cycle:** Annual
+
+---
+
+## Purpose
+
+*[State the purpose of this policy in 2–3 sentences. What problem does it address? What organizational objective does it support?]*
+
+---
+
+## Scope
+
+**Applies To:**
+- **Departments:** *[All / Specific departments]*
+- **Personnel:** *[All staff / Clinical staff / Administrative / Contractors / Volunteers]*
+- **Facilities:** *[All locations / Specific facilities]*
+- **Patients:** *[All / Specific populations]*
+
+**Does Not Apply To:** *[Exclusions, if any]*
+
+---
+
+## Definitions
+
+| Term | Definition |
+|------|-----------|
+| *[Term 1]* | *[Definition]* |
+| *[Term 2]* | *[Definition]* |
+| *[Term 3]* | *[Definition]* |
+
+---
+
+## Policy Statements
+
+1. *[Policy statement 1 — use clear, directive language: "shall", "must", "will"]*
+2. *[Policy statement 2]*
+3. *[Policy statement 3]*
+4. *[Policy statement 4]*
+
+{% if "hipaa" in compliance %}
+### HIPAA-Specific Policy Requirements
+- All workforce members must complete HIPAA Privacy and Security training within 30 days of hire and annually thereafter
+- PHI access is granted on a minimum necessary basis and reviewed quarterly
+- Breaches must be reported to the Privacy Officer within 24 hours of discovery
+- Business Associate Agreements are required before sharing PHI with any external entity
+{% endif %}
+
+---
+
+## Procedures
+
+### *[Procedure Area 1]*
+
+1. *[Step 1]*
+2. *[Step 2]*
+3. *[Step 3]*
+
+### *[Procedure Area 2]*
+
+1. *[Step 1]*
+2. *[Step 2]*
+
+---
+
+## Roles & Responsibilities
+
+| Role | Responsibility |
+|------|---------------|
+| *[Executive Sponsor]* | *[Approve policy, allocate resources, escalation point]* |
+| *[Department Heads]* | *[Ensure compliance within department, train staff]* |
+| *[Compliance Officer]* | *[Monitor compliance, conduct audits, report findings]* |
+| *[All Staff]* | *[Read, understand, and comply with policy]* |
+
+---
+
+## Compliance & Regulatory References
+
+| Standard | Reference | Requirement |
+|----------|-----------|-------------|
+| *[HIPAA]* | *[45 CFR § XXX]* | *[Specific requirement]* |
+| *[Joint Commission]* | *[Standard XX.XX.XX]* | *[Specific requirement]* |
+| *[CMS CoP]* | *[42 CFR § XXX]* | *[Specific requirement]* |
+| *[State regulation]* | *[Citation]* | *[Specific requirement]* |
+
+{% if "iso_9001" in compliance %}
+### ISO 9001 Document Control
+This policy is a controlled document per ISO 9001 § 7.5. Distribution is managed through the document control system. Unauthorized copies are uncontrolled.
+
+| Control Element | Requirement |
+|----------------|-------------|
+| Approval | *[Approving authority]* |
+| Review Cycle | *[Annual / As required]* |
+| Distribution | Controlled — via document management system |
+| Obsolete Copies | Removed within 48 hours of new version |
+{% endif %}
+
+---
+
+## Exceptions
+
+*[Describe the process for requesting an exception to this policy.]*
+
+- **Exception Authority:** *[Name/Title]*
+- **Request Process:** *[Written request to... with justification...]*
+- **Documentation:** *[Exceptions logged in...]*
+- **Duration:** *[Exceptions valid for... and must be renewed...]*
+
+---
+
+## Related Documents
+
+| Document | Relationship |
+|----------|-------------|
+| *[Related policy]* | *[Parent / Supporting / Supersedes]* |
+| *[Clinical protocol]* | *[Implements this policy in clinical setting]* |
+| *[Form or checklist]* | *[Operational tool for this policy]* |
+
+---
+
+## Review History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| {{version}} | {{date}} | {{author}} | Initial release |
+
+### Next Scheduled Review: *[Date]*
+
+---
+
+## Approval
+
+- **Author (Name/Title):** ____________________  **Date:** __________
+- **Department Head (Name/Title):** ____________________  **Date:** __________
+- **CMO / CNO (Name/Title):** ____________________  **Date:** __________
+- **Compliance (Name/Title):** ____________________  **Date:** __________
+
+---
+
+*Document generated by librarian v{{librarian_version}} from template `policy-document`.*

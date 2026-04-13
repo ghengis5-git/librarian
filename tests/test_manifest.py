@@ -327,3 +327,28 @@ class TestResolveFilePath:
         doc = {}
         result = _resolve_file_path("nonexistent-20260101-V1.0.md", doc, manifest_repo, ["docs/"])
         assert result is None
+
+    def test_path_traversal_blocked(self, manifest_repo: Path) -> None:
+        """Registry path field with ../ must not escape repo root."""
+        doc = {"path": "../../etc/passwd"}
+        result = _resolve_file_path("passwd", doc, manifest_repo, ["docs/"])
+        assert result is None
+
+    def test_hash_file_missing_no_crash(self, manifest_repo: Path) -> None:
+        """_hash_file on nonexistent path returns exists=False, no exception."""
+        from librarian.manifest import _hash_file
+        fh = _hash_file(manifest_repo / "no-such-file.md")
+        assert fh.exists is False
+        assert fh.sha256 == ""
+
+    def test_hash_file_permission_error(self, tmp_path: Path) -> None:
+        """_hash_file on unreadable file returns exists=False."""
+        import os
+        from librarian.manifest import _hash_file
+        f = tmp_path / "locked.md"
+        f.write_text("secret")
+        os.chmod(f, 0o000)
+        fh = _hash_file(f)
+        # Restore permissions for cleanup
+        os.chmod(f, 0o644)
+        assert fh.exists is False

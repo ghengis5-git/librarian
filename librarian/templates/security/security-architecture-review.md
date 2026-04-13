@@ -1,0 +1,147 @@
+---
+template_id: security-architecture-review
+display_name: Security Architecture Review
+preset: security
+description: >-
+  Security architecture review for evaluating the security posture of system
+  designs, cloud deployments, or infrastructure changes. Covers security
+  principles, control assessment, gap analysis, and recommendations.
+suggested_tags: [security, architecture, review]
+suggested_folder: docs/
+typical_cross_refs:
+  - threat-model
+  - data-classification-policy
+  - access-control-matrix
+recommended_with:
+  - threat-model
+requires: []
+sections:
+  - Review Summary
+  - Architecture Description
+  - Security Principles Assessment
+  - Control Analysis
+  - Gap Analysis
+  - Recommendations
+  - Decision
+---
+
+# Security Architecture Review: {{title}}
+
+**Document ID:** {{title}} / {{version}}
+**Date:** {{date}}
+**Reviewer:** {{author}}
+**Status:** {{status}}
+
+---
+
+## Review Summary
+
+*[1–2 paragraph summary of what was reviewed, key findings, and overall security assessment (Approved / Approved with Conditions / Not Approved).]*
+
+| Attribute | Detail |
+|-----------|--------|
+| **System/Project** | *[Name]* |
+| **Review Type** | *[New system / Major change / Periodic review]* |
+| **Architecture Owner** | *[Name/Team]* |
+| **Review Date** | {{date}} |
+| **Decision** | *[Approved / Approved with Conditions / Not Approved]* |
+
+---
+
+## Architecture Description
+
+*[Summarize or reference the architecture being reviewed. Include key components, data flows, and deployment model.]*
+
+### Components
+
+| Component | Technology | Hosting | Data Sensitivity |
+|-----------|-----------|---------|-----------------|
+| *[Frontend]* | *[React / Angular / etc.]* | *[CDN]* | *[Public]* |
+| *[API]* | *[Node / Python / etc.]* | *[Cloud / On-prem]* | *[Internal]* |
+| *[Database]* | *[PostgreSQL / etc.]* | *[Cloud / On-prem]* | *[Confidential]* |
+| *[Cache]* | *[Redis / etc.]* | *[Cloud]* | *[Internal]* |
+
+---
+
+## Security Principles Assessment
+
+| Principle | Assessment | Notes |
+|-----------|-----------|-------|
+| **Defense in depth** | *[Met / Partial / Not met]* | *[Details]* |
+| **Least privilege** | *[Met / Partial / Not met]* | *[Details]* |
+| **Zero trust** | *[Met / Partial / Not met]* | *[Details]* |
+| **Secure by default** | *[Met / Partial / Not met]* | *[Details]* |
+| **Fail securely** | *[Met / Partial / Not met]* | *[Details]* |
+| **Separation of duties** | *[Met / Partial / Not met]* | *[Details]* |
+| **Minimize attack surface** | *[Met / Partial / Not met]* | *[Details]* |
+
+{% if "iso_27001" in compliance %}
+### ISO 27001 Annex A Control Mapping
+| Architecture Element | ISO 27001 Control | Compliance |
+|---------------------|-------------------|-----------|
+| *[Authentication]* | A.9.4 — System and application access | *[Compliant / Gap]* |
+| *[Encryption]* | A.10.1 — Cryptographic controls | *[Compliant / Gap]* |
+| *[Network segmentation]* | A.13.1 — Network security management | *[Compliant / Gap]* |
+| *[Logging]* | A.12.4 — Logging and monitoring | *[Compliant / Gap]* |
+{% endif %}
+
+{% if "dod_5200" in compliance %}
+### DoD Security Architecture Requirements
+| Requirement | STIG/SRG Reference | Status |
+|------------|-------------------|--------|
+| *[FIPS 140-2 encryption]* | *[Reference]* | *[Met / Not met]* |
+| *[CAC/PIV authentication]* | *[Reference]* | *[Met / Not met]* |
+| *[Audit logging to SIEM]* | *[Reference]* | *[Met / Not met]* |
+{% endif %}
+
+---
+
+## Control Analysis
+
+| Control Area | Current State | Required State | Gap | Severity |
+|-------------|--------------|---------------|-----|----------|
+| *[Authentication]* | *[Password only]* | *[MFA required]* | *[Yes]* | *[High]* |
+| *[Encryption at rest]* | *[AES-256]* | *[AES-256]* | *[No]* | N/A |
+| *[Encryption in transit]* | *[TLS 1.2]* | *[TLS 1.3]* | *[Yes]* | *[Medium]* |
+| *[Logging]* | *[Application logs only]* | *[Centralized + security events]* | *[Yes]* | *[High]* |
+| *[Network segmentation]* | *[Flat network]* | *[Segmented by tier]* | *[Yes]* | *[Critical]* |
+
+---
+
+## Gap Analysis
+
+| # | Gap | Risk | Remediation | Effort | Priority |
+|---|-----|------|-----------|--------|----------|
+| 1 | *[Gap description]* | *[Risk if unresolved]* | *[Recommended fix]* | *[S/M/L]* | *[P1/P2/P3]* |
+| 2 | *[Gap description]* | *[Risk]* | *[Fix]* | *[Effort]* | *[Priority]* |
+
+---
+
+## Recommendations
+
+1. *[Recommendation 1 — specific and actionable]*
+2. *[Recommendation 2]*
+3. *[Recommendation 3]*
+
+---
+
+## Decision
+
+**Decision:** *[Approved / Approved with Conditions / Not Approved]*
+
+**Conditions (if applicable):**
+1. *[Condition — must be resolved before go-live]*
+2. *[Condition]*
+
+**Review valid until:** *[Date or next architectural change]*
+
+---
+
+## Approval
+
+- **Security Reviewer (Name/Title):** ____________________  **Date:** __________
+- **Architecture Owner (Name/Title):** ____________________  **Date:** __________
+
+---
+
+*Document generated by librarian v{{librarian_version}} from template `security-architecture-review`.*

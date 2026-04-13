@@ -5,6 +5,7 @@ Generates a ``_site/`` directory tree with:
 - ``index.html`` — document table, KPI summary, sidebar tree navigation
 - ``docs/<filename>.html`` — per-document detail page
 - ``graph.html`` — standalone cross-reference graph (cytoscape.js)
+- ``templates.html`` — template catalog with filterable card grid
 - ``dashboard.html`` — link target (rendered separately by dashboard module)
 - ``assets/style.css`` — shared stylesheet
 
@@ -150,6 +151,23 @@ def _md_to_html(text: str) -> str:
     return "\n".join(out)
 
 
+_SAFE_URL_SCHEMES = frozenset({"http", "https", "mailto", ""})
+
+
+def _safe_url(url: str) -> str:
+    """Sanitize a URL — block javascript: and data: schemes."""
+    stripped = url.strip().lower()
+    # Allow relative URLs (start with /, #, or no scheme)
+    if stripped.startswith(("/", "#")):
+        return url
+    # Check scheme
+    if ":" in stripped:
+        scheme = stripped.split(":", 1)[0]
+        if scheme not in _SAFE_URL_SCHEMES:
+            return ""
+    return url
+
+
 def _inline(text: str) -> str:
     """Process inline Markdown: code, bold, italic, links, images."""
     # Inline code first (protect from further processing)
@@ -160,10 +178,18 @@ def _inline(text: str) -> str:
             parts.append(f"<code>{_esc(seg[1:-1])}</code>")
         else:
             s = _esc(seg)
-            # Images before links
-            s = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r'<img src="\2" alt="\1" style="max-width:100%">', s)
-            # Links
-            s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
+            # Images before links — sanitize URLs
+            s = re.sub(
+                r"!\[([^\]]*)\]\(([^)]+)\)",
+                lambda m: f'<img src="{_safe_url(m.group(2))}" alt="{m.group(1)}" style="max-width:100%">',
+                s,
+            )
+            # Links — sanitize URLs
+            s = re.sub(
+                r"\[([^\]]+)\]\(([^)]+)\)",
+                lambda m: f'<a href="{_safe_url(m.group(2))}">{m.group(1)}</a>',
+                s,
+            )
             # Bold (** or __)
             s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
             s = re.sub(r"__(.+?)__", r"<strong>\1</strong>", s)
@@ -1472,6 +1498,77 @@ footer {
 .prose img { max-width: 100%; border-radius: var(--radius); margin: 0.8em 0; }
 .prose .md-table { margin: 1em 0; font-size: 13px; }
 
+/* ── Template Catalog ───────────────────────────────────────────────────── */
+.tmpl-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+.tmpl-controls select {
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 12px; font-family: var(--mono); background: var(--surface);
+  color: var(--text-primary); cursor: pointer;
+}
+.tmpl-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px; margin-top: 16px;
+}
+.tmpl-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  box-shadow: var(--shadow-sm); transition: box-shadow var(--transition);
+  cursor: pointer; position: relative;
+}
+.tmpl-card:hover { box-shadow: var(--shadow-md); }
+.tmpl-card.expanded { grid-column: 1 / -1; }
+.tmpl-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.tmpl-card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.tmpl-card-source {
+  font-size: 10px; font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: 0.04em; padding: 2px 7px; border-radius: 3px;
+  background: var(--surface-alt); color: var(--text-muted); white-space: nowrap;
+}
+.tmpl-card-source--universal { background: #e8eef5; color: #3b5998; }
+.tmpl-card-source--security { background: #fce8e8; color: #a63d40; }
+.tmpl-card-source--compliance { background: #faf3e0; color: #7d5f0f; }
+.tmpl-card-source--custom { background: #e6f0ec; color: #2d6a5a; }
+.tmpl-card-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
+.tmpl-card-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-family: var(--mono); color: var(--text-muted); }
+.tmpl-card-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.tmpl-card-tags { margin-top: 10px; }
+.tmpl-card-xrefs { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.tmpl-card-xrefs a { font-size: 12px; }
+.tmpl-card-detail { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.tmpl-card.expanded .tmpl-card-detail { display: block; }
+.tmpl-card-sections { list-style: none; padding: 0; }
+.tmpl-card-sections li {
+  font-size: 13px; padding: 4px 0 4px 16px; color: var(--text-secondary);
+  border-left: 2px solid var(--border); margin-bottom: 2px;
+}
+.tmpl-card-sections li:hover { border-color: var(--accent); color: var(--text-primary); }
+.tmpl-card-compliance { margin-top: 10px; }
+.tmpl-card-compliance .tag { background: #faf3e0; color: #7d5f0f; }
+.tmpl-count { font-size: 13px; color: var(--text-muted); font-family: var(--mono); }
+
+/* ── Recommendations Panel ─────────────────────────────────────────────── */
+.rec-section { margin-top: 32px; }
+.rec-section h2 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+.rec-group-title {
+  font-size: 11px; font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;
+  margin-top: 16px; margin-bottom: 8px;
+}
+.rec-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--border); margin-bottom: 6px; font-size: 13px;
+}
+.rec-item:hover { background: var(--surface-alt); }
+.rec-priority-core { border-left: 3px solid var(--status-error); }
+.rec-priority-recommended { border-left: 3px solid var(--status-warn); }
+.rec-priority-cross_ref { border-left: 3px solid var(--accent); }
+.rec-priority-compliance { border-left: 3px solid #6a5acd; }
+.rec-priority-maturity { border-left: 3px solid var(--text-muted); }
+.rec-id { font-family: var(--mono); font-weight: 600; color: var(--text-primary); min-width: 200px; }
+.rec-name { color: var(--text-secondary); flex: 1; }
+.rec-refs { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { display: none; }
@@ -1500,6 +1597,7 @@ def _nav(active: str, has_dashboard: bool = False, prefix: str = "") -> str:
         ("index.html", "Index", "index"),
         ("tree.html", "Tree", "tree"),
         ("graph.html", "Graph", "graph"),
+        ("templates.html", "Templates", "templates"),
     ]
     if has_dashboard:
         links.append(("dashboard.html", "Dashboard", "dashboard"))
@@ -1556,7 +1654,7 @@ def _sidebar_html(documents: list[dict], base_prefix: str = "") -> str:
     keys.forEach(function(key) {{
       var docs = groups[key];
       html += '<div class="tree-group">';
-      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle(\\x27collapsed\\x27)">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle(&#39;collapsed&#39;)">';
       html += '{_CHEVRON_SVG}';
       html += '<span class="tree-group-label">' + key + '</span>';
       html += '<span class="tree-group-count">' + docs.length + '</span>';
@@ -1720,11 +1818,15 @@ def _build_index(manifest: "Manifest") -> str:
 })();
 </script>"""
 
+    # Recommendations section (may be empty if no gaps)
+    rec_html = _build_recommendations_html(manifest)
+
     body = f"""<h1>{_esc(project_name)} — Document Registry</h1>
 <div class="subtitle">{len(documents)} registered documents</div>
 {kpi_html}
 {search_html}
-{table}"""
+{table}
+{rec_html}"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
 
@@ -2257,6 +2359,7 @@ def _inject_dashboard_nav(dashboard_file: Path) -> None:
   <a href="index.html">Index</a>
   <a href="tree.html">Tree</a>
   <a href="graph.html">Graph</a>
+  <a href="templates.html">Templates</a>
   <a href="dashboard.html" class="active">Dashboard</a>
   <a href="settings.html" title="Settings" aria-label="Settings" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
 </div>
@@ -2265,6 +2368,335 @@ def _inject_dashboard_nav(dashboard_file: Path) -> None:
     # Inject after <body> tag
     html = html.replace("<body>", "<body>\n" + nav_html, 1)
     dashboard_file.write_text(html, encoding="utf-8")
+
+
+# ── Templates Catalog Page ────────────────────────────────────────────────
+
+
+def _build_templates_page(manifest: "Manifest") -> str:
+    """Build the templates catalog page (templates.html).
+
+    Displays a filterable card grid of all available templates for each
+    preset.  Cards show template name, description, section count, tags,
+    cross-references, and compliance conditionals.  Clicking a card expands
+    it to show the full section list.
+    """
+    from .templates import discover_templates, CROSS_CUTTING
+
+    snapshot = manifest.registry_snapshot
+    config = snapshot.get("project_config", {})
+    project_name = config.get("project_name", "Librarian")
+    active_preset = config.get("preset", "")
+    custom_dir = config.get("custom_templates_dir", None)
+    documents = snapshot.get("documents", [])
+
+    # All preset names for the switcher
+    all_presets = [
+        "software", "business", "legal", "scientific",
+        "healthcare", "finance", "government",
+    ]
+
+    # Discover templates for ALL presets so JS can filter client-side
+    all_templates: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+
+    for preset_name in all_presets:
+        tmpls = discover_templates(preset=preset_name, custom_dir=custom_dir)
+        for tid, tmpl in sorted(tmpls.items()):
+            source = tmpl.preset  # "universal", "security", "compliance", or preset
+            card_key = f"{tid}|{source}"
+            if card_key in seen_ids:
+                continue
+            seen_ids.add(card_key)
+
+            # Detect compliance conditionals from body
+            comp_flags: list[str] = []
+            for flag in ("hipaa", "dod_5200", "iso_9001", "iso_27001", "sec_finra"):
+                if flag in tmpl.body:
+                    comp_flags.append(flag)
+
+            # Determine which presets this template is available to
+            if source in CROSS_CUTTING or source == "universal":
+                available_presets = all_presets
+            elif source == "custom":
+                available_presets = all_presets
+            else:
+                available_presets = [source]
+
+            all_templates.append({
+                "id": tid,
+                "name": tmpl.display_name,
+                "description": tmpl.description,
+                "source": source,
+                "sections": tmpl.sections,
+                "tags": tmpl.suggested_tags,
+                "cross_refs": tmpl.typical_cross_refs,
+                "requires": tmpl.requires,
+                "recommended_with": tmpl.recommended_with,
+                "compliance": comp_flags,
+                "presets": available_presets,
+            })
+
+    # Sort: universal first, then cross-cutting, then preset-specific
+    source_order = {"universal": 0, "security": 1, "compliance": 2, "custom": 3}
+    all_templates.sort(key=lambda t: (source_order.get(t["source"], 10), t["id"]))
+
+    # Serialize template data for client-side filtering
+    tmpl_json = json.dumps(all_templates, indent=None)
+
+    # Preset options for dropdown
+    preset_opts = ""
+    for p in all_presets:
+        sel = " selected" if p == active_preset else ""
+        preset_opts += f'<option value="{_esc(p)}"{sel}>{_esc(p.title())}</option>'
+
+    # Source filter options
+    source_labels = {
+        "all": "All Sources",
+        "universal": "Universal",
+        "security": "Security",
+        "compliance": "Compliance",
+        "custom": "Custom",
+    }
+    # Add preset-specific sources
+    for p in all_presets:
+        source_labels[p] = p.title()
+
+    source_opts = ""
+    for key, label in source_labels.items():
+        source_opts += f'<option value="{_esc(key)}">{_esc(label)}</option>'
+
+    # Compliance filter options
+    comp_labels = [
+        ("all", "All Compliance"),
+        ("hipaa", "HIPAA"),
+        ("dod_5200", "DoD 5200"),
+        ("iso_9001", "ISO 9001"),
+        ("iso_27001", "ISO 27001"),
+        ("sec_finra", "SEC/FINRA"),
+    ]
+    comp_opts = ""
+    for val, label in comp_labels:
+        comp_opts += f'<option value="{_esc(val)}">{_esc(label)}</option>'
+
+    body = f"""<h1>Template Catalog</h1>
+<div class="subtitle">Document templates available for scaffolding</div>
+
+<div class="tmpl-controls">
+  <label style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">Preset:</label>
+  <select id="tmpl-preset" onchange="filterTemplates()">{preset_opts}</select>
+  <label style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">Source:</label>
+  <select id="tmpl-source" onchange="filterTemplates()">{source_opts}</select>
+  <label style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">Compliance:</label>
+  <select id="tmpl-compliance" onchange="filterTemplates()">{comp_opts}</select>
+  <span class="tmpl-count" id="tmpl-count"></span>
+</div>
+
+<div class="tmpl-grid" id="tmpl-grid"></div>
+
+<script>
+(function() {{
+  var TEMPLATES = {tmpl_json};
+
+  function esc(s) {{ var d=document.createElement("div"); d.appendChild(document.createTextNode(s||"")); return d.innerHTML.replace(/'/g,"&#39;"); }}
+
+  function renderCards(filtered) {{
+    var grid = document.getElementById("tmpl-grid");
+    var html = "";
+    for (var i = 0; i < filtered.length; i++) {{
+      var t = filtered[i];
+      var src = t.source;
+      var srcCls = "tmpl-card-source";
+      if (src === "universal") srcCls += " tmpl-card-source--universal";
+      else if (src === "security") srcCls += " tmpl-card-source--security";
+      else if (src === "compliance") srcCls += " tmpl-card-source--compliance";
+      else if (src === "custom") srcCls += " tmpl-card-source--custom";
+
+      var tags = "";
+      for (var j = 0; j < t.tags.length; j++) tags += '<span class="tag">' + esc(t.tags[j]) + '</span>';
+
+      var xrefs = "";
+      if (t.cross_refs.length > 0) {{
+        xrefs = '<div class="tmpl-card-xrefs">Cross-refs: ';
+        for (var j = 0; j < t.cross_refs.length; j++) {{
+          if (j > 0) xrefs += ", ";
+          xrefs += '<a href="#" onclick="scrollToCard(\\'' + esc(t.cross_refs[j]) + '\\');return false">' + esc(t.cross_refs[j]) + '</a>';
+        }}
+        xrefs += '</div>';
+      }}
+
+      var compTags = "";
+      if (t.compliance.length > 0) {{
+        compTags = '<div class="tmpl-card-compliance">';
+        for (var j = 0; j < t.compliance.length; j++) compTags += '<span class="tag">' + esc(t.compliance[j]) + '</span>';
+        compTags += '</div>';
+      }}
+
+      var sections = "";
+      if (t.sections.length > 0) {{
+        sections = '<ul class="tmpl-card-sections">';
+        for (var j = 0; j < t.sections.length; j++) sections += '<li>' + esc(t.sections[j]) + '</li>';
+        sections += '</ul>';
+      }}
+
+      var reqHtml = "";
+      if (t.requires && t.requires.length > 0) {{
+        reqHtml = '<div style="font-size:12px;color:var(--text-muted);margin-top:8px">Requires: ';
+        for (var j = 0; j < t.requires.length; j++) {{
+          if (j > 0) reqHtml += ", ";
+          reqHtml += '<code>' + esc(t.requires[j]) + '</code>';
+        }}
+        reqHtml += '</div>';
+      }}
+
+      var recHtml = "";
+      if (t.recommended_with && t.recommended_with.length > 0) {{
+        recHtml = '<div style="font-size:12px;color:var(--text-muted);margin-top:6px">Recommended with: ';
+        for (var j = 0; j < t.recommended_with.length; j++) {{
+          if (j > 0) recHtml += ", ";
+          recHtml += '<a href="#" onclick="scrollToCard(\\'' + esc(t.recommended_with[j]) + '\\');return false">' + esc(t.recommended_with[j]) + '</a>';
+        }}
+        recHtml += '</div>';
+      }}
+
+      html += '<div class="tmpl-card" data-id="' + esc(t.id) + '" onclick="toggleCard(this)">';
+      html += '<div class="tmpl-card-header"><div class="tmpl-card-title">' + esc(t.name) + '</div>';
+      html += '<span class="' + srcCls + '">' + esc(src) + '</span></div>';
+      html += '<div class="tmpl-card-desc">' + esc(t.description) + '</div>';
+      html += '<div class="tmpl-card-meta">';
+      html += '<span>' + t.sections.length + ' sections</span>';
+      html += '<span>' + t.tags.length + ' tags</span>';
+      if (t.cross_refs.length > 0) html += '<span>' + t.cross_refs.length + ' cross-refs</span>';
+      html += '</div>';
+      if (tags) html += '<div class="tmpl-card-tags">' + tags + '</div>';
+      html += '<div class="tmpl-card-detail">';
+      html += '<div class="section-title" style="margin-top:0">Sections</div>';
+      html += sections;
+      html += xrefs;
+      html += compTags;
+      html += reqHtml;
+      html += recHtml;
+      html += '<div style="margin-top:12px;font-size:12px;font-family:var(--mono);color:var(--text-muted)">';
+      html += 'scaffold: <code>python -m librarian scaffold --template ' + esc(t.id) + '</code>';
+      html += '</div>';
+      html += '</div></div>';
+    }}
+    grid.innerHTML = html;
+    document.getElementById("tmpl-count").textContent = filtered.length + " templates";
+  }}
+
+  window.toggleCard = function(el) {{
+    el.classList.toggle("expanded");
+  }};
+
+  window.scrollToCard = function(id) {{
+    var cards = document.querySelectorAll(".tmpl-card");
+    for (var i = 0; i < cards.length; i++) {{
+      if (cards[i].getAttribute("data-id") === id) {{
+        cards[i].scrollIntoView({{ behavior: "smooth", block: "center" }});
+        cards[i].classList.add("expanded");
+        cards[i].style.outline = "2px solid var(--accent)";
+        setTimeout(function() {{ cards[i].style.outline = ""; }}, 2000);
+        return;
+      }}
+    }}
+  }};
+
+  window.filterTemplates = function() {{
+    var preset = document.getElementById("tmpl-preset").value;
+    var source = document.getElementById("tmpl-source").value;
+    var comp = document.getElementById("tmpl-compliance").value;
+
+    var filtered = TEMPLATES.filter(function(t) {{
+      // Preset filter: template must be available to the selected preset
+      if (t.presets.indexOf(preset) < 0) return false;
+      // Source filter
+      if (source !== "all" && t.source !== source) return false;
+      // Compliance filter
+      if (comp !== "all" && t.compliance.indexOf(comp) < 0) return false;
+      return true;
+    }});
+
+    renderCards(filtered);
+  }};
+
+  // Initial render
+  filterTemplates();
+}})();
+</script>"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+
+    return _page(
+        "Templates",
+        body,
+        "templates",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=True,
+        sidebar=sidebar,
+    )
+
+
+# ── Recommendations HTML helper ──────────────────────────────────────────
+
+
+def _build_recommendations_html(manifest: "Manifest") -> str:
+    """Build the recommendations section HTML for the index page.
+
+    Returns an empty string if no recommendations are generated.
+    """
+    from .recommend import generate_recommendations
+
+    snapshot = manifest.registry_snapshot
+    config = snapshot.get("project_config", {})
+    documents = snapshot.get("documents", [])
+
+    try:
+        report = generate_recommendations(
+            registry_documents=documents,
+            project_config=config,
+        )
+    except Exception:
+        return ""
+
+    if not report.recommendations:
+        return ""
+
+    groups = [
+        ("Core", "core", report.core),
+        ("Recommended", "recommended", report.recommended),
+        ("Cross-Reference Gaps", "cross_ref", report.cross_ref_gaps),
+        ("Maturity Progression", "maturity", report.maturity),
+        ("Compliance", "compliance", report.compliance),
+    ]
+
+    items_html = ""
+    for group_name, priority, recs in groups:
+        if not recs:
+            continue
+        items_html += f'<div class="rec-group-title">{_esc(group_name)}</div>'
+        for r in recs:
+            refs = ""
+            if r.referenced_by:
+                refs = f'<span class="rec-refs">← {_esc(", ".join(r.referenced_by))}</span>'
+            items_html += (
+                f'<div class="rec-item rec-priority-{_esc(priority)}">'
+                f'<span class="rec-id">{_esc(r.template_id)}</span>'
+                f'<span class="rec-name">{_esc(r.display_name)}</span>'
+                f'{refs}'
+                f'</div>'
+            )
+
+    return f"""<div class="rec-section">
+<h2>Recommendations</h2>
+<div class="subtitle" style="margin-bottom:12px">
+  {len(report.recommendations)} gap{"s" if len(report.recommendations) != 1 else ""} detected for
+  <strong>{_esc(report.preset or "unknown")}</strong> preset
+</div>
+{items_html}
+</div>"""
 
 
 # ── Main entry ───────────────────────────────────────────────────────────
@@ -2409,6 +2841,29 @@ def _build_settings_page(manifest: "Manifest") -> str:
                        '<path d="M9 12l2 2 4-4"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2'
                        ' 2 6.477 2 12s4.477 10 10 10z"/></svg>')
 
+    # Build template browser data for settings page
+    from .templates import discover_templates as _discover_templates
+    _settings_templates: list[dict[str, Any]] = []
+    _active_preset = pc.get("preset", "")
+    _custom_dir = pc.get("custom_templates_dir", None)
+    _all_presets = ["software", "business", "legal", "scientific",
+                    "healthcare", "finance", "government"]
+    _seen_tmpl: set[str] = set()
+    for _p in _all_presets:
+        _tmpls = _discover_templates(preset=_p, custom_dir=_custom_dir)
+        for _tid, _t in sorted(_tmpls.items()):
+            _key = f"{_tid}|{_t.preset}"
+            if _key in _seen_tmpl:
+                continue
+            _seen_tmpl.add(_key)
+            _avail = _all_presets if _t.preset in ("universal", "security", "compliance", "custom") else [_t.preset]
+            _settings_templates.append({
+                "id": _tid, "name": _t.display_name, "source": _t.preset,
+                "sections": len(_t.sections), "presets": _avail,
+            })
+    _settings_templates.sort(key=lambda t: ({"universal": 0, "security": 1, "compliance": 2}.get(t["source"], 10), t["id"]))
+    _settings_tmpl_json = json.dumps(_settings_templates, indent=None)
+
     body = f"""<h1>Settings</h1>
 <div class="subtitle">Current configuration for <strong>{_esc(project_name)}</strong> — values reflect your project_config in REGISTRY.yaml</div>
 
@@ -2504,7 +2959,7 @@ def _build_settings_page(manifest: "Manifest") -> str:
 <div class="settings-grid">
   <div class="settings-row">
     <div class="settings-label">Preset</div>
-    <div class="settings-control"><select id="cfg-preset">{preset_opts}</select></div>
+    <div class="settings-control"><select id="cfg-preset" onchange="renderSettingsTemplates()">{preset_opts}</select></div>
   </div>
   <div class="settings-row">
     <div class="settings-label">Strict Mode</div>
@@ -2671,6 +3126,12 @@ def _build_settings_page(manifest: "Manifest") -> str:
     <div class="settings-control"><input type="text" id="cfg-meta-cycle" value="{config.metadata.review_cycle_days}" style="width:80px" oninput="updatePreview()"> <span class="settings-hint">days (0 = none)</span></div>
   </div>
 </div>
+</div>
+
+<div class="settings-section" id="sect-templates">
+  <div class="settings-section-title">{CHECKLIST_ICON} Available Templates</div>
+  <div class="settings-hint" style="margin-bottom:10px">Templates available for the selected preset. Click a row to copy the scaffold command.</div>
+  <div id="settings-tmpl-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)"></div>
 </div>
 
 <div class="settings-actions">
@@ -3174,8 +3635,37 @@ function copyYaml() {{
   }});
 }}
 
+// Template browser for settings page
+var SETTINGS_TEMPLATES = {_settings_tmpl_json};
+function renderSettingsTemplates() {{
+  var preset = document.getElementById('cfg-preset') ? document.getElementById('cfg-preset').value : '{_esc(_active_preset)}';
+  var el = document.getElementById('settings-tmpl-list');
+  if (!el) return;
+  var filtered = SETTINGS_TEMPLATES.filter(function(t) {{ return t.presets.indexOf(preset) >= 0; }});
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">';
+  html += '<thead><tr style="background:var(--surface-alt);text-align:left">';
+  html += '<th style="padding:6px 10px">Template ID</th><th style="padding:6px 10px">Name</th>';
+  html += '<th style="padding:6px 10px">Source</th><th style="padding:6px 10px">Sections</th></tr></thead><tbody>';
+  for (var i = 0; i < filtered.length; i++) {{
+    var t = filtered[i];
+    var cmd = 'python -m librarian scaffold --template ' + t.id;
+    html += '<tr style="cursor:pointer;border-bottom:1px solid var(--border)" ';
+    html += 'onclick="navigator.clipboard.writeText(\\'' + cmd.replace(/'/g, "\\\\'") + '\\');';
+    html += 'this.style.background=\\'var(--accent-light)\\';var r=this;setTimeout(function(){{r.style.background=\\'\\'}},800)" ';
+    html += 'title="Click to copy: ' + cmd + '">';
+    html += '<td style="padding:5px 10px;font-family:var(--mono)">' + t.id + '</td>';
+    html += '<td style="padding:5px 10px">' + t.name + '</td>';
+    html += '<td style="padding:5px 10px;font-family:var(--mono);font-size:10px;text-transform:uppercase">' + t.source + '</td>';
+    html += '<td style="padding:5px 10px;text-align:center">' + t.sections + '</td>';
+    html += '</tr>';
+  }}
+  html += '</tbody></table>';
+  html += '<div style="font-size:11px;color:var(--text-muted);padding:6px 10px">' + filtered.length + ' templates available</div>';
+  el.innerHTML = html;
+}}
+
 // Initialize: snapshot defaults then render preview
-document.addEventListener('DOMContentLoaded', function() {{ captureDefaults(); updatePreview(); }});
+document.addEventListener('DOMContentLoaded', function() {{ captureDefaults(); updatePreview(); renderSettingsTemplates(); }});
 </script>"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
@@ -3251,5 +3741,8 @@ def generate_site(
 
     # Settings page
     (out / "settings.html").write_text(_build_settings_page(manifest), encoding="utf-8")
+
+    # Templates catalog page
+    (out / "templates.html").write_text(_build_templates_page(manifest), encoding="utf-8")
 
     return out.resolve()

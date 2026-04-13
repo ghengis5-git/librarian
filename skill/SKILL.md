@@ -454,8 +454,84 @@ When running in Claude Chat, the librarian operates under the constraints descri
 - Registry file must be delivered as a download for the operator to install on disk
 - The dashboard artifact (if available) provides a visual overview without requiring filesystem access
 
+## Document Templates
+
+The librarian ships with 57+ document templates organized by preset. Templates are markdown skeletons with pre-wired sections, tags, and cross-references. They do NOT generate content — they create the container (structure, naming, metadata, registry entry) so the operator or a content skill can fill it in.
+
+### Scaffolding a Document
+
+```bash
+# List templates available for your preset
+python -m librarian --registry docs/REGISTRY.yaml scaffold --list
+
+# List all templates across all presets
+python -m librarian --registry docs/REGISTRY.yaml scaffold --list-all
+
+# Create a new document from a template
+python -m librarian --registry docs/REGISTRY.yaml scaffold --template strategic-plan
+
+# Preview without writing (dry run)
+python -m librarian --registry docs/REGISTRY.yaml scaffold --template threat-model --dry-run
+
+# Override title and output folder
+python -m librarian --registry docs/REGISTRY.yaml scaffold --template runbook --title "Deployment Runbook" --folder ops/
+```
+
+The scaffold command:
+1. Resolves the template (custom dir → preset → cross-cutting → universal)
+2. Renders variables (title, date, version, author, compliance conditionals)
+3. Applies the project's naming convention
+4. Writes the file to disk
+5. Registers it in REGISTRY.yaml with tags and cross-references pre-wired
+6. Prints recommended companion documents
+
+### Template Organization
+
+| Category | Count | Available To |
+|---|---|---|
+| Universal | 4 | All presets |
+| Software | 8 | Software preset |
+| Business | 8 | Business preset |
+| Legal | 6 | Legal preset |
+| Scientific | 6 | Scientific preset |
+| Healthcare | 6 | Healthcare preset |
+| Finance | 6 | Finance preset |
+| Government | 6 | Government preset |
+| Security | 7 | All presets (cross-cutting) |
+| Compliance | 6 | All presets (cross-cutting) |
+
+### Custom Templates
+
+Projects can override or extend built-in templates by placing markdown files in a custom templates directory:
+
+```yaml
+project_config:
+  custom_templates_dir: "templates/"   # relative to repo root
+```
+
+Custom templates use the same YAML frontmatter format as built-in templates. When a custom template ID matches a built-in one, the custom version wins.
+
+### Compliance Conditionals
+
+Templates include conditional blocks that activate based on compliance flags in `project_config.compliance_standards`. For example, a security assessment template includes HIPAA privacy impact sections only when `hipaa` is in the compliance standards list.
+
+### Recommendations Engine
+
+The audit command includes a `--recommend` flag that analyzes the registry against preset expectations and suggests missing documents:
+
+```bash
+# Text output
+python -m librarian --registry docs/REGISTRY.yaml audit --recommend
+
+# JSON output (machine-readable)
+python -m librarian --registry docs/REGISTRY.yaml audit --recommend --json
+```
+
+Four deterministic rules drive recommendations: preset baseline gaps, cross-reference pull (if doc A exists and references B, recommend B), maturity progression (prerequisite chains), and compliance triggers (active compliance flags pull in security/compliance templates).
+
 ## Version History
 
 | Version | Date | Notes |
 |---|---|---|
 | V1.0 | 2026-04-11 | Initial standalone librarian skill. Genericized examples, added "Getting Started" section and generic `project_config` schema. |
+| V1.1 | 2026-04-13 | Added Document Templates section (scaffold command, template organization, custom templates, compliance conditionals, recommendations engine). |

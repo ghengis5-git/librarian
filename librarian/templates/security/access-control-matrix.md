@@ -1,0 +1,140 @@
+---
+template_id: access-control-matrix
+display_name: Access Control Matrix
+preset: security
+description: >-
+  Role-based access control (RBAC) matrix documenting who has access to what
+  resources at what permission level. Covers roles, resources, permissions,
+  and access review schedule.
+suggested_tags: [security, access-control, rbac]
+suggested_folder: docs/
+typical_cross_refs:
+  - data-classification-policy
+  - security-architecture-review
+recommended_with:
+  - data-classification-policy
+requires: []
+sections:
+  - Overview
+  - Role Definitions
+  - Resource Inventory
+  - Access Matrix
+  - Privileged Access
+  - Access Review Schedule
+---
+
+# Access Control Matrix: {{title}}
+
+**Document ID:** {{title}} / {{version}}
+**Date:** {{date}}
+**Author:** {{author}}
+**Status:** {{status}}
+
+---
+
+## Overview
+
+*[Purpose of this matrix, systems covered, and access control model in use (RBAC, ABAC, discretionary, mandatory).]*
+
+### Principles
+- **Least privilege:** Users receive only the minimum access required for their role
+- **Separation of duties:** Critical operations require multiple roles
+- **Need-to-know:** Access to sensitive data requires documented justification
+
+---
+
+## Role Definitions
+
+| Role | Description | Typical Personnel | Approver |
+|------|------------|------------------|----------|
+| *[Admin]* | *[Full system administration]* | *[IT staff]* | *[IT Director]* |
+| *[Power User]* | *[Extended functionality, no admin]* | *[Team leads]* | *[Manager]* |
+| *[Standard User]* | *[Day-to-day operations]* | *[All staff]* | *[Manager]* |
+| *[Read Only]* | *[View access, no modifications]* | *[Auditors, analysts]* | *[Compliance]* |
+| *[Service Account]* | *[Automated processes]* | *[N/A — system]* | *[IT Security]* |
+
+{% if "hipaa" in compliance %}
+### HIPAA Workforce Access Categories
+| Category | PHI Access | Justification Required |
+|----------|-----------|----------------------|
+| Clinical staff | Full patient record | Role-based, minimum necessary |
+| Administrative | Demographics + billing | Role-based, limited PHI |
+| IT support | System-level (may see PHI) | BAA or workforce agreement |
+| External vendor | Per BAA scope only | Documented BAA required |
+{% endif %}
+
+---
+
+## Resource Inventory
+
+| Resource | Type | Classification | Owner |
+|----------|------|---------------|-------|
+| *[Production database]* | Data store | *[Confidential]* | *[Team]* |
+| *[Web application]* | Application | *[Internal]* | *[Team]* |
+| *[File server]* | Storage | *[Confidential]* | *[IT]* |
+| *[Email system]* | Communication | *[Internal]* | *[IT]* |
+| *[Cloud console]* | Infrastructure | *[Restricted]* | *[DevOps]* |
+
+---
+
+## Access Matrix
+
+### Legend
+- **C** = Create  **R** = Read  **U** = Update  **D** = Delete  **X** = Execute  **—** = No access
+
+| Resource | Admin | Power User | Standard User | Read Only | Service Account |
+|----------|-------|-----------|---------------|-----------|----------------|
+| *[Production DB]* | CRUD | RU | R | R | R |
+| *[Web App]* | CRUDX | CRUD | CRU | R | X |
+| *[File Server]* | CRUD | CRUD | CRU | R | R |
+| *[Cloud Console]* | CRUDX | R | — | — | X |
+| *[Email System]* | CRUD | CRUD | CRUD | R | — |
+| *[Backup System]* | CRUDX | R | — | — | X |
+| *[Audit Logs]* | R | — | — | R | — |
+
+{% if "dod_5200" in compliance %}
+### Classified System Access
+| System | Clearance Required | Access Type | Additional Controls |
+|--------|-------------------|------------|-------------------|
+| *[SIPR system]* | *[Secret]* | *[Per role + clearance]* | *[CAC + PIN]* |
+| *[NIPR system]* | *[None]* | *[Per role]* | *[CAC]* |
+{% endif %}
+
+---
+
+## Privileged Access
+
+| Account | System | Holder | Justification | Last Review |
+|---------|--------|--------|--------------|-------------|
+| *[root / admin]* | *[System]* | *[Name]* | *[System administration]* | *[Date]* |
+| *[DBA]* | *[Database]* | *[Name]* | *[Database management]* | *[Date]* |
+| *[Service-deploy]* | *[CI/CD]* | *[Automated]* | *[Deployment pipeline]* | *[Date]* |
+
+### Privileged Access Controls
+- [ ] Privileged accounts use MFA
+- [ ] Privileged sessions are logged and monitored
+- [ ] Privileged access is reviewed *[quarterly]*
+- [ ] Break-glass procedures documented for emergency access
+
+---
+
+## Access Review Schedule
+
+| Review Type | Frequency | Reviewer | Last Completed | Next Due |
+|------------|-----------|---------|---------------|---------|
+| Full access review | *[Annual]* | *[Security + Managers]* | *[Date]* | *[Date]* |
+| Privileged access review | *[Quarterly]* | *[IT Security]* | *[Date]* | *[Date]* |
+| Service account review | *[Semi-annual]* | *[IT Security]* | *[Date]* | *[Date]* |
+| Separation of duties check | *[Annual]* | *[Compliance]* | *[Date]* | *[Date]* |
+
+---
+
+## Approval
+
+- **Author (Name/Title):** ____________________  **Date:** __________
+- **Security Lead (Name/Title):** ____________________  **Date:** __________
+- **System Owner (Name/Title):** ____________________  **Date:** __________
+
+---
+
+*Document generated by librarian v{{librarian_version}} from template `access-control-matrix`.*

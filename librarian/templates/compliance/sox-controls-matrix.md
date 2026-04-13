@@ -1,0 +1,123 @@
+---
+template_id: sox-controls-matrix
+display_name: SOX Controls Matrix
+preset: compliance
+description: >-
+  Sarbanes-Oxley (SOX) internal controls matrix documenting key controls,
+  control objectives, testing procedures, and deficiency tracking.
+  Covers COSO framework alignment and management assertions.
+suggested_tags: [compliance, sox, internal-controls]
+suggested_folder: docs/
+typical_cross_refs:
+  - audit-readiness-checklist
+  - vendor-risk-assessment
+recommended_with:
+  - audit-readiness-checklist
+requires: []
+sections:
+  - Overview
+  - COSO Framework Alignment
+  - Controls Inventory
+  - Testing Schedule
+  - Deficiency Tracking
+  - Management Attestation
+---
+
+# SOX Controls Matrix: {{title}}
+
+**Document ID:** {{title}} / {{version}}
+**Date:** {{date}}
+**Author:** {{author}}
+**Status:** {{status}}
+**Fiscal Year:** *[FY20XX]*
+
+---
+
+## Overview
+
+*[Describe the scope of SOX compliance for this entity: which financial processes, IT systems, and business units are in scope.]*
+
+### Scoping Summary
+
+| Item | Count |
+|------|-------|
+| Business processes in scope | *[X]* |
+| Significant accounts | *[X]* |
+| Key controls | *[X]* |
+| IT General Controls (ITGCs) | *[X]* |
+| Entity-level controls | *[X]* |
+
+---
+
+## COSO Framework Alignment
+
+| COSO Component | Key Principle | Controls Mapped | Assessment |
+|---------------|-------------|----------------|-----------|
+| Control Environment | Commitment to integrity and ethics | *[X controls]* | *[Effective / Deficient]* |
+| Risk Assessment | Identifies and analyzes risks | *[X controls]* | *[Effective / Deficient]* |
+| Control Activities | Policies and procedures | *[X controls]* | *[Effective / Deficient]* |
+| Information & Communication | Relevant, quality information | *[X controls]* | *[Effective / Deficient]* |
+| Monitoring Activities | Ongoing and separate evaluations | *[X controls]* | *[Effective / Deficient]* |
+
+---
+
+## Controls Inventory
+
+### Financial Reporting Controls
+
+| Control ID | Process | Control Description | Type | Frequency | Owner | Assertion |
+|-----------|---------|-------------------|------|-----------|-------|-----------|
+| FR-001 | *[Revenue]* | *[Control description]* | *[Preventive / Detective]* | *[Daily / Monthly / Quarterly]* | *[Name]* | *[C / E / V / R / P]* |
+| FR-002 | *[Accounts Payable]* | *[Control description]* | *[Type]* | *[Frequency]* | *[Name]* | *[Assertion]* |
+| FR-003 | *[Financial Close]* | *[Control description]* | *[Type]* | *[Frequency]* | *[Name]* | *[Assertion]* |
+
+**Assertions:** C=Completeness, E=Existence, V=Valuation, R=Rights & Obligations, P=Presentation
+
+### IT General Controls
+
+| Control ID | Domain | Control Description | Type | Frequency | Owner |
+|-----------|--------|-------------------|------|-----------|-------|
+| IT-001 | *[Access Management]* | *[Control description]* | *[Preventive]* | *[Continuous]* | *[IT]* |
+| IT-002 | *[Change Management]* | *[Control description]* | *[Preventive]* | *[Per change]* | *[IT]* |
+| IT-003 | *[Operations]* | *[Control description]* | *[Detective]* | *[Daily]* | *[IT]* |
+| IT-004 | *[Backup & Recovery]* | *[Control description]* | *[Preventive]* | *[Daily]* | *[IT]* |
+
+{% if "sec_finra" in compliance %}
+### SEC Reporting Controls
+| Control ID | Filing | Control | Testing Status |
+|-----------|--------|---------|---------------|
+| SEC-001 | 10-K | *[XBRL tagging review]* | *[Tested / Not tested]* |
+| SEC-002 | 10-Q | *[Disclosure checklist review]* | *[Tested / Not tested]* |
+{% endif %}
+
+---
+
+## Testing Schedule
+
+| Control ID | Test Method | Sample Size | Tester | Planned Date | Status |
+|-----------|-----------|-------------|--------|-------------|--------|
+| FR-001 | *[Inspection / Reperformance / Inquiry]* | *[X of Y]* | *[Internal / External]* | *[Date]* | *[Not started / In progress / Complete]* |
+| IT-001 | *[Walkthrough + sampling]* | *[X]* | *[Internal]* | *[Date]* | *[Status]* |
+
+---
+
+## Deficiency Tracking
+
+| # | Control ID | Deficiency | Classification | Root Cause | Remediation | Owner | Target Date | Status |
+|---|-----------|-----------|---------------|-----------|------------|-------|------------|--------|
+| 1 | *[ID]* | *[Description]* | *[Material Weakness / Significant Deficiency / Deficiency]* | *[Cause]* | *[Action plan]* | *[Name]* | *[Date]* | *[Open / Closed]* |
+
+---
+
+## Management Attestation
+
+Management of *[Entity Name]* has assessed the effectiveness of internal control over financial reporting as of *[Date]*, based on the framework established in COSO Internal Control — Integrated Framework (2013).
+
+Based on this assessment, management has concluded that internal controls over financial reporting are **[effective / not effective — cite material weaknesses]** as of *[Date]*.
+
+- **CEO (Name):** ____________________  **Date:** __________
+- **CFO (Name):** ____________________  **Date:** __________
+
+---
+
+*Document generated by librarian v{{librarian_version}} from template `sox-controls-matrix`.*

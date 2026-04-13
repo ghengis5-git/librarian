@@ -5,10 +5,19 @@ An evidence pack bundles:
 2. A git commit hash anchoring the snapshot to version control
 3. A generation timestamp
 4. A pack-level SHA-256 seal computed over the manifest JSON
+5. (Optional) A git commit signature when ``evidence_signing`` is enabled
 
 The pack is self-verifiable: re-generate the manifest, re-compute the seal,
 and compare.  Any file modification, addition, or removal between pack
 generation and verification will produce a different seal.
+
+**Signing** (feature flag): when ``evidence_signing`` is set to ``"gpg"``
+or ``"ssh"`` in ``project_config``, the evidence pack captures the HEAD
+commit's cryptographic signature.  This anchors the pack to an externally
+verifiable identity (the key owner) without any network call.  If signing
+is enabled but git is not configured for it, generation fails with a clear
+error.  When set to ``"off"`` (the default), the pack works exactly as
+before — SHA-256 seal only.
 
 The pack is written as a single JSON file suitable for archival, email
 attachment, or submission as exhibit material.
@@ -38,7 +47,7 @@ class EvidencePack:
     # Identity
     pack_id: str = ""  # ISO timestamp used as unique ID
     project_name: str = ""
-    generator_version: str = "0.3.0"
+    generator_version: str = "0.7.0"
 
     # Anchors
     git_commit_hash: str = ""
@@ -51,13 +60,16 @@ class EvidencePack:
     # Seal: SHA-256 of the deterministic manifest JSON
     manifest_json_sha256: str = ""
 
+    # Signature (optional — populated when evidence_signing is gpg/ssh)
+    signature: dict[str, Any] = field(default_factory=dict)
+
     # Metadata
     generated_at: str = ""
     registry_path: str = ""
     repo_root: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "evidence_pack": {
                 "pack_id": self.pack_id,
                 "project_name": self.project_name,
@@ -78,6 +90,9 @@ class EvidencePack:
                 "note": "Computed over the deterministic JSON serialization of the manifest (sorted keys). Re-generate the manifest and re-hash to verify.",
             },
         }
+        if self.signature:
+            result["signature"] = self.signature
+        return result
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False)
@@ -131,12 +146,150 @@ def _git_is_dirty(repo_root: Path) -> bool:
         return False
 
 
+# ------------------------------------------------------------------ signing
+
+
+def _git_signing_configured(repo_root: Path) -> dict[str, str]:
+    """Check if git commit signing is configured. Returns config details."""
+    info: dict[str, str] = {}
+    for key in ("commit.gpgsign", "gpg.format", "user.signingkey"):
+        try:
+            result = subprocess.run(
+                ["git", "config", "--get", key],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                info[key] = result.stdout.strip()
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+    return info
+
+
+def _git_verify_commit(repo_root: Path, commit_hash: str) -> dict[str, Any]:
+    """Verify a git commit's signature. Returns signature details.
+
+    Uses ``git log --show-signature -1`` which works for both GPG and SSH.
+    """
+    if not commit_hash:
+        return {"signed": False, "reason": "no commit hash"}
+
+    try:
+        result = subprocess.run(
+            ["git", "log", "--show-signature", "-1", "--format=%G?%n%GS%n%GK%n%GT", commit_hash],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return {"signed": False, "reason": "git not available or timed out"}
+
+    if result.returncode != 0:
+        return {"signed": False, "reason": f"git log failed: {result.stderr.strip()[:200]}"}
+
+    lines = result.stdout.strip().splitlines()
+    if len(lines) < 4:
+        return {"signed": False, "reason": "unexpected git output format"}
+
+    status_code = lines[0].strip()   # G=good, B=bad, U=untrusted, N=none, E=expired, X=expired good
+    signer = lines[1].strip()        # signer identity
+    key_id = lines[2].strip()        # key fingerprint
+    trust_model = lines[3].strip()   # trust model (gpg or ssh)
+
+    if status_code == "N":
+        return {"signed": False, "reason": "commit is not signed"}
+
+    return {
+        "signed": True,
+        "status": status_code,
+        "status_description": {
+            "G": "good signature",
+            "B": "bad signature",
+            "U": "good signature, untrusted key",
+            "X": "good signature, expired",
+            "Y": "good signature, expired key",
+            "R": "good signature, revoked key",
+            "E": "cannot verify (missing key)",
+        }.get(status_code, f"unknown ({status_code})"),
+        "signer": signer,
+        "key_id": key_id,
+        "trust_model": trust_model or "gpg",
+        "commit": commit_hash,
+    }
+
+
+class SigningError(Exception):
+    """Raised when evidence_signing is enabled but signing is not configured."""
+    pass
+
+
+def _require_signing(repo_root: Path, mode: str) -> dict[str, Any]:
+    """Validate that signing is properly configured for the requested mode.
+
+    Args:
+        repo_root: project root
+        mode: "gpg" or "ssh"
+
+    Returns:
+        Signature details dict if HEAD is signed.
+
+    Raises:
+        SigningError: if signing is not configured or HEAD is unsigned.
+    """
+    # Check git config
+    config = _git_signing_configured(repo_root)
+    gpg_sign = config.get("commit.gpgsign", "false").lower()
+    gpg_format = config.get("gpg.format", "openpgp")
+
+    if gpg_sign != "true":
+        raise SigningError(
+            f"evidence_signing is '{mode}' but git commit signing is not enabled.\n"
+            f"  Run: git config commit.gpgsign true\n"
+            f"  And: git config user.signingkey <your-key-id>"
+        )
+
+    # Validate format matches requested mode
+    if mode == "ssh" and gpg_format != "ssh":
+        raise SigningError(
+            f"evidence_signing is 'ssh' but gpg.format is '{gpg_format}'.\n"
+            f"  Run: git config gpg.format ssh\n"
+            f"  And: git config user.signingkey <path-to-ssh-key>"
+        )
+    if mode == "gpg" and gpg_format == "ssh":
+        raise SigningError(
+            f"evidence_signing is 'gpg' but gpg.format is 'ssh'.\n"
+            f"  Run: git config gpg.format openpgp\n"
+            f"  Or change evidence_signing to 'ssh' in project_config."
+        )
+
+    # Verify HEAD is signed
+    commit = _git_commit_hash(repo_root)
+    sig_info = _git_verify_commit(repo_root, commit)
+
+    if not sig_info.get("signed"):
+        reason = sig_info.get("reason", "unknown")
+        raise SigningError(
+            f"evidence_signing is '{mode}' but HEAD commit is not signed ({reason}).\n"
+            f"  Ensure your latest commit was signed:\n"
+            f"    git commit -S -m \"your message\"\n"
+            f"  Or enable auto-signing:\n"
+            f"    git config commit.gpgsign true"
+        )
+
+    return sig_info
+
+
 # ------------------------------------------------------------------ main entry
 
 
 def generate_evidence(
     registry: Registry,
     repo_root: str | Path,
+    *,
+    evidence_signing: str = "off",
 ) -> EvidencePack:
     """Generate an IP evidence pack from a Registry and repo root.
 
@@ -144,14 +297,19 @@ def generate_evidence(
     1. Generates a full manifest (all three types)
     2. Reads git state (commit, branch, dirty flag)
     3. Computes a SHA-256 seal over the manifest JSON
-    4. Bundles everything into an EvidencePack
+    4. (Optional) Captures git commit signature if evidence_signing != "off"
+    5. Bundles everything into an EvidencePack
 
     Args:
         registry: loaded Registry instance
         repo_root: path to the project root
+        evidence_signing: "off" (default), "gpg", or "ssh"
 
     Returns:
         An EvidencePack dataclass ready for serialization.
+
+    Raises:
+        SigningError: if evidence_signing is enabled but not properly configured.
     """
     repo_root = Path(repo_root).resolve()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -169,6 +327,12 @@ def generate_evidence(
     branch = _git_branch(repo_root)
     dirty = _git_is_dirty(repo_root)
 
+    # Signing (optional)
+    signature: dict[str, Any] = {}
+    signing_mode = evidence_signing.strip().lower() if evidence_signing else "off"
+    if signing_mode in ("gpg", "ssh"):
+        signature = _require_signing(repo_root, signing_mode)
+
     project_name = registry.project_config.get("project_name", "unknown")
 
     return EvidencePack(
@@ -182,6 +346,7 @@ def generate_evidence(
         git_dirty=dirty,
         manifest=manifest_dict,
         manifest_json_sha256=seal,
+        signature=signature,
     )
 
 
@@ -196,7 +361,8 @@ def write_evidence(pack: EvidencePack, output_path: str | Path) -> Path:
 def verify_evidence(pack_path: str | Path, registry: Registry, repo_root: str | Path) -> dict[str, Any]:
     """Verify an evidence pack against the current state.
 
-    Re-generates the manifest and compares the seal.
+    Re-generates the manifest and compares the seal.  If the pack
+    contains a signature block, also verifies the commit signature.
 
     Returns a dict with:
         valid: bool — True if the seal matches
@@ -205,6 +371,7 @@ def verify_evidence(pack_path: str | Path, registry: Registry, repo_root: str | 
         pack_commit: str — git commit in the pack
         current_commit: str — current HEAD commit
         drift_detected: bool — True if any hash differs
+        signature_valid: bool | None — None if no signature, True/False otherwise
     """
     pack_path = Path(pack_path)
     pack_data = json.loads(pack_path.read_text(encoding="utf-8"))
@@ -219,11 +386,22 @@ def verify_evidence(pack_path: str | Path, registry: Registry, repo_root: str | 
     current_seal = hashlib.sha256(current_json.encode("utf-8")).hexdigest()
     current_commit = _git_commit_hash(repo_root)
 
-    return {
+    result = {
         "valid": pack_seal == current_seal,
         "pack_seal": pack_seal,
         "current_seal": current_seal,
         "pack_commit": pack_commit,
         "current_commit": current_commit,
         "drift_detected": pack_seal != current_seal,
+        "signature_valid": None,
     }
+
+    # Verify signature if present
+    pack_sig = pack_data.get("signature", {})
+    if pack_sig and pack_sig.get("signed"):
+        sig_commit = pack_sig.get("commit", "")
+        if sig_commit:
+            current_sig = _git_verify_commit(repo_root, sig_commit)
+            result["signature_valid"] = current_sig.get("signed", False)
+
+    return result

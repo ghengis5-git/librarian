@@ -45,6 +45,7 @@ DEFAULTS: dict[str, Any] = {
     "default_classification": "",
     "classification_levels": [],
     "staleness_threshold_days": 90,
+    "evidence_signing": "off",       # off | gpg | ssh — requires git signing config
     "document_header": {
         "enabled": False,
         "organization": "",

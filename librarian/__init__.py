@@ -18,7 +18,7 @@ from .config import (
 )
 from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import DiffReport, diff_manifests, format_diff
-from .evidence import EvidencePack, generate_evidence, write_evidence, verify_evidence
+from .evidence import EvidencePack, generate_evidence, write_evidence, verify_evidence, SigningError
 from .manifest import (
     DependencyEdge,
     FileHash,
@@ -27,9 +27,25 @@ from .manifest import (
     write_manifest,
 )
 from .naming import ParsedName, ValidationResult, parse_filename, validate
-from .oplog import OpLogEntry, append as oplog_append, log_operation, read_log, format_log
+from .oplog import OpLogEntry, append as oplog_append, log_operation, read_log, format_log, verify_chain
 from .registry import Registry
+from .recommend import (
+    PRESET_EXPECTATIONS,
+    COMPLIANCE_TEMPLATES,
+    Recommendation,
+    RecommendationReport,
+    generate_recommendations,
+    format_recommendations,
+)
 from .sitegen import generate_site
+from .templates import (
+    DocumentTemplate,
+    render_template,
+    discover_templates,
+    load_template,
+    list_templates,
+    build_context,
+)
 from .versioning import Version, bump_filename, parse_version
 
 __all__ = [
@@ -63,6 +79,7 @@ __all__ = [
     "generate_evidence",
     "write_evidence",
     "verify_evidence",
+    "SigningError",
     # manifest
     "DependencyEdge",
     "FileHash",
@@ -80,10 +97,25 @@ __all__ = [
     "log_operation",
     "read_log",
     "format_log",
+    "verify_chain",
+    # recommend
+    "PRESET_EXPECTATIONS",
+    "COMPLIANCE_TEMPLATES",
+    "Recommendation",
+    "RecommendationReport",
+    "generate_recommendations",
+    "format_recommendations",
     # registry
     "Registry",
     # sitegen
     "generate_site",
+    # templates
+    "DocumentTemplate",
+    "render_template",
+    "discover_templates",
+    "load_template",
+    "list_templates",
+    "build_context",
     # versioning
     "Version",
     "bump_filename",

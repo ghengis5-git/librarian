@@ -1204,3 +1204,481 @@ class TestEditableTagsAndNewFields:
 
     def test_yaml_exports_tags_taxonomy(self, settings_html: str):
         assert "tags_taxonomy:" in settings_html
+
+
+# ─── Templates Catalog Page ──────────────────────────────────────────────────
+
+
+class TestTemplatesCatalogPage:
+    """Tests for the templates.html catalog page."""
+
+    @pytest.fixture
+    def software_manifest(self, tmp_path: Path) -> Manifest:
+        """Manifest with software preset configured."""
+        reg_data = {
+            "project_config": {
+                "project_name": "SoftTest",
+                "preset": "software",
+                "tracked_dirs": ["docs/"],
+                "default_author": "Tester",
+            },
+            "documents": [
+                {
+                    "filename": "architecture-20260101-V1.0.md",
+                    "title": "Architecture",
+                    "status": "active",
+                    "version": "V1.0",
+                    "tags": ["architecture"],
+                    "path": "docs/architecture-20260101-V1.0.md",
+                },
+            ],
+            "registry_meta": {"total_documents": 1, "active": 1},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+        (tmp_path / "docs" / "architecture-20260101-V1.0.md").write_text("# Arch\n")
+        reg = Registry.load(reg_path)
+        return generate_manifest(reg, tmp_path)
+
+    def test_templates_page_generated(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        assert (out / "templates.html").is_file()
+
+    def test_templates_page_title(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert "Template Catalog" in html
+
+    def test_templates_page_has_preset_selector(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert 'id="tmpl-preset"' in html
+        assert "Software" in html
+
+    def test_templates_page_has_source_filter(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert 'id="tmpl-source"' in html
+        assert "All Sources" in html
+
+    def test_templates_page_has_compliance_filter(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert 'id="tmpl-compliance"' in html
+        assert "HIPAA" in html
+
+    def test_templates_page_contains_template_data(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        # Should contain template IDs from software preset in JSON
+        assert "technical-architecture" in html
+        assert "runbook" in html
+
+    def test_templates_page_contains_universal_templates(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert "readme" in html
+        assert "project-plan" in html
+
+    def test_templates_page_contains_cross_cutting(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert "threat-model" in html
+        assert "audit-readiness-checklist" in html
+
+    def test_templates_page_has_card_grid(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert 'class="tmpl-grid"' in html
+        assert "filterTemplates" in html
+
+    def test_templates_page_scaffold_command(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        assert "python -m librarian scaffold --template" in html
+
+    def test_templates_page_section_data(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        # Templates have sections array in JSON
+        assert '"sections"' in html
+
+    def test_templates_page_active_nav(self, software_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest, out)
+        html = (out / "templates.html").read_text()
+        # "Templates" should be active in nav
+        assert 'class="active">Templates</a>' in html
+
+
+# ─── Navigation Integration ──────────────────────────────────────────────────
+
+
+class TestNavigationTemplatesLink:
+    """Templates link appears in all site nav bars."""
+
+    def test_index_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "index.html").read_text()
+        assert 'href="templates.html"' in html
+        assert ">Templates<" in html
+
+    def test_tree_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "tree.html").read_text()
+        assert 'href="templates.html"' in html
+
+    def test_graph_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "graph.html").read_text()
+        assert 'href="templates.html"' in html
+
+    def test_settings_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert 'href="templates.html"' in html
+
+
+# ─── Recommendations on Index Page ───────────────────────────────────────────
+
+
+class TestIndexRecommendations:
+    """Recommendations section on the index page."""
+
+    @pytest.fixture
+    def software_manifest_with_preset(self, tmp_path: Path) -> Manifest:
+        """Manifest with software preset — will trigger recommendations."""
+        reg_data = {
+            "project_config": {
+                "project_name": "RecTest",
+                "preset": "software",
+                "tracked_dirs": ["docs/"],
+            },
+            "documents": [
+                {
+                    "filename": "readme-20260101-V1.0.md",
+                    "title": "Readme",
+                    "status": "active",
+                    "version": "V1.0",
+                    "tags": [],
+                    "path": "docs/readme-20260101-V1.0.md",
+                },
+            ],
+            "registry_meta": {"total_documents": 1, "active": 1},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+        (tmp_path / "docs" / "readme-20260101-V1.0.md").write_text("# README\n")
+        reg = Registry.load(reg_path)
+        return generate_manifest(reg, tmp_path)
+
+    def test_index_has_recommendations_section(self, software_manifest_with_preset: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest_with_preset, out)
+        html = (out / "index.html").read_text()
+        assert "Recommendations" in html
+        assert "rec-section" in html
+
+    def test_index_recommendations_show_preset(self, software_manifest_with_preset: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest_with_preset, out)
+        html = (out / "index.html").read_text()
+        assert "software" in html
+
+    def test_index_recommendations_show_core_gaps(self, software_manifest_with_preset: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest_with_preset, out)
+        html = (out / "index.html").read_text()
+        # Software core expectations include technical-architecture and project-plan
+        assert "technical-architecture" in html or "project-plan" in html
+
+    def test_index_recommendations_have_priority_classes(self, software_manifest_with_preset: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(software_manifest_with_preset, out)
+        html = (out / "index.html").read_text()
+        assert "rec-priority-" in html
+        assert "rec-item" in html
+
+    def test_index_no_recs_without_preset(self, empty_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(empty_manifest, out)
+        html = (out / "index.html").read_text()
+        # Empty manifest has no preset, so no recommendations
+        assert "rec-section" not in html
+
+
+# ─── Dashboard Overlay Nav ───────────────────────────────────────────────────
+
+
+class TestDashboardOverlayTemplatesLink:
+    """Dashboard overlay nav includes Templates link."""
+
+    def test_dashboard_nav_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        # Need dashboard for the overlay
+        from librarian.dashboard import write_dashboard
+        dash_path = out / "dashboard.html"
+        out.mkdir(parents=True, exist_ok=True)
+        manifest = sample_manifest
+        write_dashboard(manifest, dash_path)
+        generate_site(manifest, out, dashboard_path=dash_path)
+        html = (out / "dashboard.html").read_text()
+        assert 'href="templates.html"' in html
+        assert ">Templates<" in html
+
+
+# ─── CSS Styles ──────────────────────────────────────────────────────────────
+
+
+class TestTemplatesCSSPresent:
+    """Template catalog CSS classes exist in the stylesheet."""
+
+    def test_style_css_has_template_classes(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        css = (out / "assets" / "style.css").read_text()
+        assert ".tmpl-grid" in css
+        assert ".tmpl-card" in css
+        assert ".tmpl-card-title" in css
+        assert ".tmpl-controls" in css
+
+    def test_style_css_has_recommendations_classes(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        css = (out / "assets" / "style.css").read_text()
+        assert ".rec-section" in css
+        assert ".rec-item" in css
+        assert ".rec-priority-core" in css
+
+
+# ─── Settings Template Browser ───────────────────────────────────────────────
+
+
+class TestSettingsTemplateBrowser:
+    """Settings page includes template browser section."""
+
+    def test_settings_has_template_section(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "Available Templates" in html
+        assert "settings-tmpl-list" in html
+
+    def test_settings_has_template_data(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "SETTINGS_TEMPLATES" in html
+        assert "renderSettingsTemplates" in html
+
+    def test_settings_preset_triggers_template_refresh(self, sample_manifest: Manifest, tmp_path: Path):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert 'onchange="renderSettingsTemplates()"' in html
+
+
+# ─── Custom Templates Override ───────────────────────────────────────────────
+
+
+class TestCustomTemplatesOverride:
+    """Custom templates dir overrides built-in templates."""
+
+    def test_custom_template_overrides_builtin(self, tmp_path: Path):
+        """A custom template with the same ID as a built-in wins."""
+        from librarian.templates import discover_templates
+
+        custom_dir = tmp_path / "custom_templates"
+        custom_dir.mkdir()
+        # Create a custom "readme" template that overrides universal/readme
+        (custom_dir / "readme.md").write_text(
+            "---\ntemplate_id: readme\ndisplay_name: Custom Readme\n"
+            "description: My custom readme\nsuggested_tags: [custom]\n"
+            "sections:\n  - Custom Section\n---\n# {{title}}\nCustom body.\n"
+        )
+        templates = discover_templates(preset="software", custom_dir=str(custom_dir))
+        assert "readme" in templates
+        assert templates["readme"].display_name == "Custom Readme"
+        assert templates["readme"].preset == "custom"
+
+    def test_custom_template_adds_new(self, tmp_path: Path):
+        """A custom template with a novel ID is available."""
+        from librarian.templates import discover_templates
+
+        custom_dir = tmp_path / "custom_templates"
+        custom_dir.mkdir()
+        (custom_dir / "my-special-doc.md").write_text(
+            "---\ntemplate_id: my-special-doc\ndisplay_name: Special Doc\n"
+            "description: A project-specific template\nsuggested_tags: [special]\n"
+            "sections:\n  - Overview\n---\n# {{title}}\n"
+        )
+        templates = discover_templates(preset="software", custom_dir=str(custom_dir))
+        assert "my-special-doc" in templates
+        assert templates["my-special-doc"].preset == "custom"
+
+    def test_custom_dir_none_uses_builtins_only(self):
+        """When custom_dir is None, only built-in templates are returned."""
+        from librarian.templates import discover_templates
+
+        templates = discover_templates(preset="software", custom_dir=None)
+        assert "readme" in templates  # universal
+        assert templates["readme"].preset == "universal"
+
+    def test_custom_dir_nonexistent_is_ignored(self, tmp_path: Path):
+        """A non-existent custom_dir is silently ignored."""
+        from librarian.templates import discover_templates
+
+        templates = discover_templates(
+            preset="software",
+            custom_dir=str(tmp_path / "does_not_exist"),
+        )
+        assert "readme" in templates  # still works with builtins
+
+    def test_scaffold_reads_custom_templates_dir(self, tmp_path: Path):
+        """The scaffold command reads custom_templates_dir from project_config."""
+        custom_dir = tmp_path / "templates"
+        custom_dir.mkdir()
+        (custom_dir / "custom-doc.md").write_text(
+            "---\ntemplate_id: custom-doc\ndisplay_name: Custom Doc\n"
+            "description: test\nsuggested_tags: [test]\n"
+            "sections:\n  - Intro\n---\n# {{title}}\n"
+        )
+
+        reg_data = {
+            "project_config": {
+                "project_name": "CustomTest",
+                "preset": "software",
+                "custom_templates_dir": str(custom_dir),
+                "tracked_dirs": ["docs/"],
+            },
+            "documents": [],
+            "registry_meta": {"total_documents": 0},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+
+        import subprocess
+        result = subprocess.run(
+            [
+                sys.executable, "-m", "librarian",
+                "--registry", str(reg_path),
+                "--repo", str(tmp_path),
+                "scaffold", "--list",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert "custom-doc" in result.stdout
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Security — XSS prevention in markdown and JS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class TestSecurityXSS:
+    """Tests for XSS mitigations in generated HTML."""
+
+    def test_javascript_uri_blocked_in_link(self):
+        """Links with javascript: scheme must be neutralized."""
+        html = _inline("[click](javascript:alert(1))")
+        assert "javascript:" not in html
+        assert 'href=""' in html
+
+    def test_javascript_uri_blocked_in_image(self):
+        """Images with javascript: scheme must be neutralized."""
+        html = _inline("![img](javascript:alert(1))")
+        assert "javascript:" not in html
+        assert 'src=""' in html
+
+    def test_data_uri_blocked(self):
+        """data: URIs should be blocked to prevent embedded script execution."""
+        html = _inline("[click](data:text/html,<script>alert(1)</script>)")
+        assert "data:" not in html
+
+    def test_safe_http_link_preserved(self):
+        """Normal http/https links must still work."""
+        html = _inline("[site](https://example.com)")
+        assert 'href="https://example.com"' in html
+
+    def test_safe_relative_link_preserved(self):
+        """Relative links and anchors must still work."""
+        html = _inline("[top](#header)")
+        assert 'href="#header"' in html
+        html2 = _inline("[doc](/docs/readme.html)")
+        assert 'href="/docs/readme.html"' in html2
+
+    def test_mailto_link_preserved(self):
+        """mailto: links must still work."""
+        html = _inline("[mail](mailto:user@example.com)")
+        assert 'href="mailto:user@example.com"' in html
+
+    def test_javascript_uri_case_insensitive(self):
+        """javascript: blocking must be case-insensitive."""
+        html = _inline("[x](JaVaScRiPt:alert(1))")
+        assert "javascript" not in html.lower() or 'href=""' in html
+
+    def test_esc_function_escapes_single_quotes(self):
+        """The template catalog esc() JS function must escape single quotes."""
+        from librarian.sitegen import _build_templates_page
+        from librarian.registry import Registry
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            reg_data = {
+                "project_config": {"project_name": "Test", "preset": "software", "tracked_dirs": ["docs/"]},
+                "documents": [],
+                "registry_meta": {"total_documents": 0},
+            }
+            (tmp / "docs").mkdir()
+            reg_path = tmp / "docs" / "REGISTRY.yaml"
+            with reg_path.open("w") as f:
+                yaml.safe_dump(reg_data, f, sort_keys=False)
+            reg = Registry.load(reg_path)
+            manifest = generate_manifest(reg, tmp)
+            page = _build_templates_page(manifest)
+            # The esc function should include single-quote escaping
+            assert "&#39;" in page
+
+    def test_tree_page_no_backslash_x27(self):
+        """Tree page must not contain \\x27 in HTML onclick attributes."""
+        from librarian.registry import Registry
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            reg_data = {
+                "project_config": {"project_name": "Test", "tracked_dirs": ["docs/"]},
+                "documents": [],
+                "registry_meta": {"total_documents": 0},
+            }
+            (tmp / "docs").mkdir()
+            reg_path = tmp / "docs" / "REGISTRY.yaml"
+            with reg_path.open("w") as f:
+                yaml.safe_dump(reg_data, f, sort_keys=False)
+            reg = Registry.load(reg_path)
+            manifest = generate_manifest(reg, tmp)
+            out = tmp / "_site"
+            generate_site(manifest, out)
+            tree_html = (out / "tree.html").read_text()
+            assert "\\x27" not in tree_html

@@ -14,6 +14,9 @@ from librarian.oplog import (
     read_log,
     read_log_since,
     format_log,
+    verify_chain,
+    _hash_line,
+    _GENESIS_SENTINEL,
 )
 
 
@@ -264,3 +267,142 @@ class TestFormatLog:
         ]
         output = format_log(entries)
         assert "abc12345" in output
+
+    def test_shows_chain_indicator(self) -> None:
+        entries = [
+            OpLogEntry(
+                timestamp="2026-04-11T12:00:00Z",
+                operation="test",
+                actor="cli",
+                prev_hash="genesis",
+            ),
+        ]
+        output = format_log(entries)
+        assert "\u26d3" in output  # chain link symbol
+
+
+# ------------------------------------------------------------------ hash chaining
+
+
+class TestHashChaining:
+    def test_chain_flag_adds_genesis(self, tmp_path: Path) -> None:
+        """First chained entry gets 'genesis' as prev_hash."""
+        log_file = tmp_path / "audit.jsonl"
+        entry = OpLogEntry(timestamp="2026-04-11T12:00:00Z", operation="first", actor="t")
+        append(entry, log_path=log_file, chain=True)
+        entries = read_log(log_file)
+        assert entries[0].prev_hash == _GENESIS_SENTINEL
+
+    def test_chain_links_entries(self, tmp_path: Path) -> None:
+        """Second chained entry's prev_hash matches hash of first entry."""
+        log_file = tmp_path / "audit.jsonl"
+        e1 = OpLogEntry(timestamp="2026-04-11T12:00:00Z", operation="first", actor="a")
+        append(e1, log_path=log_file, chain=True)
+
+        e2 = OpLogEntry(timestamp="2026-04-11T12:01:00Z", operation="second", actor="b")
+        append(e2, log_path=log_file, chain=True)
+
+        lines = log_file.read_text().strip().splitlines()
+        entries = read_log(log_file)
+
+        # Second entry's prev_hash should be SHA-256 of first line
+        expected = _hash_line(lines[0])
+        assert entries[1].prev_hash == expected
+
+    def test_chain_three_entries(self, tmp_path: Path) -> None:
+        """Three chained entries form a valid chain."""
+        log_file = tmp_path / "audit.jsonl"
+        for i in range(3):
+            e = OpLogEntry(timestamp=f"2026-04-11T12:0{i}:00Z", operation=f"op{i}", actor="t")
+            append(e, log_path=log_file, chain=True)
+
+        result = verify_chain(log_file)
+        assert result["valid"] is True
+        assert result["chained_entries"] == 3
+        assert result["total_entries"] == 3
+
+    def test_no_chain_flag_omits_prev_hash(self, tmp_path: Path) -> None:
+        """Without chain=True, entries have no prev_hash (v1 compat)."""
+        log_file = tmp_path / "audit.jsonl"
+        entry = OpLogEntry(timestamp="2026-04-11T12:00:00Z", operation="test", actor="t")
+        append(entry, log_path=log_file)
+        entries = read_log(log_file)
+        assert entries[0].prev_hash == ""
+
+    def test_prev_hash_not_in_v1_json(self, tmp_path: Path) -> None:
+        """v1 entries (no chain) should not include prev_hash in JSON."""
+        entry = OpLogEntry(timestamp="2026-04-11T12:00:00Z", operation="test", actor="t")
+        line = entry.to_json_line()
+        parsed = json.loads(line)
+        assert "prev_hash" not in parsed
+
+    def test_log_operation_with_chain(self, tmp_path: Path) -> None:
+        """log_operation convenience function passes chain flag through."""
+        log_file = tmp_path / "audit.jsonl"
+        entry = log_operation("test", log_path=log_file, chain=True)
+        assert entry.prev_hash == _GENESIS_SENTINEL
+
+
+# ------------------------------------------------------------------ verify_chain
+
+
+class TestVerifyChain:
+    def test_empty_log_valid(self, tmp_path: Path) -> None:
+        result = verify_chain(tmp_path / "nonexistent.jsonl")
+        assert result["valid"] is True
+        assert result["total_entries"] == 0
+
+    def test_v1_log_valid(self, tmp_path: Path) -> None:
+        """v1 logs (no chaining) are considered valid."""
+        log_file = tmp_path / "audit.jsonl"
+        for i in range(3):
+            e = OpLogEntry(timestamp=f"2026-04-11T12:0{i}:00Z", operation=f"op{i}", actor="t")
+            append(e, log_path=log_file)  # no chain
+        result = verify_chain(log_file)
+        assert result["valid"] is True
+        assert result["chained_entries"] == 0
+
+    def test_valid_chain(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "audit.jsonl"
+        for i in range(5):
+            e = OpLogEntry(timestamp=f"2026-04-11T12:0{i}:00Z", operation=f"op{i}", actor="t")
+            append(e, log_path=log_file, chain=True)
+        result = verify_chain(log_file)
+        assert result["valid"] is True
+        assert result["chained_entries"] == 5
+        assert result["first_broken_index"] is None
+        assert result["error"] == ""
+
+    def test_tampered_entry_detected(self, tmp_path: Path) -> None:
+        """Modifying an entry breaks the chain."""
+        log_file = tmp_path / "audit.jsonl"
+        for i in range(3):
+            e = OpLogEntry(timestamp=f"2026-04-11T12:0{i}:00Z", operation=f"op{i}", actor="t")
+            append(e, log_path=log_file, chain=True)
+
+        # Tamper with the first entry
+        lines = log_file.read_text().splitlines()
+        tampered = json.loads(lines[0])
+        tampered["operation"] = "TAMPERED"
+        lines[0] = json.dumps(tampered, sort_keys=True)
+        log_file.write_text("\n".join(lines) + "\n")
+
+        result = verify_chain(log_file)
+        assert result["valid"] is False
+        assert result["first_broken_index"] is not None
+        assert "mismatch" in result["error"]
+
+    def test_deleted_entry_detected(self, tmp_path: Path) -> None:
+        """Deleting an entry breaks the chain."""
+        log_file = tmp_path / "audit.jsonl"
+        for i in range(4):
+            e = OpLogEntry(timestamp=f"2026-04-11T12:0{i}:00Z", operation=f"op{i}", actor="t")
+            append(e, log_path=log_file, chain=True)
+
+        # Delete the second entry
+        lines = log_file.read_text().strip().splitlines()
+        del lines[1]
+        log_file.write_text("\n".join(lines) + "\n")
+
+        result = verify_chain(log_file)
+        assert result["valid"] is False

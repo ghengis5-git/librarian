@@ -22,18 +22,95 @@ Project-agnostic by design — works with any project that supplies a REGISTRY.y
 ```
 librarian/                  # pip-installable Python package (v0.7.0)
 ├── __init__.py             # public API exports + __version__
-├── __main__.py             # CLI: audit, status, register, bump, manifest, evidence, diff, log, dashboard, site, init, config
+├── __main__.py             # CLI: audit (--recommend --json), status, register, bump, manifest, evidence, diff, log, dashboard, site, init, config, scaffold
 ├── config.py               # configuration system: defaults, presets, naming templates, merge logic
 ├── naming.py               # naming convention parser + validator (config-aware)
 ├── versioning.py           # version bump logic
 ├── registry.py             # REGISTRY.yaml CRUD
 ├── audit.py                # OODA audit engine + formatter + folder density analysis
+├── recommend.py            # recommendations engine: 4 deterministic rules, PRESET_EXPECTATIONS, COMPLIANCE_TEMPLATES
 ├── manifest.py             # portable JSON + SHA-256 hashes + dependency graph
 ├── oplog.py                # append-only JSONL operation log
 ├── evidence.py             # tamper-evident IP evidence pack
 ├── diffaudit.py            # delta report between two manifests
 ├── dashboard.py            # dashboard template loader + manifest JSON injection
-└── sitegen.py              # static site generator (sidebar tree, grouping, graph)
+├── sitegen.py              # static site generator (sidebar tree, grouping, graph)
+└── templates/              # Phase G — document template system
+    ├── __init__.py         # template registry, discovery, resolution, context builder
+    ├── _base.py            # DocumentTemplate dataclass + zero-dep mini template engine
+    ├── universal/          # templates available to all presets (4)
+    │   ├── readme.md
+    │   ├── project-plan.md
+    │   ├── changelog.md
+    │   └── meeting-notes.md
+    ├── software/           # software preset templates (8)
+    │   ├── architecture-decision-record.md
+    │   ├── technical-architecture.md
+    │   ├── api-specification.md
+    │   ├── runbook.md
+    │   ├── security-assessment.md
+    │   ├── incident-postmortem.md
+    │   ├── test-plan.md
+    │   └── release-notes.md
+    ├── scientific/         # scientific preset templates (6)
+    │   ├── scientific-foundation.md
+    │   ├── experiment-protocol.md
+    │   ├── literature-review.md
+    │   ├── data-management-plan.md
+    │   ├── irb-application.md
+    │   └── lab-notebook-entry.md
+    ├── business/           # business preset templates (8)
+    │   ├── strategic-plan.md
+    │   ├── cost-analysis.md
+    │   ├── competitor-analysis.md
+    │   ├── project-management-plan.md
+    │   ├── business-case.md
+    │   ├── risk-assessment.md
+    │   ├── stakeholder-analysis.md
+    │   └── executive-summary.md
+    ├── legal/              # legal preset templates (6)
+    │   ├── legal-review.md
+    │   ├── patent-review.md
+    │   ├── ip-landscape.md
+    │   ├── contract-summary.md
+    │   ├── regulatory-compliance-checklist.md
+    │   └── nda-tracker.md
+    ├── healthcare/         # healthcare preset templates (6)
+    │   ├── clinical-protocol.md
+    │   ├── hipaa-risk-assessment.md
+    │   ├── quality-improvement-plan.md
+    │   ├── policy-document.md
+    │   ├── incident-report.md
+    │   └── credentialing-checklist.md
+    ├── finance/            # finance preset templates (6)
+    │   ├── due-diligence-report.md
+    │   ├── investment-memo.md
+    │   ├── compliance-review.md
+    │   ├── audit-finding.md
+    │   ├── risk-assessment-finance.md
+    │   └── regulatory-filing-checklist.md
+    ├── government/         # government preset templates (6)
+    │   ├── policy-directive.md
+    │   ├── standard-operating-procedure.md
+    │   ├── memorandum.md
+    │   ├── acquisition-plan.md
+    │   ├── security-plan.md
+    │   └── after-action-report.md
+    ├── security/           # cross-cutting security templates (7)
+    │   ├── threat-model.md
+    │   ├── vulnerability-assessment.md
+    │   ├── penetration-test-report.md
+    │   ├── security-architecture-review.md
+    │   ├── incident-response-plan.md
+    │   ├── access-control-matrix.md
+    │   └── data-classification-policy.md
+    └── compliance/         # cross-cutting compliance templates (6)
+        ├── sox-controls-matrix.md
+        ├── gdpr-dpia.md
+        ├── pci-dss-checklist.md
+        ├── iso27001-statement-of-applicability.md
+        ├── audit-readiness-checklist.md
+        └── vendor-risk-assessment.md
 ```
 
 ---
@@ -43,7 +120,8 @@ librarian/                  # pip-installable Python package (v0.7.0)
 python -m librarian --registry <path> <command>
 
 Commands:
-  audit       OODA governance audit (drift, naming, orphans, cross-refs, folder suggestions)
+  audit       OODA governance audit (drift, naming, orphans, cross-refs, folder suggestions, --recommend, --json)
+  scaffold    Create a new document from a template (--list, --list-all, --dry-run, --no-register)
   status      Quick registry summary (counts by status)
   register    Add a new document entry to the registry
   bump        Version-bump an existing document
@@ -60,7 +138,7 @@ Commands:
 ---
 
 ## Test Suite
-- **329 tests** across 10 test files
+- **540 tests** across 13 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Config: 56 (presets 8, templates 6, loading 7, naming-config 10, configurable-naming 9, parse 4, CLI init 5, CLI config 3, merge 4)
 - Phase B: 26 (manifest)
@@ -71,6 +149,13 @@ Commands:
 - Settings interactivity: 18 (onclick quoting, ID consistency, STANDARDS completeness, toggle/deselect, YAML export)
 - Editable tags + new fields: 20 (tag CRUD, logo field, disclaimer dropdown, YAML export coverage)
 - Folder suggestions: 8 (audit density analysis)
+- Phase G.1 Templates: 56 (engine 20, dataclass 3, frontmatter 2, discovery 7, context 5, scaffold CLI 11, condition eval 4, security 4)
+- Phase G.2a Software+Scientific: 17 (software count/ids/sections/tags/xrefs/conditionals 8, scientific count/ids/sections/xrefs/conditionals/requires 9)
+- Phase G.2b Business+Legal: 15 (business count/ids/sections/tags/xrefs/conditionals/isolation 8, legal count/ids/sections/xrefs/conditionals 7)
+- Phase G.2c Healthcare+Finance+Government: 24 (healthcare count/ids/sections/tags/xrefs/conditionals/isolation 8, finance count/ids/sections/xrefs/conditionals/isolation 8, government count/ids/sections/xrefs/conditionals/isolation 8)
+- Phase G.2d Security+Compliance cross-cutting: 28 (security count/ids/sections/xrefs/conditionals 7, compliance count/ids/sections/xrefs/conditionals 7, cross-cutting resolution parametrized 14)
+- Phase G.3 Recommendations: 39 (preset expectations 4, compliance templates 2, rule 1 baseline 8, rule 2 cross-ref 3, rule 3 maturity 3, rule 4 compliance 5, dedup 2, report 3, formatter 6, CLI integration 3)
+- Phase G.4 Templates page + integration: 32 (catalog page 12, nav links 4, index recommendations 5, dashboard overlay 1, CSS 2, settings template browser 3, custom template override 5)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
@@ -78,7 +163,7 @@ Commands:
 
 ## Current State
 **Version:** 0.7.0
-**Tests:** 329/329 PASS
+**Tests:** 540/540 PASS
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -148,12 +233,93 @@ Commands:
 - **Pre-commit hook hardened**: Removed `py` from DOC_EXTENSIONS, added source dirs to SKIP_DIRS, warnings pass in non-interactive mode
 - **Audit false positive fix**: `audit.py` now checks registered `path` for files outside `tracked_dirs`
 
+### Session 36 Deliverables (Phase G.1 — Template infrastructure)
+- **Mini template engine** (`_base.py`, ~260 lines): Zero-dependency engine with `{{variable}}` substitution, `{% if %}` / `{% elif %}` / `{% else %}` / `{% endif %}` conditionals, `{% for %}` / `{% endfor %}` iteration. Supports truthiness, `==`, `!=`, `in` membership, `and`, `or`, `not` operators. No arbitrary Python eval.
+- **DocumentTemplate dataclass**: `from_string()`, `from_file()`, `render()` — parses YAML frontmatter + markdown body, renders with context dict
+- **Template registry** (`templates/__init__.py`): `discover_templates()`, `load_template()`, `list_templates()`, `build_context()` — scans built-in dirs + custom dir with resolution priority: custom > preset > cross-cutting > universal
+- **4 universal templates**: `readme`, `project-plan`, `changelog`, `meeting-notes` — each with YAML frontmatter (template_id, display_name, suggested_tags, cross-refs, sections) and conditional blocks for compliance standards
+- **`scaffold` CLI subcommand**: `--template`, `--title`, `--folder`, `--author`, `--preset`, `--list`, `--list-all`, `--dry-run`, `--no-register`. Creates properly named file, registers in REGISTRY.yaml with tags/cross-refs, logs operation, prints recommended companions.
+- **Context builder**: Reads `project_config` (preset, compliance flags, naming rules, header/footer config) and builds the dict that feeds the engine
+- **56 new tests** (385 total): engine variable substitution (5), conditionals (11), for loops (4), condition eval (4), DocumentTemplate (3), frontmatter (2), discovery (7), context builder (5), scaffold CLI (11), security hardening (4)
+
+### Session 37 Deliverables (Phase G.2a — Software + Scientific templates)
+- **8 software templates**: architecture-decision-record, technical-architecture, api-specification, runbook, security-assessment, incident-postmortem, test-plan, release-notes
+- **6 scientific templates**: scientific-foundation, experiment-protocol, literature-review, data-management-plan, irb-application, lab-notebook-entry
+- **Compliance conditionals**: security-assessment has ISO 27001 + HIPAA + DoD 5200 conditional blocks; data-management-plan has HIPAA + ISO 27001 + DoD 5200; experiment-protocol has HIPAA + ISO 9001; test-plan has ISO 9001; technical-architecture has ISO 27001 + DoD 5200
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set
+- **IRB requires field**: irb-application declares `requires: [experiment-protocol]` — first use of prerequisite chain
+- **17 new tests** (402 total): template counts, ID verification, section counts, tag counts, cross-ref validity, conditional rendering (ISO 27001, HIPAA), prerequisite chains, preset isolation
+
+### Session 38 Deliverables (Phase G.2b — Business + Legal templates)
+- **8 business templates**: strategic-plan, cost-analysis, competitor-analysis, project-management-plan, business-case, risk-assessment, stakeholder-analysis, executive-summary
+- **6 legal templates**: legal-review, patent-review, ip-landscape, contract-summary, regulatory-compliance-checklist, nda-tracker
+- **Compliance conditionals**: strategic-plan has SEC/FINRA + ISO 9001; risk-assessment has ISO 9001 + ISO 27001; regulatory-compliance-checklist has HIPAA + ISO 27001 + SEC/FINRA + DoD 5200; contract-summary has HIPAA (BAA) + SEC/FINRA; legal-review has HIPAA + SEC/FINRA
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set + universal
+- **Preset isolation**: business templates don't leak into scientific, legal don't leak into software
+- **15 new tests** (417 total): business count/ids/sections/tags/xrefs/conditionals/isolation (8), legal count/ids/sections/xrefs/conditionals (7)
+
+### Session 39 Deliverables (Phase G.2c — Healthcare + Finance + Government templates)
+- **6 healthcare templates**: clinical-protocol, hipaa-risk-assessment, quality-improvement-plan, policy-document, incident-report, credentialing-checklist
+- **6 finance templates**: due-diligence-report, investment-memo, compliance-review, audit-finding, risk-assessment-finance, regulatory-filing-checklist
+- **6 government templates**: policy-directive, standard-operating-procedure, memorandum, acquisition-plan, security-plan, after-action-report
+- **Compliance conditionals**: healthcare templates use HIPAA + ISO 27001 + ISO 9001; finance templates use SEC/FINRA + HIPAA; government templates use DoD 5200 + ISO 9001
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set + universal
+- **Preset isolation**: healthcare/finance/government templates don't leak across presets
+- **Template ID collision avoidance**: finance risk-assessment uses `risk-assessment-finance` to avoid collision with business `risk-assessment`
+- **24 new tests** (441 total): healthcare 8, finance 8, government 8 — each covering count/ids/sections/tags/xrefs/conditionals/isolation
+
+### Session 40 Deliverables (Phase G.2d — Cross-cutting Security + Compliance templates)
+- **7 security templates** (cross-cutting — available to all presets): threat-model, vulnerability-assessment, penetration-test-report, security-architecture-review, incident-response-plan, access-control-matrix, data-classification-policy
+- **6 compliance templates** (cross-cutting — available to all presets): sox-controls-matrix, gdpr-dpia, pci-dss-checklist, iso27001-statement-of-applicability, audit-readiness-checklist, vendor-risk-assessment
+- **Cross-cutting resolution**: security/ and compliance/ directories auto-loaded for every preset via `CROSS_CUTTING` tuple in `templates/__init__.py` — no code changes needed
+- **Compliance conditionals**: threat-model (HIPAA + DoD 5200 + ISO 27001), data-classification-policy (DoD 5200 + HIPAA + SEC/FINRA), audit-readiness-checklist (5 compliance blocks: ISO 9001/27001 + HIPAA + SEC/FINRA + DoD 5200), vendor-risk-assessment (HIPAA + SEC/FINRA), gdpr-dpia (HIPAA), iso27001-statement-of-applicability (HIPAA), penetration-test-report (HIPAA), incident-response-plan (HIPAA), access-control-matrix (HIPAA + DoD 5200), security-architecture-review (ISO 27001 + DoD 5200), sox-controls-matrix (SEC/FINRA)
+- **Cross-reference integrity**: all cross-refs resolve within security + compliance cross-cutting sets
+- **28 new tests** (469 total): TestSecurityTemplates (7), TestComplianceTemplates (7), TestCrossCuttingResolution (14 parametrized — 7 presets × 2 cross-cutting dirs)
+
+### Session 41 Deliverables (Phase G.3 — Recommendations engine)
+- **`librarian/recommend.py`** (~230 lines): Deterministic gap analysis engine with 4 rules
+  - Rule 1 (Preset baseline): `PRESET_EXPECTATIONS` dict with core/recommended template sets for all 7 presets (software, business, legal, scientific, healthcare, finance, government)
+  - Rule 2 (Cross-reference pull): Scans `typical_cross_refs` from present docs, flags missing targets with `referenced_by` attribution
+  - Rule 3 (Maturity progression): Checks template `requires` fields; recommends templates when all prerequisites are present
+  - Rule 4 (Compliance triggers): `COMPLIANCE_TEMPLATES` maps 5 flags (hipaa, dod_5200, iso_9001, iso_27001, sec_finra) to security/compliance template IDs
+- **Deduplication**: Each template_id appears at most once; earlier rules take priority (core > recommended > cross_ref > maturity > compliance)
+- **CLI integration**: `audit --recommend` appends formatted recommendations after standard OODA audit; `audit --json` produces machine-readable JSON (works with or without `--recommend`)
+- **`Recommendation` + `RecommendationReport` dataclasses**: `.to_dict()` for JSON serialization, category properties (`.core`, `.recommended`, `.cross_ref_gaps`, `.maturity`, `.compliance`)
+- **`format_recommendations()`**: Human-readable formatter matching the plan's output format (CORE/RECOMMENDED/CROSS-REFERENCE GAPS/MATURITY PROGRESSION/COMPLIANCE sections)
+- **39 new tests** (508 total): preset expectations structure (4), compliance templates structure (2), Rule 1 (8), Rule 2 (3), Rule 3 (3), Rule 4 (5), deduplication (2), report dataclass (3), formatter (6), CLI integration (3)
+
+### Session 42 Deliverables (Phase G.4 — Templates catalog page + site integration)
+- **Template Catalog page** (`templates.html`): New page in the static site with a filterable card grid of all available templates
+  - Preset switcher dropdown to browse templates across all 7 presets
+  - Source filter (Universal, Security, Compliance, Custom, or per-preset)
+  - Compliance filter (HIPAA, DoD 5200, ISO 9001, ISO 27001, SEC/FINRA)
+  - Cards display: template name, description, section count, tag count, cross-ref count, source badge
+  - Click-to-expand: full section list, cross-ref links, compliance conditionals, requires/recommended-with, scaffold command
+  - Cross-ref links between template cards (click scrolls to target card)
+  - Source badges with distinct colors: universal (blue), security (red), compliance (gold), custom (green)
+  - Client-side filtering via JSON template data — no server round-trips
+- **Navigation integration**: "Templates" link added to all site nav bars (header nav, sidebar pages, dashboard overlay nav)
+- **Recommendations on index page**: Index page now renders a recommendations panel below the document table, showing core/recommended/cross-ref/maturity/compliance gaps with priority color coding
+- **`_build_recommendations_html()` helper**: Reusable function that generates recommendations HTML from any manifest, returns empty string if no gaps
+- **CSS additions**: 30+ new CSS classes for template cards (`.tmpl-*`) and recommendations panel (`.rec-*`), following existing design token system
+- **24 new tests** (532 total): templates catalog page (12), navigation links (4), index recommendations (5), dashboard overlay (1), CSS presence (2)
+
+### Session 42b Deliverables (Phase G.4 completion)
+- **Settings page template browser**: "Available Templates" section with scrollable table listing all templates for the active preset, click-to-copy scaffold command, auto-refreshes when preset dropdown changes
+- **Custom templates dir support**: `custom_templates_dir` config field wired through settings page, scaffold CLI, and site generator; custom templates override built-in when IDs collide
+- **SKILL.md updated** (V1.1): Added Document Templates section covering scaffold command, template organization table, custom templates, compliance conditionals, recommendations engine
+- **README.md updated**: Added scaffold to CLI commands table, new Document Templates section with usage examples, updated test count to 540
+- **8 new tests** (540 total): settings template browser (3), custom template override/add/none/nonexistent/scaffold-cli (5)
+
 ### Next Steps (by priority)
-1. **Phase G — Document templates & recommendations engine** (plan ready, 4 sub-phases):
-   - G.1: Template infrastructure — `templates/` package, `DocumentTemplate` dataclass, `scaffold` CLI command
-   - G.2: Preset template packs — ~70 templates across 8 presets + security/compliance cross-cutting
-   - G.3: Recommendations engine — `audit --recommend` with 4 deterministic rules
-   - G.4: Custom templates, settings integration, polish
+1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
+   - ~~G.1: Template infrastructure~~ ✅ (Session 36)
+   - ~~G.2a: Software + Scientific templates~~ ✅ (Session 37)
+   - ~~G.2b: Business + Legal templates~~ ✅ (Session 38)
+   - ~~G.2c: Healthcare + Finance + Government templates~~ ✅ (Session 39)
+   - ~~G.2d: Cross-cutting Security + Compliance templates~~ ✅ (Session 40)
+   - ~~G.3: Recommendations engine~~ ✅ (Session 41)
+   - ~~G.4: Templates catalog page, site/dashboard integration, custom templates, settings browser, docs~~ ✅ (Session 42/42b)
    - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
 2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
 3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from datetime import date
 from pathlib import Path
 
 from .audit import audit, format_report
+from .recommend import generate_recommendations, format_recommendations
 from .config import (
     PRESETS,
     NAMING_TEMPLATES,
@@ -18,12 +20,14 @@ from .config import (
 )
 from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import diff_manifests, format_diff
-from .evidence import generate_evidence, write_evidence, verify_evidence
+from .evidence import generate_evidence, write_evidence, verify_evidence, SigningError
 from .manifest import generate as generate_manifest, write_manifest
 from .naming import parse_filename
 from .oplog import log_operation, read_log, read_log_since, format_log
 from .registry import Registry
 from .sitegen import generate_site
+from .templates import discover_templates, load_template, list_templates, build_context
+from .templates._base import render_template
 from .versioning import bump_filename
 
 DEFAULT_REGISTRY = "docs/REGISTRY.yaml"
@@ -39,11 +43,60 @@ def _find_registry(explicit: str | None, repo_root: Path) -> Path:
 
 
 def cmd_audit(args: argparse.Namespace) -> int:
+    import json as _json
+
     repo_root = Path(args.repo or ".").resolve()
     reg_path = _find_registry(args.registry, repo_root)
     reg = Registry.load(reg_path)
     report = audit(reg, repo_root)
-    print(format_report(report))
+
+    if args.recommend:
+        rec_report = generate_recommendations(
+            registry_documents=reg.documents,
+            project_config=reg.project_config,
+        )
+        if args.json:
+            # JSON output: combine audit summary + recommendations
+            output = {
+                "audit": {
+                    "files_on_disk": len(report.on_disk),
+                    "registered": len(report.registered),
+                    "unregistered": report.unregistered,
+                    "missing": report.missing,
+                    "naming_violations": [
+                        {"file": n, "errors": e}
+                        for n, e in report.naming_violations
+                    ],
+                    "pending_cross_refs": report.pending_cross_refs,
+                    "clean": report.clean,
+                },
+                "recommendations": rec_report.to_dict(),
+            }
+            print(_json.dumps(output, indent=2))
+        else:
+            print(format_report(report))
+            print()
+            print(format_recommendations(rec_report))
+    else:
+        if args.json:
+            output = {
+                "audit": {
+                    "files_on_disk": len(report.on_disk),
+                    "registered": len(report.registered),
+                    "unregistered": report.unregistered,
+                    "missing": report.missing,
+                    "naming_violations": [
+                        {"file": n, "errors": e}
+                        for n, e in report.naming_violations
+                    ],
+                    "pending_cross_refs": report.pending_cross_refs,
+                    "clean": report.clean,
+                },
+            }
+            print(_json.dumps(output, indent=2))
+        else:
+            print(format_report(report))
+
     return 0 if report.clean else 1
 
 
@@ -198,7 +251,14 @@ def cmd_evidence(args: argparse.Namespace) -> int:
     reg_path = _find_registry(args.registry, repo_root)
     reg = Registry.load(reg_path)
 
-    pack = generate_evidence(reg, repo_root)
+    # Read evidence_signing from project_config (feature flag)
+    signing_mode = reg.project_config.get("evidence_signing", "off")
+
+    try:
+        pack = generate_evidence(reg, repo_root, evidence_signing=signing_mode)
+    except SigningError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
 
     if args.output:
         out = write_evidence(pack, args.output)
@@ -207,10 +267,12 @@ def cmd_evidence(args: argparse.Namespace) -> int:
         print(pack.to_json())
 
     dirty_str = " (DIRTY)" if pack.git_dirty else ""
+    signed_str = "  |  Signed: YES" if pack.signature.get("signed") else ""
     sys.stderr.write(
         f"\n  Project: {pack.project_name}"
         f"  |  Commit: {pack.git_commit_hash[:8] or 'N/A'}{dirty_str}"
-        f"  |  Seal: {pack.manifest_json_sha256[:16]}...\n"
+        f"  |  Seal: {pack.manifest_json_sha256[:16]}..."
+        f"{signed_str}\n"
     )
 
     # Log the operation
@@ -221,6 +283,7 @@ def cmd_evidence(args: argparse.Namespace) -> int:
             "commit": pack.git_commit_hash[:8],
             "seal": pack.manifest_json_sha256[:16],
             "dirty": pack.git_dirty,
+            "signed": bool(pack.signature.get("signed")),
         },
         repo_root=repo_root,
     )
@@ -339,6 +402,223 @@ def cmd_site(args: argparse.Namespace) -> int:
         },
         repo_root=repo_root,
     )
+    return 0
+
+
+def cmd_scaffold(args: argparse.Namespace) -> int:
+    """Scaffold a new document from a template."""
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+
+    # Load registry and config
+    try:
+        reg = Registry.load(reg_path)
+        pc = reg.project_config
+    except FileNotFoundError:
+        if not args.list and not args.list_all:
+            print(f"Registry not found: {reg_path}", file=sys.stderr)
+            return 1
+        pc = {}
+        reg = None
+
+    preset = pc.get("preset", args.preset or "")
+    custom_dir = pc.get("custom_templates_dir", None)
+
+    # --list: show templates for this preset
+    if args.list:
+        templates = list_templates(preset=preset, custom_dir=custom_dir)
+        if not templates:
+            print("No templates found.")
+            return 0
+        print(f"Available templates (preset: {preset or 'universal'}):\n")
+        for t in templates:
+            print(f"  {t['id']:35s}  {t['name']}")
+            if t['description']:
+                print(f"  {'':35s}  {t['description']}")
+            print()
+        return 0
+
+    # --list-all: show all templates across all presets
+    if args.list_all:
+        all_presets = ["universal", "software", "business", "legal", "scientific",
+                       "healthcare", "finance", "government", "security", "compliance"]
+        seen: set[str] = set()
+        for p in all_presets:
+            templates = discover_templates(preset=p, custom_dir=custom_dir)
+            new_ids = sorted(set(templates.keys()) - seen)
+            if new_ids:
+                print(f"\n  [{p}]")
+                for tid in new_ids:
+                    t = templates[tid]
+                    print(f"    {tid:35s}  {t.display_name}")
+                    seen.add(tid)
+        print()
+        return 0
+
+    # Require --template
+    if not args.template:
+        print("Error: --template is required (or use --list to see available templates).",
+              file=sys.stderr)
+        return 1
+
+    # Resolve template
+    tmpl = load_template(args.template, preset=preset, custom_dir=custom_dir)
+    if tmpl is None:
+        print(f"Template not found: {args.template}", file=sys.stderr)
+        print(f"Run: python -m librarian scaffold --list", file=sys.stderr)
+        return 1
+
+    # Build context
+    ctx = build_context(project_config=pc)
+
+    # Apply overrides
+    title = args.title or tmpl.display_name
+    ctx["title"] = title
+    if args.author:
+        ctx["author"] = args.author
+
+    # Render the template body
+    rendered = tmpl.render(ctx)
+
+    # Build the filename using naming convention
+    nr = pc.get("naming_rules", {})
+    sep = nr.get("separator", "-")
+    date_fmt = nr.get("date_format", "YYYYMMDD")
+    version_fmt = nr.get("version_format", "VX.Y")
+
+    today = date.today()
+    if date_fmt == "YYYY-MM-DD":
+        date_str = today.strftime("%Y-%m-%d")
+    elif date_fmt == "off":
+        date_str = ""
+    else:
+        date_str = today.strftime("%Y%m%d")
+
+    if version_fmt == "vX.Y":
+        ver_str = "v1.0"
+    elif version_fmt == "X.Y":
+        ver_str = "1.0"
+    else:
+        ver_str = "V1.0"
+
+    # Build filename parts — sanitize template_id to prevent path traversal
+    stem = re.sub(r"[^a-z0-9-]", "", tmpl.template_id.lower())
+    if not stem:
+        print("Error: template_id contains no valid characters.", file=sys.stderr)
+        return 1
+    parts = [stem]
+    if date_str:
+        parts.append(date_str)
+    parts.append(ver_str)
+    filename = sep.join(parts) + ".md"
+
+    # Determine output folder — sanitize to prevent path traversal
+    folder = args.folder or tmpl.suggested_folder or "docs/"
+    if not folder.endswith("/"):
+        folder += "/"
+    out_dir = (repo_root / folder).resolve()
+    out_path = out_dir / filename
+
+    # Security: ensure output path is under repo_root
+    try:
+        out_path.resolve().relative_to(repo_root)
+    except ValueError:
+        print(f"Error: output path escapes repo root: {folder}", file=sys.stderr)
+        return 1
+
+    # --dry-run: show what would be created
+    if args.dry_run:
+        print(f"[dry-run] Would create: {out_path.relative_to(repo_root)}")
+        print(f"  Template:  {tmpl.template_id}")
+        print(f"  Title:     {title}")
+        print(f"  Tags:      {', '.join(tmpl.suggested_tags)}")
+        if tmpl.typical_cross_refs:
+            print(f"  X-refs:    {', '.join(tmpl.typical_cross_refs)}")
+        print(f"\n--- Preview (first 20 lines) ---\n")
+        for line in rendered.splitlines()[:20]:
+            print(line)
+        if len(rendered.splitlines()) > 20:
+            print(f"  ... ({len(rendered.splitlines()) - 20} more lines)")
+        return 0
+
+    # Refuse to overwrite existing files
+    if out_path.exists():
+        print(f"Error: file already exists: {out_path.relative_to(repo_root)}", file=sys.stderr)
+        print("  Bump the existing version or remove the file first.", file=sys.stderr)
+        return 1
+
+    # Write the file
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(rendered, encoding="utf-8")
+
+    # Register in REGISTRY.yaml (unless --no-register)
+    if not args.no_register and reg is not None:
+        rel_path = str(out_path.relative_to(repo_root))
+        entry = {
+            "filename": filename,
+            "title": title,
+            "description": tmpl.description,
+            "status": "draft",
+            "version": "V1.0",
+            "created": today.strftime("%Y-%m-%d"),
+            "updated": today.strftime("%Y-%m-%d"),
+            "author": ctx.get("author", ""),
+            "classification": ctx.get("classification", "INTERNAL"),
+            "tags": list(tmpl.suggested_tags),
+            "path": rel_path,
+            "infrastructure_exempt": False,
+        }
+
+        # Add cross-references for targets that already exist in registry
+        xrefs = []
+        for ref_id in tmpl.typical_cross_refs:
+            # Check if a document with this template_id in its filename exists
+            for doc in reg.documents:
+                doc_fn = doc.get("filename", "")
+                if ref_id in doc_fn:
+                    xrefs.append(doc_fn)
+                    break
+        if xrefs:
+            entry["cross_references"] = xrefs
+
+        try:
+            reg.add_document(entry)
+            reg.save()
+        except ValueError as e:
+            print(f"Warning: could not register — {e}", file=sys.stderr)
+
+        # Log the operation
+        log_operation(
+            "scaffold",
+            files=[filename],
+            details={
+                "template": tmpl.template_id,
+                "title": title,
+                "tags": tmpl.suggested_tags,
+            },
+            repo_root=repo_root,
+        )
+
+    # Print summary
+    print(f"Created: {out_path.relative_to(repo_root)}")
+    print(f"  Title:    {title}")
+    print(f"  Status:   draft")
+    print(f"  Tags:     {', '.join(tmpl.suggested_tags)}")
+
+    if tmpl.typical_cross_refs:
+        print(f"  X-refs:   {', '.join(tmpl.typical_cross_refs)}")
+
+    # Show recommended companions
+    if tmpl.recommended_with:
+        existing = {d.get("filename", "") for d in (reg.documents if reg else [])}
+        missing = [r for r in tmpl.recommended_with
+                   if not any(r in fn for fn in existing)]
+        if missing:
+            print(f"\n  Recommended companions (not yet in registry):")
+            for m in missing:
+                print(f"    - {m}")
+            print(f"\n  Run: python -m librarian scaffold --template <name>")
+
     return 0
 
 
@@ -496,6 +776,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     # --- audit
     p_audit = sub.add_parser("audit", help="Run OODA audit")
+    p_audit.add_argument("--recommend", action="store_true",
+                         help="include document gap recommendations")
+    p_audit.add_argument("--json", action="store_true",
+                         help="output as JSON instead of text")
     p_audit.set_defaults(func=cmd_audit)
 
     # --- status
@@ -559,6 +843,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_log.add_argument("--since", help="show entries from this ISO timestamp onward")
     p_log.add_argument("--last", type=int, help="show only the last N entries")
     p_log.set_defaults(func=cmd_log)
+
+    # --- scaffold (Phase G)
+    p_scaffold = sub.add_parser("scaffold", help="Create a new document from a template")
+    p_scaffold.add_argument("--template", help="template ID (e.g., project-plan, readme)")
+    p_scaffold.add_argument("--title", help="override the document title")
+    p_scaffold.add_argument("--folder", help="override the output folder")
+    p_scaffold.add_argument("--author", help="override the default author")
+    p_scaffold.add_argument("--preset", help="preset for template resolution")
+    p_scaffold.add_argument("--list", action="store_true", help="list templates for the project's preset")
+    p_scaffold.add_argument("--list-all", action="store_true", help="list all templates across all presets")
+    p_scaffold.add_argument("--dry-run", action="store_true", help="preview without writing files")
+    p_scaffold.add_argument("--no-register", action="store_true", help="create file but skip registry entry")
+    p_scaffold.set_defaults(func=cmd_scaffold)
 
     # --- init
     p_init = sub.add_parser("init", help="Scaffold a new REGISTRY.yaml from a preset")

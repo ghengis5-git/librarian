@@ -664,19 +664,28 @@ cross-references between templates are internally consistent.
   (empty registry, all templates satisfied, unknown preset)
 - Target: ~30 tests
 
-### G.4 — Custom templates & polish (1 session)
+### G.4 — Custom templates, catalog page & polish (1–2 sessions)
 
 **Deliverables:**
 - Custom template directory support (`custom_templates_dir` config field)
 - Template override: project template beats built-in when IDs collide
 - `scaffold --template` tab-completion helper (outputs valid IDs)
+- **Template Catalog page** (`templates.html`) in the static site:
+  - Card grid showing all templates available for the active preset
+  - Cards display: template name, description, section count, tags, cross-refs
+  - Filter by source directory (universal / preset / security / compliance)
+  - Filter by compliance conditional (HIPAA, ISO 27001, DoD 5200, etc.)
+  - Preset switcher to browse other preset inventories
+  - Click-to-expand: full section list and rendered preview
+  - Cross-ref links between template cards
+  - Added to sidebar nav and dashboard overlay nav
 - Settings page: template browser section — shows available templates,
   lets operator preview sections before scaffolding
 - Scaffold command prints "recommended companions" after creating a doc
 - Update SKILL.md with template guidance
 - Update README.md with template examples
-- Full regression: all existing 329 tests pass + ~20 new tests
-- Target: ~20 new tests
+- Full regression: all existing 469 tests pass + ~30 new tests
+- Target: ~30 new tests
 
 ### Total estimated new tests: ~136
 ### Total test target: ~465

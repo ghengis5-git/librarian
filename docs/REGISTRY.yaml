@@ -446,11 +446,42 @@ documents:
   - planning
   - governance
   - phase-g
+- filename: security-review-20260413-V1.0.md
+  path: docs/security-review-20260413-V1.0.md
+  title: Security Review — Librarian v0.7.0
+  description: Comprehensive security audit of the full Librarian codebase. Covers XSS
+    in generated HTML, evidence integrity limitations, path traversal, template engine
+    safety, YAML deserialization, and operation log integrity. Includes prioritized
+    remediation plan.
+  format: md
+  version: '1.0'
+  date: '2026-04-13'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements: []
+  cross_references:
+  - doc: librarian-architecture-20260411-V1.0.md
+    sections:
+    - Security model and threat boundaries
+    status: pending
+    note: Architecture doc should reference security review findings
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - governance
+  - report
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 17
-  active: 14
+  total_documents: 18
+  active: 15
   draft: 1
   superseded: 2
   not_in_repo: 0

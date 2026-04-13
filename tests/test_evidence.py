@@ -15,9 +15,13 @@ from librarian.evidence import (
     generate_evidence,
     write_evidence,
     verify_evidence,
+    SigningError,
     _git_commit_hash,
     _git_branch,
     _git_is_dirty,
+    _git_signing_configured,
+    _git_verify_commit,
+    _require_signing,
 )
 from librarian.registry import Registry
 
@@ -178,7 +182,18 @@ class TestGenerateEvidence:
 
     def test_generator_version(self, evidence_registry: Registry, evidence_repo: Path) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
-        assert pack.generator_version == "0.3.0"
+        assert pack.generator_version == "0.7.0"
+
+    def test_default_no_signature(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+        """Default (off) evidence_signing produces no signature block."""
+        pack = generate_evidence(evidence_registry, evidence_repo)
+        assert pack.signature == {}
+        d = pack.to_dict()
+        assert "signature" not in d
+
+    def test_signing_off_explicit(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+        pack = generate_evidence(evidence_registry, evidence_repo, evidence_signing="off")
+        assert pack.signature == {}
 
 
 # ------------------------------------------------------------------ write_evidence
@@ -238,3 +253,108 @@ class TestVerifyEvidence:
 
         result = verify_evidence(pack_path, evidence_registry, evidence_repo)
         assert result["drift_detected"] is True
+
+    def test_verify_returns_signature_valid_none_when_unsigned(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
+        pack = generate_evidence(evidence_registry, evidence_repo)
+        pack_path = tmp_path / "evidence.json"
+        write_evidence(pack, pack_path)
+        result = verify_evidence(pack_path, evidence_registry, evidence_repo)
+        assert result["signature_valid"] is None
+
+
+# ------------------------------------------------------------------ signing
+
+
+class TestSigningConfig:
+    def test_signing_configured_non_git(self, tmp_path: Path) -> None:
+        """Non-git directory returns empty signing config."""
+        result = _git_signing_configured(tmp_path)
+        assert result == {}
+
+    def test_verify_commit_non_git(self, tmp_path: Path) -> None:
+        result = _git_verify_commit(tmp_path, "abc123")
+        assert result["signed"] is False
+
+    def test_verify_commit_empty_hash(self, tmp_path: Path) -> None:
+        result = _git_verify_commit(tmp_path, "")
+        assert result["signed"] is False
+        assert "no commit hash" in result["reason"]
+
+    def test_require_signing_fails_without_config(self, tmp_path: Path) -> None:
+        """require_signing raises SigningError when gpgsign is not enabled."""
+        with pytest.raises(SigningError, match="not enabled"):
+            _require_signing(tmp_path, "gpg")
+
+    def test_signing_error_gpg_without_config(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
+        """generate_evidence with signing='gpg' fails in non-git repo."""
+        with pytest.raises(SigningError):
+            generate_evidence(evidence_registry, evidence_repo, evidence_signing="gpg")
+
+    def test_signing_error_ssh_without_config(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
+        with pytest.raises(SigningError):
+            generate_evidence(evidence_registry, evidence_repo, evidence_signing="ssh")
+
+    @patch("librarian.evidence._git_signing_configured")
+    @patch("librarian.evidence._git_verify_commit")
+    @patch("librarian.evidence._git_commit_hash")
+    def test_signed_pack_has_signature_block(
+        self, mock_commit, mock_verify, mock_config,
+        evidence_registry, evidence_repo,
+    ) -> None:
+        """When signing is configured and HEAD is signed, pack includes signature."""
+        mock_config.return_value = {
+            "commit.gpgsign": "true",
+            "gpg.format": "openpgp",
+            "user.signingkey": "ABCD1234",
+        }
+        mock_commit.return_value = "abc123def456"
+        mock_verify.return_value = {
+            "signed": True,
+            "status": "G",
+            "status_description": "good signature",
+            "signer": "Test User <test@example.com>",
+            "key_id": "ABCD1234",
+            "trust_model": "gpg",
+            "commit": "abc123def456",
+        }
+        pack = generate_evidence(evidence_registry, evidence_repo, evidence_signing="gpg")
+        assert pack.signature["signed"] is True
+        assert pack.signature["signer"] == "Test User <test@example.com>"
+        d = pack.to_dict()
+        assert "signature" in d
+        assert d["signature"]["status"] == "G"
+
+    @patch("librarian.evidence._git_signing_configured")
+    @patch("librarian.evidence._git_verify_commit")
+    @patch("librarian.evidence._git_commit_hash")
+    def test_ssh_signing_with_gpg_format_raises(
+        self, mock_commit, mock_verify, mock_config,
+        evidence_registry, evidence_repo,
+    ) -> None:
+        """ssh mode with gpg.format=openpgp raises SigningError."""
+        mock_config.return_value = {
+            "commit.gpgsign": "true",
+            "gpg.format": "openpgp",
+        }
+        with pytest.raises(SigningError, match="gpg.format is 'openpgp'"):
+            generate_evidence(evidence_registry, evidence_repo, evidence_signing="ssh")
+
+    @patch("librarian.evidence._git_signing_configured")
+    @patch("librarian.evidence._git_verify_commit")
+    @patch("librarian.evidence._git_commit_hash")
+    def test_unsigned_commit_raises(
+        self, mock_commit, mock_verify, mock_config,
+        evidence_registry, evidence_repo,
+    ) -> None:
+        """Signing enabled but HEAD not signed raises SigningError."""
+        mock_config.return_value = {"commit.gpgsign": "true", "gpg.format": "openpgp"}
+        mock_commit.return_value = "abc123"
+        mock_verify.return_value = {"signed": False, "reason": "commit is not signed"}
+        with pytest.raises(SigningError, match="not signed"):
+            generate_evidence(evidence_registry, evidence_repo, evidence_signing="gpg")

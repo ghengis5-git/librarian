@@ -110,9 +110,10 @@ class Manifest:
 
 def _hash_file(path: Path) -> FileHash:
     """Compute SHA-256 of a file. Returns FileHash with exists=False if missing."""
-    if not path.is_file():
+    try:
+        data = path.read_bytes()
+    except (FileNotFoundError, PermissionError, IsADirectoryError):
         return FileHash(filename=path.name, sha256="", size_bytes=0, exists=False)
-    data = path.read_bytes()
     h = hashlib.sha256(data).hexdigest()
     return FileHash(filename=path.name, sha256=h, size_bytes=len(data), exists=True)
 
@@ -131,7 +132,12 @@ def _resolve_file_path(
     # Explicit path in registry entry
     explicit = doc_entry.get("path")
     if explicit:
-        candidate = repo_root / explicit
+        candidate = (repo_root / explicit).resolve()
+        # Ensure resolved path is within the repo root (prevent traversal)
+        try:
+            candidate.relative_to(repo_root.resolve())
+        except ValueError:
+            return None
         if candidate.is_file():
             return candidate
 
