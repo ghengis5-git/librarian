@@ -21,7 +21,7 @@ project_config:
     - registry.schema.yaml
     - project_config.minimal.yaml
     - project_config.full.yaml
-    - project_config.prism.yaml
+    - project_config.example.yaml
   default_author: Chris Kahn
   default_classification: PERSONAL / INTERNAL USE ONLY
   classification_levels:
@@ -78,8 +78,7 @@ documents:
   path: skill/SKILL.md
   title: Document Librarian Skill Definition
   description: Canonical skill definition for the project-agnostic document librarian.
-    Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed
-    and a Getting Started section added.
+    Includes Getting Started section and generic project_config schema.
   format: md
   version: '1.0'
   date: '2026-04-11'
@@ -273,12 +272,12 @@ documents:
   tags:
   - example
   - phase-b
-- filename: project_config.prism.yaml
-  path: examples/project_config.prism.yaml
-  title: PRISM Config Reference
-  description: Real-world project_config from Project PRISM (the first librarian consumer).
-    Shows a production configuration with custom classification levels, extended tags
-    taxonomy, and multi-prefix git commit conventions.
+- filename: project_config.example.yaml
+  path: examples/project_config.example.yaml
+  title: Example Config Reference
+  description: Real-world project_config example showing a production configuration
+    with custom classification levels, extended tags taxonomy, and multi-prefix git
+    commit conventions.
   format: yaml
   version: '1.0'
   date: '2026-04-11'
@@ -329,8 +328,8 @@ documents:
   - phase-b
 - filename: librarian-buildout-plan-20260411-V1.2.md
   title: Doc Librarian Buildout Plan
-  description: Six-phase roadmap (A-F) to evolve librarian from PRISM skill to standalone
-    open-source tool
+  description: Six-phase roadmap (A-F) to evolve librarian into a standalone open-source
+    tool
   status: active
   version: V1.2
   created: '2026-04-12'

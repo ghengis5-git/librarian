@@ -458,4 +458,4 @@ When running in Claude Chat, the librarian operates under the constraints descri
 
 | Version | Date | Notes |
 |---|---|---|
-| V1.0 | 2026-04-11 | Initial standalone librarian skill. Ported from `prism-librarian` — removed PRISM-specific defaults, genericized examples, added "Getting Started" section and generic `project_config` schema. |
+| V1.0 | 2026-04-11 | Initial standalone librarian skill. Genericized examples, added "Getting Started" section and generic `project_config` schema. |

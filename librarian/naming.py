@@ -36,7 +36,7 @@ CANONICAL_RE = re.compile(
     r"\.(?P<ext>[a-z0-9]+)$"
 )
 
-# Forbidden stem tokens (hyphen-split). Inherited from PRISM hook.
+# Forbidden stem tokens (hyphen-split). Generic names that violate naming convention.
 FORBIDDEN_WORDS = frozenset({"file", "download", "output", "document"})
 
 

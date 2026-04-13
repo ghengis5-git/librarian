@@ -147,7 +147,7 @@ python -m librarian dashboard [--registry PATH] [-o output.html] [--template PAT
 | Manifest JSON (10 docs) | ~8KB |
 | **Total** | **~116KB** |
 
-Well within the 10MB budget. Even at PRISM scale (40 docs + full-text corpus), estimate ~500KB.
+Well within the 10MB budget. Even at scale (40 docs + full-text corpus), estimate ~500KB.
 
 ## Out of Scope (Phase D)
 

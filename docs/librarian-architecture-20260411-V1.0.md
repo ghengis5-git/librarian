@@ -24,7 +24,7 @@ This document describes the system as of v0.2.0 (Phase B complete).
 
 **Deterministic output.** Manifests use sorted keys, sorted hashes, and sorted edges. Two runs against the same registry and filesystem produce identical JSON (modulo the `generated_at` timestamp). This enables meaningful diffs between manifest versions.
 
-**Project-agnostic core.** The `librarian` package has zero project-specific logic. All project customization comes from the `project_config` block in REGISTRY.yaml. When `project_config` is absent, built-in defaults (matching PRISM's original configuration) are used so the librarian works standalone for ad hoc use.
+**Project-agnostic core.** The `librarian` package has zero project-specific logic. All project customization comes from the `project_config` block in REGISTRY.yaml. When `project_config` is absent, built-in defaults are used so the librarian works standalone for ad hoc use.
 
 **Convention over configuration.** The naming convention (`descriptive-name-YYYYMMDD-VX.Y.ext`) is hardcoded in the regex. Projects can customize the separator, case, forbidden words, and exempt files — but not the structural pattern. This is intentional: the pattern is the product's identity.
 
@@ -129,7 +129,7 @@ When computing SHA-256 hashes, the manifest generator needs to locate each regis
 The librarian is installed as an editable package (`pip install -e ~/projects/librarian`) in each consuming project's venv. The consuming project provides:
 
 1. A `project_config` block in its REGISTRY.yaml
-2. A thin skill wrapper (e.g., PRISM's `skills/prism-librarian/SKILL.md`) that documents CLI commands and project-specific governance rules
+2. A thin skill wrapper (e.g., `skills/doc-librarian/SKILL.md`) that documents CLI commands and project-specific governance rules
 
 The skill wrapper contains a condensed governance protocol (naming rules, version bump decision tree, cross-reference cascade) and delegates mechanical operations to the CLI. This split keeps the governance knowledge in the skill file (read by Claude) and the implementation in the Python package (run by the operator).
 

@@ -7,53 +7,53 @@
 <style>
 /* ── Design Tokens ── */
 :root {
-  --bg: #f8f7f4;
+  --bg: #fafaf8;
   --surface: #ffffff;
-  --surface-alt: #f0eeea;
-  --border: #e2dfd8;
-  --border-focus: #8c7e6a;
-  --text-primary: #2c2825;
-  --text-secondary: #6b6560;
-  --text-muted: #9c9590;
-  --accent: #3d6b5e;
-  --accent-light: #e8f0ed;
-  --accent-hover: #2d5046;
-  --status-active: #3d6b5e;
-  --status-active-bg: #e8f0ed;
-  --status-draft: #8b6914;
+  --surface-alt: #f3f2ee;
+  --border: #e4e1da;
+  --border-focus: #ccc8be;
+  --text-primary: #1a1816;
+  --text-secondary: #555049;
+  --text-muted: #908a82;
+  --accent: #2d6a5a;
+  --accent-light: #e6f0ec;
+  --accent-hover: #1e4f42;
+  --status-active: #2d6a5a;
+  --status-active-bg: #e6f0ec;
+  --status-draft: #7d5f0f;
   --status-draft-bg: #faf3e0;
-  --status-superseded: #8c7e6a;
+  --status-superseded: #7a7168;
   --status-superseded-bg: #f0eeea;
-  --status-warn: #b8860b;
+  --status-warn: #a67208;
   --status-warn-bg: #fef9e7;
   --status-error: #a63d40;
   --status-error-bg: #fdecea;
-  --radius: 6px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
-  --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
-  --sans: "Source Sans 3", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --transition: 150ms ease;
+  --radius: 5px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.03);
+  --mono: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
+  --sans: "Source Sans 3", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --transition: 180ms ease;
 }
 
 [data-theme="dark"] {
-  --bg: #1a1917;
-  --surface: #242320;
-  --surface-alt: #2e2d29;
-  --border: #3d3b36;
+  --bg: #18171a;
+  --surface: #222124;
+  --surface-alt: #2c2b2e;
+  --border: #3a3840;
   --border-focus: #8c7e6a;
-  --text-primary: #e8e4dd;
-  --text-secondary: #a09890;
-  --text-muted: #706860;
-  --accent: #6aab97;
-  --accent-light: #2a3d35;
-  --accent-hover: #8cc4b2;
-  --status-active: #6aab97;
-  --status-active-bg: #2a3d35;
+  --text-primary: #e6e2dc;
+  --text-secondary: #9e9890;
+  --text-muted: #6e6860;
+  --accent: #5fa892;
+  --accent-light: #253530;
+  --accent-hover: #80c4ae;
+  --status-active: #5fa892;
+  --status-active-bg: #253530;
   --status-draft: #c4a33a;
   --status-draft-bg: #3a3320;
-  --status-superseded: #8c7e6a;
-  --status-superseded-bg: #2e2d29;
+  --status-superseded: #7a7168;
+  --status-superseded-bg: #2c2b2e;
   --status-warn: #c4a33a;
   --status-warn-bg: #3a3320;
   --status-error: #d06b6e;
@@ -574,6 +574,12 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
     },
     {
       "sections": [],
+      "source": "project_config.example.yaml",
+      "status": "supplement",
+      "target": "project_config.schema.yaml"
+    },
+    {
+      "sections": [],
       "source": "project_config.full.yaml",
       "status": "supplement",
       "target": "project_config.schema.yaml"
@@ -581,12 +587,6 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
     {
       "sections": [],
       "source": "project_config.minimal.yaml",
-      "status": "supplement",
-      "target": "project_config.schema.yaml"
-    },
-    {
-      "sections": [],
-      "source": "project_config.prism.yaml",
       "status": "supplement",
       "target": "project_config.schema.yaml"
     },
@@ -613,26 +613,32 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
     {
       "exists": true,
       "filename": "SKILL.md",
-      "sha256": "0c4e4baea1fcac5bf87981a16dfb35880c623ee49483da308c2b6c3881f3109f",
-      "size_bytes": 29452
+      "sha256": "fdfc1a67c951a7c472d3bb38bb4d4a15801b3c5451abf03425af6d16ad3d5117",
+      "size_bytes": 29385
     },
     {
       "exists": true,
       "filename": "librarian-architecture-20260411-V1.0.md",
-      "sha256": "448e8a8e2a9144b12da9f58a59de0b70e07cfb7244b1d8b0a728c78d15a6bd22",
-      "size_bytes": 9281
+      "sha256": "4468ccd114c18c9d69557ba35f80ddc0d63886beeb4db0e948c8762521693047",
+      "size_bytes": 9229
     },
     {
       "exists": true,
       "filename": "librarian-buildout-plan-20260411-V1.2.md",
-      "sha256": "3f60d356bf3b3409f28f1571ef4b3c8729175c861dbeb671ac8fcd6afc25c171",
-      "size_bytes": 24322
+      "sha256": "4df9eef97cbc9e2a34653fffab635b41d253ef847a88728433e26a436a521bf0",
+      "size_bytes": 23578
     },
     {
       "exists": true,
       "filename": "manifest.schema.json",
       "sha256": "50e3a3d1e37a9ba83e89a5c71cfebe4cabee67f469926b7f504c94458860a76d",
       "size_bytes": 6038
+    },
+    {
+      "exists": true,
+      "filename": "project_config.example.yaml",
+      "sha256": "99f9f77c81e2fff313bf0147387ecb43479e4a9fe5ac0a11af8441421536a428",
+      "size_bytes": 2047
     },
     {
       "exists": true,
@@ -648,15 +654,9 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
     },
     {
       "exists": true,
-      "filename": "project_config.prism.yaml",
-      "sha256": "ec73fb3b563b8aed01dcb17021b838aeb1ebc768f0d9e27de71d7b12d118d96f",
-      "size_bytes": 2015
-    },
-    {
-      "exists": true,
       "filename": "project_config.schema.yaml",
-      "sha256": "39b5f884256099e4fb648cc8b61dc17d667223ac278a3098d1d1711c345d3b88",
-      "size_bytes": 5332
+      "sha256": "3f5553fe056f4072bbdce42e30d3fd91741e3a78cf4150c241d4d7e7ee223ab8",
+      "size_bytes": 5329
     },
     {
       "exists": true,
@@ -665,12 +665,12 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
       "size_bytes": 7101
     }
   ],
-  "manifest_sha256": "11a836c932dd26635d6e3c597fabe4574ed05381eba6615455b1c5831c98b45f",
+  "manifest_sha256": "c503ddd6913e0a2095369c0151e33220b5fdc8b8896b6cced51bbd1046d94a95",
   "meta": {
-    "generated_at": "2026-04-12T11:25:07Z",
+    "generated_at": "2026-04-13T02:49:05Z",
     "generator_version": "0.2.0",
     "registry_path": "docs/REGISTRY.yaml",
-    "repo_root": "/sessions/epic-inspiring-johnson/mnt/librarian"
+    "repo_root": "/sessions/vibrant-adoring-wozniak/mnt/librarian"
   },
   "registry_snapshot": {
     "documents": [
@@ -679,7 +679,7 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
         "classification": "PERSONAL / INTERNAL USE ONLY",
         "cross_references": [],
         "date": "2026-04-11",
-        "description": "Canonical skill definition for the project-agnostic document librarian. Ported from prism-librarian on 2026-04-11 with PRISM-specific defaults removed and a Getting Started section added.",
+        "description": "Canonical skill definition for the project-agnostic document librarian. Includes Getting Started section and generic project_config schema.",
         "exemption_reason": "Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version suffix not applied.",
         "filename": "SKILL.md",
         "format": "md",
@@ -898,9 +898,9 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
         "classification": "PERSONAL / INTERNAL USE ONLY",
         "cross_references": [],
         "date": "2026-04-11",
-        "description": "Real-world project_config from Project PRISM (the first librarian consumer). Shows a production configuration with custom classification levels, extended tags taxonomy, and multi-prefix git commit conventions.",
+        "description": "Real-world project_config example showing a production configuration with custom classification levels, extended tags taxonomy, and multi-prefix git commit conventions.",
         "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
-        "filename": "project_config.prism.yaml",
+        "filename": "project_config.example.yaml",
         "format": "yaml",
         "infrastructure_exempt": true,
         "locations": {
@@ -909,7 +909,7 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
           "disk": true
         },
         "parent": null,
-        "path": "examples/project_config.prism.yaml",
+        "path": "examples/project_config.example.yaml",
         "status": "active",
         "superseded_by": null,
         "supersedes": null,
@@ -920,7 +920,7 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
           "example",
           "phase-b"
         ],
-        "title": "PRISM Config Reference",
+        "title": "Example Config Reference",
         "version": "1.0"
       },
       {
@@ -955,7 +955,7 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
         "author": "Chris Kahn",
         "classification": "PERSONAL / INTERNAL USE ONLY",
         "created": "2026-04-12",
-        "description": "Six-phase roadmap (A-F) to evolve librarian from PRISM skill to standalone open-source tool",
+        "description": "Six-phase roadmap (A-F) to evolve librarian into a standalone open-source tool",
         "filename": "librarian-buildout-plan-20260411-V1.2.md",
         "infrastructure_exempt": false,
         "path": "docs/librarian-buildout-plan-20260411-V1.2.md",
@@ -1007,7 +1007,7 @@ var Xr=function(e){if(!(this instanceof Xr))return new Xr(e);this.id="Thenable/1
           "registry.schema.yaml",
           "project_config.minimal.yaml",
           "project_config.full.yaml",
-          "project_config.prism.yaml"
+          "project_config.example.yaml"
         ],
         "separator": "-"
       },

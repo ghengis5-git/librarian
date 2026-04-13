@@ -7,4 +7,8 @@ __pycache__/
 dist/
 build/
 _site/
+_site_preview/
+_site_preview_output/
+site/
+site_output/
 operator/

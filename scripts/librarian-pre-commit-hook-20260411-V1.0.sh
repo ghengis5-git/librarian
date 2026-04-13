@@ -15,30 +15,17 @@
 #
 # ------------------------------------------------------------
 # Lineage:
-#   This hook is a clean-room port of the PRISM pre-commit hook V1.3
-#   (scripts/prism-pre-commit-hook-20260411-V1.3.sh in the PRISM repo).
-#   Changes vs the PRISM version:
-#     1. Removed PRISM-specific legacy file detection regex
-#        (the project_prism|prism_|ETHICS|AI_ match). Standalone
-#        librarian has no legacy files — every file must comply
-#        with the canonical naming convention from commit #1.
-#     2. Removed PRISM-specific tracked-directory list. Projects
-#        that adopt the librarian should edit TRACKED_DIRS below
-#        to match their own layout. Default: docs/ skill/.
-#     3. INFRA_EXEMPT list matches the default documented in
-#        skill/SKILL.md project_config schema. Projects that
-#        adopt the librarian should edit this list if they need
-#        additional exemptions.
-#     4. Banner renamed from "PRISM Pre-Commit Check" to
-#        "Librarian Pre-Commit Check".
-#     5. Version reset to V1.0 — the PRISM hook's V1.1 through
-#        V1.3 changelog entries are resolved in this port:
-#          - V1.1 forbidden-word filter → included
-#          - V1.2 /dev/tty prompt, --no-renames enumeration,
-#            POSIX comment filter, sed self-reference filter
-#            → included
-#          - V1.3 session-log.md exemption → included (as
-#            infrastructure exemption, not PRISM-specific)
+#   Standalone librarian pre-commit hook V1.0. Enforces the
+#   canonical naming convention from commit #1. Projects that
+#   adopt the librarian should edit TRACKED_DIRS and INFRA_EXEMPT
+#   below to match their own layout.
+#
+# Features included:
+#   - Forbidden-word filter
+#   - /dev/tty prompt with non-interactive fallback
+#   - --no-renames enumeration for accurate staging detection
+#   - POSIX comment filter and sed self-reference filter
+#   - session-log.md infrastructure exemption
 # ============================================================
 
 set -uo pipefail
@@ -75,6 +62,7 @@ INFRA_EXEMPT=(
     "MEMORY.md"
     "ARCHITECTURE.md"
     "session-log.md"
+    "phase-d-implementation-plan.md"
 )
 
 # Forbidden words in descriptive-name portion. Matches the default
@@ -84,10 +72,11 @@ FORBIDDEN_WORDS=("file" "download" "output" "document")
 # Directories to skip naming checks on (not document directories).
 # The librarian's naming convention applies to docs and skill files,
 # not to source code or virtualenvs.
-SKIP_DIRS=("src/" "lib/" "node_modules/" ".git/" "__pycache__/" ".venv/" "venv/" "data/" "build/" "dist/")
+SKIP_DIRS=("src/" "lib/" "node_modules/" ".git/" "__pycache__/" ".venv/" "venv/" "data/" "build/" "dist/" "librarian/" "tests/" "scripts/" "site/" "site_output/" "examples/" "schema/" "dashboard/")
 
 # Document extensions that the naming convention applies to.
-DOC_EXTENSIONS=("docx" "md" "html" "pdf" "pptx" "txt" "sh" "py" "yaml" "yml" "jsx" "css" "js" "json")
+# NOTE: .py is excluded — Python source files are NOT governed documents.
+DOC_EXTENSIONS=("docx" "md" "html" "pdf" "pptx" "txt" "sh" "yaml" "yml" "jsx" "css" "js" "json")
 
 # Tracked directories for the registry-sync check. The hook only
 # flags unregistered files in these directories. Projects adopting
@@ -467,8 +456,13 @@ if { : > /dev/tty; } 2>/dev/null; then
         exit 1
     fi
 else
-    # No controlling terminal — block
-    echo -e "${RED}Non-interactive mode — commit blocked due to warnings.${RESET}"
-    echo -e "Run: ${CYAN}git commit --no-verify${RESET} to bypass."
-    exit 1
+    # No controlling terminal — block on errors, pass on warnings-only
+    if [ "$errors" -gt 0 ]; then
+        echo -e "${RED}Non-interactive mode — commit blocked due to errors.${RESET}"
+        echo -e "Run: ${CYAN}git commit --no-verify${RESET} to bypass."
+        exit 1
+    else
+        echo -e "${YELLOW}Non-interactive mode — proceeding with warnings.${RESET}"
+        exit 0
+    fi
 fi

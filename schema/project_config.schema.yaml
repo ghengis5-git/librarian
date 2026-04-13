@@ -18,7 +18,7 @@ project_config:
     project_name:
       type: string
       description: Human-readable project name.  Displayed in audit output.
-      example: "Project PRISM"
+      example: "My Project"
 
     # -------------------------------------------------------- naming
     naming_convention:

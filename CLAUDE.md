@@ -3,7 +3,7 @@
 ## Project Overview
 Standalone document governance tool. Enforces naming conventions, tracks versions,
 manages cross-references, produces tamper-evident manifests and audit trails.
-Project-agnostic by design — PRISM (`~/projects/prism`) is the first consumer.
+Project-agnostic by design — works with any project that supplies a REGISTRY.yaml.
 
 **Solo development — local only.**
 
@@ -149,17 +149,14 @@ Commands:
 ---
 
 ## Buildout Plan
-The authoritative buildout plan lives in PRISM at:
-`~/projects/prism/docs/librarian-buildout-plan-20260411-V1.2.md`
-
-A local copy is at `docs/librarian-buildout-plan-20260411-V1.2.md`.
+The authoritative buildout plan is at `docs/librarian-buildout-plan-20260411-V1.2.md`.
 
 ---
 
 ## Document Governance — Self-Governed
 The librarian governs its own docs. `docs/REGISTRY.yaml` is the registry.
 The `project_config` block in that file contains the librarian-specific rules.
-The `prism-doc-librarian` skill (or equivalent) applies to this repo too.
+The `doc-librarian` skill applies to this repo too.
 
 ### Naming Convention
 `descriptive-name-YYYYMMDD-VX.Y.ext`
@@ -181,18 +178,6 @@ git -c user.name="Chris Kahn" -c user.email="research+ai@brokenwire.org" commit 
 - `test:` — test additions or fixes
 - `fix:` — bug fixes
 - `infra:` — build tooling, CI, pre-commit hooks
-
----
-
-## Dependency on PRISM
-PRISM is a consumer of this project, not a dependency. The librarian must never
-import anything from PRISM. PRISM installs the librarian as an editable package:
-`pip install -e ~/projects/librarian`
-
-When testing the librarian against PRISM's registry:
-```bash
-python -m librarian --registry ~/projects/prism/docs/REGISTRY.yaml audit
-```
 
 ---
 

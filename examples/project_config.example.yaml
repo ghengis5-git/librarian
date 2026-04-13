@@ -1,8 +1,9 @@
-# PRISM project_config — real-world reference from the first librarian consumer.
-# This is the exact configuration used by Project PRISM (as of Session 28).
+# Example project_config — real-world reference configuration.
+# Shows a production setup with custom classification levels, extended tags
+# taxonomy, and multi-prefix git commit conventions.
 
 project_config:
-  project_name: "Project PRISM"
+  project_name: "My Project"
   naming_convention: "descriptive-name-YYYYMMDD-VX.Y.ext"
   naming_rules:
     separator: "-"
