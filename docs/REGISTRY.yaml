@@ -42,6 +42,7 @@ project_config:
     - phase-d
     - phase-e
     - phase-f
+    - phase-g
     type:
     - skill-definition
     - technical-spec
@@ -410,11 +411,46 @@ documents:
   tags:
   - example
   - phase-b
+- filename: phase-g-templates-and-recommendations-20260412-V1.0.md
+  path: docs/phase-g-templates-and-recommendations-20260412-V1.0.md
+  title: Phase G — Document Templates & Recommendations Engine
+  description: Phase plan for adding document scaffolding templates (per preset) and
+    a deterministic recommendations engine that detects document gaps in a project registry.
+  format: md
+  version: '1.0'
+  date: '2026-04-12'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: librarian-buildout-plan-20260411-V1.2.md
+  supplements: []
+  cross_references:
+  - doc: librarian-architecture-20260411-V1.0.md
+    sections:
+    - Package structure — needs update for templates module
+    status: pending
+    note: Architecture doc needs a templates section after G.1 implementation
+  - doc: librarian-buildout-plan-20260411-V1.2.md
+    sections:
+    - Execution plan — Phase G extends the A-F roadmap
+    status: pending
+    note: Buildout plan should reference Phase G once implementation begins
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - planning
+  - governance
+  - phase-g
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 16
-  active: 13
+  total_documents: 17
+  active: 14
   draft: 1
   superseded: 2
   not_in_repo: 0
