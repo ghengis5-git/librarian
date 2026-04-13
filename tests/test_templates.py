@@ -1186,6 +1186,7 @@ EXPECTED_SECURITY_IDS = {
     "incident-response-plan",
     "access-control-matrix",
     "data-classification-policy",
+    "bug-bounty-report",
 }
 
 EXPECTED_COMPLIANCE_IDS = {
@@ -1204,7 +1205,7 @@ class TestSecurityTemplates:
     def test_security_template_count(self):
         templates = discover_templates(preset="software")
         found = {tid for tid, t in templates.items() if t.preset == "security"}
-        assert len(found) == 7
+        assert len(found) == 8
 
     def test_security_template_ids(self):
         templates = discover_templates(preset="software")
@@ -1333,6 +1334,54 @@ class TestComplianceTemplates:
         rendered_on = t.render(ctx_on)
         rendered_off = t.render(ctx_off)
         assert len(rendered_on) > len(rendered_off)
+
+    def test_bug_bounty_report_sections(self):
+        """bug-bounty-report has all required sections for researcher submissions."""
+        templates = discover_templates(preset="software")
+        t = templates["bug-bounty-report"]
+        assert len(t.sections) >= 9
+        required = {"Vulnerability Summary", "Vulnerability Classification",
+                     "Steps to Reproduce", "Proof of Concept", "Impact Assessment"}
+        assert required.issubset(set(t.sections)), f"Missing sections: {required - set(t.sections)}"
+
+    def test_bug_bounty_report_cvss_and_cwe(self):
+        """bug-bounty-report includes CVSS 3.1 scoring and CWE classification."""
+        templates = discover_templates(preset="software")
+        t = templates["bug-bounty-report"]
+        rendered = t.render(build_context(overrides={"title": "Test"}))
+        assert "CVSS 3.1" in rendered
+        assert "CWE" in rendered
+        assert "Attack Vector" in rendered
+        assert "CVSS Vector" in rendered
+
+    def test_bug_bounty_report_dod5200_conditional(self):
+        """bug-bounty-report expands with DoD 5200 classification marking."""
+        templates = discover_templates(preset="software")
+        t = templates["bug-bounty-report"]
+        ctx_on = build_context(
+            project_config={"compliance_standards": ["dod_5200"]},
+            overrides={"title": "Test"},
+        )
+        ctx_off = build_context(overrides={"title": "Test"})
+        rendered_on = t.render(ctx_on)
+        rendered_off = t.render(ctx_off)
+        assert "Classification" in rendered_on
+        assert len(rendered_on) > len(rendered_off)
+
+    def test_bug_bounty_report_tags(self):
+        """bug-bounty-report has security and bug-bounty tags."""
+        templates = discover_templates(preset="software")
+        t = templates["bug-bounty-report"]
+        assert "security" in t.suggested_tags
+        assert "bug-bounty" in t.suggested_tags
+
+    def test_bug_bounty_report_cross_refs_resolve(self):
+        """bug-bounty-report cross-refs resolve within security cross-cutting set."""
+        templates = discover_templates(preset="software")
+        t = templates["bug-bounty-report"]
+        cc_ids = {tid for tid, tmpl in templates.items() if tmpl.preset in ("security", "compliance")}
+        for xref in t.typical_cross_refs:
+            assert xref in cc_ids, f"xref '{xref}' not in cross-cutting set"
 
 
 class TestCrossCuttingResolution:

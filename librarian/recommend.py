@@ -98,6 +98,82 @@ COMPLIANCE_TEMPLATES: dict[str, list[str]] = {
         "sox-controls-matrix", "audit-readiness-checklist",
         "compliance-review", "vendor-risk-assessment",
     ],
+    "gdpr": [
+        "gdpr-dpia", "data-classification-policy",
+        "vendor-risk-assessment", "access-control-matrix",
+        "incident-response-plan",
+    ],
+    "sox": [
+        "sox-controls-matrix", "audit-readiness-checklist",
+        "access-control-matrix", "vendor-risk-assessment",
+    ],
+    "pci_dss": [
+        "pci-dss-checklist", "vulnerability-assessment",
+        "penetration-test-report", "access-control-matrix",
+        "incident-response-plan",
+    ],
+    "soc2": [
+        "security-architecture-review", "access-control-matrix",
+        "vendor-risk-assessment", "incident-response-plan",
+        "audit-readiness-checklist",
+    ],
+    "ccpa": [
+        "gdpr-dpia", "data-classification-policy",
+        "vendor-risk-assessment", "incident-response-plan",
+    ],
+    "nist_csf": [
+        "threat-model", "security-architecture-review",
+        "incident-response-plan", "access-control-matrix",
+        "vulnerability-assessment", "data-classification-policy",
+    ],
+    "fda_21cfr11": [
+        "audit-readiness-checklist", "access-control-matrix",
+        "data-classification-policy", "vendor-risk-assessment",
+    ],
+    "cmmc": [
+        "security-plan", "access-control-matrix",
+        "incident-response-plan", "vulnerability-assessment",
+        "threat-model", "data-classification-policy",
+    ],
+    "ferpa": [
+        "data-classification-policy", "access-control-matrix",
+        "incident-response-plan",
+    ],
+    "fedramp": [
+        "security-plan", "security-architecture-review",
+        "access-control-matrix", "incident-response-plan",
+        "vulnerability-assessment", "audit-readiness-checklist",
+    ],
+    "gxp": [
+        "audit-readiness-checklist", "vendor-risk-assessment",
+        "data-classification-policy", "access-control-matrix",
+    ],
+    "itar_ear": [
+        "data-classification-policy", "access-control-matrix",
+        "security-plan", "vendor-risk-assessment",
+    ],
+    "nerc_cip": [
+        "security-plan", "incident-response-plan",
+        "access-control-matrix", "vulnerability-assessment",
+        "audit-readiness-checklist",
+    ],
+    "nis2": [
+        "incident-response-plan", "security-architecture-review",
+        "threat-model", "vendor-risk-assessment",
+        "audit-readiness-checklist",
+    ],
+    "dora": [
+        "incident-response-plan", "vendor-risk-assessment",
+        "audit-readiness-checklist", "security-architecture-review",
+    ],
+    "pipeda": [
+        "gdpr-dpia", "data-classification-policy",
+        "incident-response-plan", "vendor-risk-assessment",
+    ],
+    "lgpd": [
+        "gdpr-dpia", "data-classification-policy",
+        "incident-response-plan", "access-control-matrix",
+    ],
 }
 
 

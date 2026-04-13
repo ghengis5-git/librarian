@@ -266,30 +266,26 @@ class TestPageContent:
         assert "ELEMENTS" in html
 
 
-# ─── Dashboard Inclusion ─────────────────────────────────────────────────────
+# ─── Dashboard Removed From Site ─────────────────────────────────────────────
 
 
-class TestDashboardInclusion:
-    def test_dashboard_included_when_provided(self, tmp_path: Path, sample_manifest: Manifest):
-        out = tmp_path / "site_out"
-        dash = tmp_path / "dash.html"
-        dash.write_text("<html><body>Dashboard</body></html>")
-        generate_site(sample_manifest, out, dashboard_path=dash)
-        assert (out / "dashboard.html").is_file()
-        assert "Dashboard" in (out / "dashboard.html").read_text()
-
-    def test_nav_includes_dashboard_link(self, tmp_path: Path, sample_manifest: Manifest):
-        out = tmp_path / "site_out"
-        dash = tmp_path / "dash.html"
-        dash.write_text("<html><body>Dashboard</body></html>")
-        generate_site(sample_manifest, out, dashboard_path=dash)
-        html = (out / "index.html").read_text()
-        assert "dashboard.html" in html
-
-    def test_no_dashboard_when_not_provided(self, tmp_path: Path, sample_manifest: Manifest):
+class TestDashboardNotInSite:
+    def test_no_dashboard_generated(self, tmp_path: Path, sample_manifest: Manifest):
         out = tmp_path / "site_out"
         generate_site(sample_manifest, out)
         assert not (out / "dashboard.html").is_file()
+
+    def test_nav_has_no_dashboard_link(self, tmp_path: Path, sample_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "index.html").read_text()
+        assert "dashboard.html" not in html
+
+    def test_nav_says_home_not_index(self, tmp_path: Path, sample_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(sample_manifest, out)
+        html = (out / "index.html").read_text()
+        assert ">Home</a>" in html
 
 
 # ─── Edge Cases ──────────────────────────────────────────────────────────────
@@ -330,7 +326,6 @@ class TestCLISite:
                 "--repo", str(temp_repo),
                 "site",
                 "-o", str(out),
-                "--no-dashboard",
             ],
             capture_output=True,
             text=True,
@@ -348,7 +343,6 @@ class TestCLISite:
                 "--repo", str(temp_repo),
                 "site",
                 "-o", str(out),
-                "--no-dashboard",
             ],
             capture_output=True,
             text=True,
@@ -414,10 +408,10 @@ class TestGroupByPath:
         groups = _group_by_path(SAMPLE_DOCS)
         assert "docs" in groups
         assert "specs" in groups
-        assert "." in groups
+        assert "/ (root)" in groups
         assert len(groups["docs"]) == 2
         assert len(groups["specs"]) == 1
-        assert len(groups["."]) == 1
+        assert len(groups["/ (root)"]) == 1
 
     def test_empty_list(self):
         groups = _group_by_path([])
@@ -510,6 +504,18 @@ class TestTreeDiagram:
         assert "data-folder" in html
         assert "scrollIntoView" in html
 
+    def test_folders_only_expands_collapsed_branches(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        """Folders Only should expand all collapsed branches so nested folders are visible."""
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "tree.html").read_text()
+        # Extract the toggleFoldersOnly function body
+        fn_start = html.index("function toggleFoldersOnly()")
+        fn_body = html[fn_start:fn_start + 1500]
+        # Must remove 'collapsed' from branches so nested folders show
+        assert "td-branch.collapsed" in fn_body
+        assert "classList.remove" in fn_body
+
 
 # ─── Sidebar in Pages ──────────────────────────────────────────────────────
 
@@ -542,7 +548,7 @@ class TestSidebar:
         html = (out / "index.html").read_text()
         assert 'data-group="status"' in html
         assert 'data-group="tag"' in html
-        assert 'data-group="path"' in html
+        assert 'data-group="tree"' in html
 
     def test_sidebar_tree_data_valid_json(self, tmp_path: Path, multi_doc_manifest: Manifest):
         out = tmp_path / "site_out"
@@ -872,8 +878,13 @@ class TestSettingsInteractivity:
 
     # ── compliance buttons ───────────────────────────────────────────
 
-    def test_all_six_compliance_buttons_present(self, settings_html: str):
-        standards = ["dod", "iso9001", "hipaa", "sec", "scientific", "legal"]
+    def test_all_compliance_buttons_present(self, settings_html: str):
+        standards = [
+            "dod", "iso9001", "hipaa", "sec", "scientific", "legal", "gdpr",
+            "iso27001", "sox", "pcidss", "soc2", "ccpa", "nist", "fda",
+            "cmmc", "ferpa", "fedramp", "gxp",
+            "itar", "nerccip", "nis2", "dora", "pipeda", "lgpd",
+        ]
         for std in standards:
             assert f'id="std-{std}"' in settings_html, f"Missing button: std-{std}"
             assert f"applyStandard('{std}')" in settings_html, (
@@ -886,7 +897,7 @@ class TestSettingsInteractivity:
         buttons = re.findall(
             r"<button[^>]*settings-compliance-btn[^>]*>", settings_html
         )
-        assert len(buttons) == 6
+        assert len(buttons) == 24
         for btn in buttons:
             assert 'type="button"' in btn, f"Missing type=button: {btn[:80]}"
 
@@ -933,7 +944,12 @@ class TestSettingsInteractivity:
             "metaOwner", "metaApprover", "metaReview", "metaDist", "metaRev",
             "retention", "cycle", "cls",
         ]
-        standards = ["dod", "iso9001", "hipaa", "sec", "scientific", "legal"]
+        standards = [
+            "dod", "iso9001", "hipaa", "sec", "scientific", "legal", "gdpr",
+            "iso27001", "sox", "pcidss", "soc2", "ccpa", "nist", "fda",
+            "cmmc", "ferpa", "fedramp", "gxp",
+            "itar", "nerccip", "nis2", "dora", "pipeda", "lgpd",
+        ]
         # Extract the STANDARDS block from a <script> tag
         match = re.search(
             r"var STANDARDS\s*=\s*\{(.+?)\n\};", settings_html, re.DOTALL
@@ -1430,18 +1446,15 @@ class TestIndexRecommendations:
 
 
 class TestDashboardOverlayTemplatesLink:
-    """Dashboard overlay nav includes Templates link."""
+    """Dashboard overlay nav includes Templates link when injected."""
 
     def test_dashboard_nav_has_templates_link(self, sample_manifest: Manifest, tmp_path: Path):
-        out = tmp_path / "site_out"
-        # Need dashboard for the overlay
+        from librarian.sitegen import _inject_dashboard_nav
         from librarian.dashboard import write_dashboard
-        dash_path = out / "dashboard.html"
-        out.mkdir(parents=True, exist_ok=True)
-        manifest = sample_manifest
-        write_dashboard(manifest, dash_path)
-        generate_site(manifest, out, dashboard_path=dash_path)
-        html = (out / "dashboard.html").read_text()
+        dash_path = tmp_path / "dashboard.html"
+        write_dashboard(sample_manifest, dash_path)
+        _inject_dashboard_nav(dash_path)
+        html = dash_path.read_text()
         assert 'href="templates.html"' in html
         assert ">Templates<" in html
 
@@ -1682,3 +1695,701 @@ class TestSecurityXSS:
             generate_site(manifest, out)
             tree_html = (out / "tree.html").read_text()
             assert "\\x27" not in tree_html
+
+
+class TestSecurityScriptBreakout:
+    """Tests for </script> injection in JSON data embedded in HTML."""
+
+    def test_json_safe_escapes_closing_script(self):
+        """_json_safe must escape </script> sequences."""
+        from librarian.sitegen import _json_safe
+        payload = {"name": 'evil</script><img onerror="alert(1)">'}
+        result = _json_safe(payload)
+        assert "</script>" not in result
+        assert r"<\/script>" in result
+
+    def test_json_safe_preserves_json_validity(self):
+        """_json_safe output must parse as valid JSON (JS is superset)."""
+        import json as json_mod
+        from librarian.sitegen import _json_safe
+        payload = {"title": 'test</script>more', "list": ["a</b>", "</script>"]}
+        result = _json_safe(payload)
+        # <\/ is valid in JSON string values
+        parsed = json_mod.loads(result)
+        assert parsed["title"] == 'test</script>more'
+        assert parsed["list"][1] == "</script>"
+
+    def test_no_closing_script_in_audit_page(self):
+        """Audit page must not contain unescaped </script> inside JSON data blocks."""
+        from librarian.registry import Registry
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            # Create registry with a filename containing </script>
+            reg_data = {
+                "project_config": {"project_name": "Test</script>XSS", "tracked_dirs": ["docs/"]},
+                "documents": [
+                    {"filename": "safe-doc-20260101-V1.0.md", "path": "docs/safe-doc-20260101-V1.0.md",
+                     "status": "active", "description": "test</script>xss"}
+                ],
+                "registry_meta": {"total_documents": 1},
+            }
+            (tmp / "docs").mkdir()
+            (tmp / "docs" / "safe-doc-20260101-V1.0.md").write_text("# Test")
+            reg_path = tmp / "docs" / "REGISTRY.yaml"
+            with reg_path.open("w") as f:
+                yaml.safe_dump(reg_data, f, sort_keys=False)
+            reg = Registry.load(reg_path)
+            manifest = generate_manifest(reg, tmp)
+            out = tmp / "_site"
+            generate_site(manifest, out)
+            for page in ["audit.html", "index.html", "manage.html", "graph.html", "templates.html"]:
+                html = (out / page).read_text()
+                # Count occurrences — the literal </script> should only appear as
+                # actual script close tags, never inside JSON data
+                import re
+                script_blocks = re.findall(r'<script>(.*?)</script>', html, re.DOTALL)
+                for block in script_blocks:
+                    assert "</script>" not in block, f"Unescaped </script> in {page} script block"
+
+
+class TestSecurityPathTraversal:
+    """Tests for path traversal prevention in file content rendering."""
+
+    def test_render_file_content_blocks_traversal(self):
+        """_render_file_content must block ../../../etc/passwd paths."""
+        from librarian.sitegen import _render_file_content
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            doc = {"path": "../../../etc/passwd", "filename": "passwd"}
+            result = _render_file_content(doc, td)
+            assert "outside repository" in result.lower() or result == ""
+
+    def test_render_file_content_allows_valid_path(self):
+        """_render_file_content must still read valid files inside repo."""
+        from librarian.sitegen import _render_file_content
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "docs").mkdir()
+            (tmp / "docs" / "test.md").write_text("# Hello World")
+            doc = {"path": "docs/test.md", "filename": "test.md"}
+            result = _render_file_content(doc, td)
+            assert "Hello World" in result
+
+    def test_render_file_content_blocks_symlink_escape(self):
+        """_render_file_content must block symlinks pointing outside repo."""
+        from librarian.sitegen import _render_file_content
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "docs").mkdir()
+            # Create symlink to /etc/hostname (common safe file)
+            link_path = tmp / "docs" / "escape.md"
+            try:
+                os.symlink("/etc/hostname", str(link_path))
+            except OSError:
+                pytest.skip("Cannot create symlink")
+            doc = {"path": "docs/escape.md", "filename": "escape.md"}
+            result = _render_file_content(doc, td)
+            assert "outside repository" in result.lower() or result == ""
+
+
+# ─── Setup Wizard Page ──────────────────────────────────────────────────────
+
+
+class TestSetupWizardPage:
+    """Verify the setup wizard page generation."""
+
+    def test_wizard_html_generated(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        assert (out / "wizard.html").exists()
+
+    def test_wizard_has_five_steps(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'id="step-1"' in html
+        assert 'id="step-2"' in html
+        assert 'id="step-3"' in html
+        assert 'id="step-4"' in html
+        assert 'id="step-5"' in html
+
+    def test_wizard_has_result_step(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'id="step-result"' in html
+
+    def test_wizard_has_use_case_options(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'data-value="personal"' in html
+        assert 'data-value="business"' in html
+        assert 'data-value="both"' in html
+
+    def test_wizard_has_industry_options(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        for industry in ["software", "business", "legal", "scientific",
+                         "healthcare", "finance", "government", "general"]:
+            assert f'data-value="{industry}"' in html
+
+    def test_wizard_has_compliance_toggles(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        for std in ["hipaa", "gdpr", "iso_27001", "sox", "pci_dss", "soc2",
+                     "dod_5200", "iso_9001", "sec_finra", "ccpa", "nist_csf"]:
+            assert f'data-value="{std}"' in html
+
+    def test_wizard_has_formality_options(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'data-value="minimal"' in html
+        assert 'data-value="standard"' in html
+        assert 'data-value="strict"' in html
+
+    def test_wizard_has_detail_fields(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'id="wiz-org"' in html
+        assert 'id="wiz-author"' in html
+        assert 'id="wiz-project"' in html
+
+    def test_wizard_has_progress_bar(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'id="wizard-progress-bar"' in html
+
+    def test_wizard_has_generate_yaml_function(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert "wizFinish" in html
+        assert "wizCopy" in html
+        assert "wizRestart" in html
+
+    def test_wizard_links_to_settings(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert 'href="settings.html"' in html
+
+    def test_wizard_has_copy_button(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "wizard.html").read_text()
+        assert "Copy to Clipboard" in html
+
+
+# ─── Settings View Toggle ────────────────────────────────────────────────────
+
+
+class TestSettingsViewToggle:
+    """Verify the Basic/Advanced view toggle on settings page."""
+
+    def test_view_toggle_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'id="view-toggle"' in html
+
+    def test_basic_and_advanced_buttons(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'id="view-basic-btn"' in html
+        assert 'id="view-advanced-btn"' in html
+
+    def test_basic_sections_have_data_view(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'data-view="basic"' in html
+
+    def test_advanced_sections_have_data_view(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'data-view="advanced"' in html
+
+    def test_switch_settings_view_function_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert "switchSettingsView" in html
+
+    def test_basic_view_starts_on_load(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert "switchSettingsView('basic')" in html
+
+    def test_project_basics_section_exists(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert "Project Basics" in html
+
+    def test_wizard_link_in_settings(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'href="wizard.html"' in html
+
+    def test_view_toggle_css_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        css = (out / "assets" / "style.css").read_text()
+        assert ".settings-view-toggle" in css
+        assert ".view-toggle-btn" in css
+
+    def test_wizard_css_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        css = (out / "assets" / "style.css").read_text()
+        assert ".wizard-container" in css
+        assert ".wizard-step" in css
+        assert ".wizard-option" in css
+
+
+# ─── Settings Search Bar ─────────────────────────────────────────────────────
+
+
+class TestSettingsSearchBar:
+    """Verify the settings search bar."""
+
+    def test_search_input_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert 'id="settings-search-input"' in html
+
+    def test_search_function_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert "searchSettings" in html
+        assert "clearSettingsSearch" in html
+
+    def test_search_icon_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        html = (out / "settings.html").read_text()
+        assert "settings-search-icon" in html
+
+    def test_search_css_present(self, multi_doc_manifest, tmp_path):
+        out = generate_site(multi_doc_manifest, tmp_path / "_site")
+        css = (out / "assets" / "style.css").read_text()
+        assert ".settings-search" in css
+        assert ".search-highlight" in css
+
+
+# ─── Template Search + Compliance Filter Fixes ──────────────────────────────
+
+
+class TestTemplateSearchInput:
+    """Verify the search input on the templates catalog page."""
+
+    @pytest.fixture
+    def software_manifest(self, tmp_path: Path) -> Manifest:
+        reg_data = {
+            "project_config": {
+                "project_name": "SearchTest",
+                "preset": "software",
+                "tracked_dirs": ["docs/"],
+            },
+            "documents": [],
+            "registry_meta": {"total_documents": 0},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+        reg = Registry.load(reg_path)
+        return generate_manifest(reg, tmp_path)
+
+    def test_search_input_present(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert 'id="tmpl-search"' in html
+
+    def test_search_icon_present(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert "tmpl-search-icon" in html
+
+    def test_filter_uses_search_query(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert 'getElementById("tmpl-search")' in html
+        assert "haystack" in html
+
+    def test_search_css_present(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        css = (out / "assets" / "style.css").read_text()
+        assert ".tmpl-search" in css
+        assert ".tmpl-search input" in css
+
+
+class TestComplianceFilterAccuracy:
+    """Verify compliance dropdown only shows flags with actual template content."""
+
+    @pytest.fixture
+    def software_manifest(self, tmp_path: Path) -> Manifest:
+        reg_data = {
+            "project_config": {
+                "project_name": "CompTest",
+                "preset": "software",
+                "tracked_dirs": ["docs/"],
+            },
+            "documents": [],
+            "registry_meta": {"total_documents": 0},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+        reg = Registry.load(reg_path)
+        return generate_manifest(reg, tmp_path)
+
+    def test_compliance_dropdown_has_hipaa(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert 'value="hipaa"' in html
+
+    def test_compliance_dropdown_has_gdpr(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert 'value="gdpr"' in html
+
+    def test_compliance_dropdown_has_sox(self, software_manifest, tmp_path):
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        assert 'value="sox"' in html
+
+    def test_compliance_dropdown_excludes_empty_flags(self, software_manifest, tmp_path):
+        """Flags with no templates should NOT appear in dropdown."""
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        # Extract just the compliance dropdown
+        import re
+        comp_section = re.search(
+            r'id="tmpl-compliance".*?</select>',
+            html,
+            re.DOTALL,
+        )
+        assert comp_section is not None
+        comp_html = comp_section.group(0)
+        # These flags have zero templates, should NOT be in dropdown
+        for empty_flag in ("ccpa", "nist_csf", "cmmc", "ferpa", "fedramp",
+                           "pci_dss", "soc2", "itar_ear", "nerc_cip",
+                           "nis2", "dora", "pipeda", "lgpd"):
+            assert f'value="{empty_flag}"' not in comp_html, (
+                f"Flag {empty_flag} should not be in dropdown — no templates use it"
+            )
+
+    def test_template_data_detects_gdpr_flag(self, software_manifest, tmp_path):
+        """gdpr flag should be detected in template JSON data."""
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        import json, re
+        m = re.search(r'var TEMPLATES = (\[.*?\]);\s*\n', html, re.DOTALL)
+        assert m is not None
+        data = json.loads(m.group(1))
+        gdpr_tmpls = [t for t in data if "gdpr" in t["compliance"]]
+        assert len(gdpr_tmpls) >= 1, "At least one template should have gdpr flag"
+
+    def test_template_data_detects_sox_flag(self, software_manifest, tmp_path):
+        """sox flag should be detected in template JSON data."""
+        out = generate_site(software_manifest, tmp_path / "_site")
+        html = (out / "templates.html").read_text()
+        import json, re
+        m = re.search(r'var TEMPLATES = (\[.*?\]);\s*\n', html, re.DOTALL)
+        assert m is not None
+        data = json.loads(m.group(1))
+        sox_tmpls = [t for t in data if "sox" in t["compliance"]]
+        assert len(sox_tmpls) >= 1, "At least one template should have sox flag"
+
+
+class TestGlobalSearchBar:
+    """Global search bar in the site header — searches docs, settings, templates, pages."""
+
+    @pytest.fixture
+    def site_out(self, tmp_path: Path) -> Path:
+        reg_data = {
+            "project_config": {
+                "project_name": "SearchSite",
+                "preset": "software",
+                "tracked_dirs": ["docs/"],
+            },
+            "documents": [
+                {
+                    "title": "Architecture Overview",
+                    "filename": "architecture-overview-20260413-V1.0.md",
+                    "status": "active",
+                    "path": "docs/",
+                    "tags": ["design"],
+                },
+            ],
+            "registry_meta": {"total_documents": 1},
+        }
+        (tmp_path / "docs").mkdir()
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f, sort_keys=False)
+        # Create the document file so the doc page can be built
+        (tmp_path / "docs" / "architecture-overview-20260413-V1.0.md").write_text(
+            "# Architecture Overview\n\nContent here."
+        )
+        reg = Registry.load(reg_path)
+        m = generate_manifest(reg, tmp_path)
+        return generate_site(m, tmp_path / "_site")
+
+    def test_search_input_on_index(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert 'id="global-search-input"' in html
+
+    def test_search_input_on_settings(self, site_out):
+        html = (site_out / "settings.html").read_text()
+        assert 'id="global-search-input"' in html
+
+    def test_search_input_on_doc_page(self, site_out):
+        doc_page = list((site_out / "docs").glob("*.html"))[0]
+        html = doc_page.read_text()
+        assert 'id="global-search-input"' in html
+
+    def test_search_results_container(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert 'id="global-search-results"' in html
+
+    def test_search_index_has_documents(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert "SEARCH_INDEX" in html
+        import re
+        m = re.search(r'var SEARCH_INDEX = (\[.*?\]);\s*var PREFIX', html, re.DOTALL)
+        assert m is not None
+        data = json.loads(m.group(1))
+        docs = [e for e in data if e["category"] == "document"]
+        assert len(docs) >= 1
+        assert any("architecture" in d["text"] for d in docs)
+
+    def test_search_index_has_settings(self, site_out):
+        html = (site_out / "index.html").read_text()
+        import re
+        m = re.search(r'var SEARCH_INDEX = (\[.*?\]);\s*var PREFIX', html, re.DOTALL)
+        data = json.loads(m.group(1))
+        settings = [e for e in data if e["category"] == "setting"]
+        assert len(settings) >= 10
+
+    def test_search_index_has_templates(self, site_out):
+        html = (site_out / "index.html").read_text()
+        import re
+        m = re.search(r'var SEARCH_INDEX = (\[.*?\]);\s*var PREFIX', html, re.DOTALL)
+        data = json.loads(m.group(1))
+        templates = [e for e in data if e["category"] == "template"]
+        assert len(templates) >= 10
+
+    def test_search_index_has_pages(self, site_out):
+        html = (site_out / "index.html").read_text()
+        import re
+        m = re.search(r'var SEARCH_INDEX = (\[.*?\]);\s*var PREFIX', html, re.DOTALL)
+        data = json.loads(m.group(1))
+        pages = [e for e in data if e["category"] == "page"]
+        assert len(pages) >= 4
+        assert any("home" in p["text"] for p in pages)
+
+    def test_doc_page_prefix_is_parent(self, site_out):
+        doc_page = list((site_out / "docs").glob("*.html"))[0]
+        html = doc_page.read_text()
+        assert "var PREFIX = '../'" in html
+
+    def test_search_css_present(self, site_out):
+        css = (site_out / "assets" / "style.css").read_text()
+        assert ".global-search" in css
+        assert ".global-search-results" in css
+        assert ".gsr-item" in css
+
+    def test_search_js_keyboard_shortcut(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert "e.key === '/'" in html
+
+    def test_search_index_documents_have_date(self, site_out):
+        """Document entries in the search index include a date field."""
+        html = (site_out / "index.html").read_text()
+        import re
+        m = re.search(r'var SEARCH_INDEX = (\[.*?\]);\s*var PREFIX', html, re.DOTALL)
+        data = json.loads(m.group(1))
+        docs = [e for e in data if e["category"] == "document"]
+        dated = [d for d in docs if d.get("date")]
+        # Our fixture document has a date in the filename
+        assert len(dated) >= 1
+        # Verify date format is YYYY-MM-DD
+        for d in dated:
+            assert re.match(r"^\d{4}-\d{2}-\d{2}$", d["date"]), f"Bad date format: {d['date']}"
+
+    def test_search_js_has_date_parsing(self, site_out):
+        """Global search JS includes date range parsing logic."""
+        html = (site_out / "index.html").read_text()
+        assert "parseDate" in html
+        assert "dateToNum" in html
+        assert "dateToMax" in html
+
+    def test_search_js_range_syntax(self, site_out):
+        """Global search JS supports the '..' range operator."""
+        html = (site_out / "index.html").read_text()
+        assert '".."' in html or "'..' " in html or "rangeMatch" in html
+
+
+class TestManagePage:
+    """Tests for the Project Manager page (manage.html)."""
+
+    @pytest.fixture()
+    def site_out(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        return out
+
+    def test_manage_page_exists(self, site_out):
+        assert (site_out / "manage.html").exists()
+
+    def test_manage_page_title(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "Project Manager" in html
+
+    def test_manage_page_four_sections(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert html.count("mgr-section-header") == 4
+
+    def test_manage_nav_link(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert 'class="active"' in html
+        assert "Manage" in html
+
+    def test_manage_nav_on_other_pages(self, site_out):
+        for page in ["index.html", "tree.html", "templates.html"]:
+            html = (site_out / page).read_text()
+            assert "manage.html" in html, f"Manage link missing from {page}"
+
+    def test_manage_unreg_data(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "var UNREG" in html
+
+    def test_manage_folders_data(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "var FOLDERS" in html
+
+    def test_manage_templates_data(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "var TEMPLATES" in html
+
+    def test_manage_register_form(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        for field_id in ["reg-filename", "reg-path", "reg-status", "reg-desc", "reg-tags"]:
+            assert field_id in html, f"Missing form field: {field_id}"
+
+    def test_manage_scaffold_form(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        for field_id in ["scaf-preset", "scaf-template", "scaf-title", "scaf-folder", "scaf-author"]:
+            assert field_id in html, f"Missing scaffold field: {field_id}"
+
+    def test_manage_folder_form(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "folder-path" in html
+
+    def test_manage_output_panel(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "mgr-output" in html
+        assert "mgr-output-cmd" in html
+
+    def test_manage_js_functions(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        for fn in ["generateRegister", "generateMkdir", "generateScaffold",
+                    "quickRegister", "toggleMgrSection", "updateTemplateList",
+                    "shellQuote", "showCommand", "copyCommand", "closeMgrOutput"]:
+            assert fn in html, f"Missing JS function: {fn}"
+
+    def test_manage_global_search(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        assert "global-search" in html
+
+    def test_manage_css_classes(self, site_out):
+        html = (site_out / "manage.html").read_text()
+        for cls in ["mgr-section", "mgr-form", "mgr-btn", "mgr-table", "mgr-preview"]:
+            assert cls in html, f"Missing CSS class: {cls}"
+
+    def test_manage_in_search_index(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert "Project Manager" in html or "manage.html" in html
+
+
+class TestAuditPage:
+    """Tests for the Audit & Verify page (audit.html)."""
+
+    @pytest.fixture()
+    def site_out(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        return out
+
+    def test_audit_page_exists(self, site_out):
+        assert (site_out / "audit.html").exists()
+
+    def test_audit_page_title(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "Audit" in html
+
+    def test_audit_six_sections(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert html.count("aud-section-header") == 6
+
+    def test_audit_kpi_cards(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        for label in ["Registered", "Unregistered", "Missing", "Naming Issues", "Chain Integrity"]:
+            assert label in html, f"Missing KPI: {label}"
+
+    def test_audit_nav_link(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert 'class="active"' in html
+        assert ">Audit<" in html
+
+    def test_audit_nav_on_other_pages(self, site_out):
+        for page in ["index.html", "tree.html", "manage.html", "templates.html"]:
+            html = (site_out / page).read_text()
+            assert "audit.html" in html, f"Audit link missing from {page}"
+
+    def test_audit_data_vars(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        for var in ["var AUDIT", "var FILES", "var OPLOG", "var CHAIN", "var RECS"]:
+            assert var in html, f"Missing JS data variable: {var}"
+
+    def test_audit_js_functions(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        for fn in ["toggleAudSection", "copyText", "renderIntegrity",
+                    "filterIntegrity", "toggleHashes"]:
+            assert fn in html, f"Missing JS function: {fn}"
+
+    def test_audit_integrity_controls(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "integrity-search" in html
+        assert "show-hashes" in html
+
+    def test_audit_seal_section(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "aud-seal-box" in html
+        assert "SHA-256 Seal" in html
+
+    def test_audit_cli_commands(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "aud-cli-grid" in html
+        assert html.count("aud-cli-card") >= 6
+
+    def test_audit_recommendations_section(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "rec-results" in html
+        assert "rec-count" in html
+
+    def test_audit_ooda_section(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "ooda-results" in html
+
+    def test_audit_oplog_section(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "oplog-table" in html
+        assert "chain-status" in html
+
+    def test_audit_css_classes(self, site_out):
+        css = (site_out / "assets" / "style.css").read_text()
+        for cls in ["aud-section", "aud-pass", "aud-fail", "aud-seal-box",
+                     "aud-cli-grid", "aud-chain-ok", "aud-dot--ok", "aud-hash"]:
+            assert cls in css, f"Missing CSS class: {cls}"
+
+    def test_audit_in_search_index(self, site_out):
+        html = (site_out / "index.html").read_text()
+        assert "Audit" in html and "audit.html" in html
+
+    def test_audit_global_search(self, site_out):
+        html = (site_out / "audit.html").read_text()
+        assert "global-search" in html

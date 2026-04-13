@@ -3,12 +3,27 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "librarian"
-version = "0.1.0"
-description = "Document governance, version control, and registry management"
-requires-python = ">=3.13"
+name = "librarian-2026"
+version = "0.7.0"
+description = "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests."
+requires-python = ">=3.10"
+license = "Apache-2.0"
+readme = "README.md"
 authors = [
-    {name = "Chris Kahn", email = "research+ai@brokenwire.org"}
+    {name = "Chris Kahn", email = "ghengis5@gmail.com"}
+]
+keywords = ["documents", "governance", "versioning", "audit", "registry", "naming-conventions"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
     "pyyaml>=6.0",
@@ -20,6 +35,11 @@ dev = [
     "pytest-cov>=5.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ghengis5/librarian"
+Repository = "https://github.com/ghengis5/librarian"
+Issues = "https://github.com/ghengis5/librarian/issues"
+
 [project.scripts]
 librarian = "librarian.__main__:main"
 
@@ -27,6 +47,9 @@ librarian = "librarian.__main__:main"
 where = ["."]
 include = ["librarian*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+librarian = ["templates/**/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

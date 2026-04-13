@@ -66,8 +66,8 @@ project_config:
   diagrams_path: docs/diagrams/
   operator_path: docs/phase-specs/
   staleness_threshold_days: 90
-  git_author_name: Chris Kahn
-  git_author_email: research+ai@brokenwire.org
+  git_author_name: Your Name
+  git_author_email: you@example.com
   git_commit_prefixes:
     docs: 'docs:'
     registry: 'registry:'
@@ -379,7 +379,8 @@ documents:
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   infrastructure_exempt: true
-  exemption_reason: Generated dashboard artifact. Versioned by output, not by naming convention.
+  exemption_reason: Generated dashboard artifact. Versioned by output, not by naming
+    convention.
   tags:
   - dashboard
   - phase-d
@@ -416,7 +417,8 @@ documents:
   path: docs/phase-g-templates-and-recommendations-20260412-V1.0.md
   title: Phase G — Document Templates & Recommendations Engine
   description: Phase plan for adding document scaffolding templates (per preset) and
-    a deterministic recommendations engine that detects document gaps in a project registry.
+    a deterministic recommendations engine that detects document gaps in a project
+    registry.
   format: md
   version: '1.0'
   date: '2026-04-12'
@@ -450,9 +452,9 @@ documents:
 - filename: security-review-20260413-V1.0.md
   path: docs/security-review-20260413-V1.0.md
   title: Security Review — Librarian v0.7.0
-  description: Comprehensive security audit of the full Librarian codebase. Covers XSS
-    in generated HTML, evidence integrity limitations, path traversal, template engine
-    safety, YAML deserialization, and operation log integrity. Includes prioritized
+  description: Comprehensive security audit of the full Librarian codebase. Covers
+    XSS in generated HTML, evidence integrity limitations, path traversal, template
+    engine safety, YAML deserialization, and operation log integrity. Includes prioritized
     remediation plan.
   format: md
   version: '1.0'
@@ -480,7 +482,8 @@ documents:
   - report
 - filename: phase-f-plugin-and-release-20260413-V1.0.md
   title: Phase F — Plugin Packaging + Open-Source Release
-  description: Scope plan for Claude Code plugin, PyPI package, and GitHub public release
+  description: Scope plan for Claude Code plugin, PyPI package, and GitHub public
+    release
   format: md
   version: '1.0'
   date: '2026-04-13'
@@ -501,12 +504,31 @@ documents:
   tags:
   - planning
   - infrastructure
+- filename: bug-bounty-report-20260413-V1.0.md
+  title: SSRF-in-image-proxy
+  description: Structured vulnerability disclosure report for bug bounty submissions.
+    Follows HackerOne/Bugcrowd best practices with CVSS 3.1 scoring, CWE classification,
+    clear reproduction steps, proof of concept, and impact assessment. Designed for
+    researcher submissions to maximize triage speed and bounty outcomes.
+  status: draft
+  version: V1.0
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - security
+  - bug-bounty
+  - disclosure
+  - vulnerability
+  path: docs/bug-bounty-report-20260413-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
   total_documents: 19
-  active: 15
-  draft: 2
+  active: 14
+  draft: 3
   superseded: 2
   not_in_repo: 0
   archived: 0
@@ -524,4 +546,4 @@ registry_meta:
   locations_in_cowork: 10
   locations_disk_only: 0
   locations_chat_only: 0
-  last_updated: '2026-04-12'
+  last_updated: '2026-04-13'

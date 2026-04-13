@@ -138,7 +138,7 @@ Commands:
 ---
 
 ## Test Suite
-- **578 tests** across 13 test files
+- **673 tests** across 13 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Config: 56 (presets 8, templates 6, loading 7, naming-config 10, configurable-naming 9, parse 4, CLI init 5, CLI config 3, merge 4)
 - Phase B: 26 (manifest)
@@ -156,17 +156,20 @@ Commands:
 - Phase G.2d Security+Compliance cross-cutting: 28 (security count/ids/sections/xrefs/conditionals 7, compliance count/ids/sections/xrefs/conditionals 7, cross-cutting resolution parametrized 14)
 - Phase G.3 Recommendations: 39 (preset expectations 4, compliance templates 2, rule 1 baseline 8, rule 2 cross-ref 3, rule 3 maturity 3, rule 4 compliance 5, dedup 2, report 3, formatter 6, CLI integration 3)
 - Phase G.4 Templates page + integration: 32 (catalog page 12, nav links 4, index recommendations 5, dashboard overlay 1, CSS 2, settings template browser 3, custom template override 5)
-- Security hardening: 14 (XSS safe_url 10, manifest path traversal 3, template recursion depth 1)
+- Security hardening: 20 (XSS safe_url 10, manifest path traversal 3, template recursion depth 1, script breakout 3, sitegen path traversal 3)
 - Oplog hash chaining: 12 (genesis/linking/three-entry/compat/v1-json/passthrough 6, verify chain 5, format indicator 1)
 - Evidence signing: 12 (default off 2, signing config 8, verify returns 1, signed pack mock 1)
+- Folders Only fix: 1 (branch expansion)
+- Manage page: 16 (exists/title/sections/nav/data/forms/JS/search/CSS/index)
+- Audit page: 17 (exists/title/sections/KPI/nav/data/JS/controls/seal/CLI/recs/OODA/oplog/CSS/search-index/global-search)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
 ---
 
 ## Current State
-**Version:** 0.7.0
-**Tests:** 578/578 PASS
+**Version:** 0.7.1
+**Tests:** 673/673 PASS
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -328,6 +331,46 @@ Commands:
 - **Updated exports** (`__init__.py`): `SigningError`, `verify_chain` added to public API
 - **38 new tests** (578 total): XSS safe_url (10), path traversal (3), recursion depth (1), oplog chaining (6), verify chain (5), format indicator (1), evidence signing config (8), default off (2), verify signature (1), signed pack mock (1)
 
+### Session 44 Deliverables (Website improvements + wizard + settings UX)
+- **Header redesign**: Removed seal hash from top, removed diamond bullet, added SVG logo mark, Playfair Display serif font for brand title, brass/gold gear icon (22px, `--gear-color: #b07d2e`)
+- **Dashboard removed from site**: Index + Graph + Tree cover all features; standalone `librarian dashboard` CLI preserved for portable single-file export
+- **Nav updates**: "Index" renamed to "Home", Dashboard link removed
+- **Tree page Folders Only mode**: Collapse All / Expand All / Folders Only toggle buttons with `toggleFoldersOnly()` JS
+- **24 compliance standards**: Expanded from 6 to 24 across all touchpoints (Settings buttons, STANDARDS JS object, COMPLIANCE_TEMPLATES in recommend.py, disclaimer dropdown). Two-tier layout with industry filter dropdown.
+- **Setup wizard** (`wizard.html`): 5-step questionnaire — use case (Personal/Business/Both) → industry → compliance → formality (Minimal/Standard/Strict) → org details. Generates ready-to-paste `project_config` YAML block.
+- **Settings Basic/Advanced toggle**: BASIC view as default showing only Project Basics + Compliance Standards. Advanced reveals all settings sections. `data-view` attributes control visibility.
+- **Settings search bar**: Search icon + input field in settings topbar. Searches section headers, field labels, and hints. Auto-switches to Advanced view on search. Highlights matching rows, dims non-matching sections, scrolls to first match.
+- **Template catalog search**: Search input added to templates page filter bar. Searches template id, name, description, tags, and section names. Works alongside preset/source/compliance dropdowns.
+- **Compliance filter fix**: Template compliance detection expanded from 5 flags to 22 (now catches `gdpr` and `sox`). Compliance dropdown dynamically trimmed to only show flags with actual template content (8 options instead of 23 dead-end options).
+- **36 new tests** (614 total): wizard page (12), settings view toggle (10), settings search bar (4), template search input (4), compliance filter accuracy (6)
+
+### Session 45 Deliverables (Manage page + Audit page + bug fixes)
+- **Folders Only fix** (tree.html): `toggleFoldersOnly()` now expands all collapsed branches before hiding files, showing full nested hierarchy instead of just top-level folders
+- **Settings template browser fix**: `renderSettingsTemplates()` now shows all templates when no preset is selected (was filtering for empty string)
+- **Project Manager page** (`manage.html`): Full document management page with 4 collapsible sections:
+  - Unregistered Files — shows files on disk not in registry, one-click `quickRegister()` buttons
+  - Register Existing File — form with filename, path, status, description, tags → generates `librarian register` CLI command
+  - Create Folder — path input → generates `mkdir -p` command
+  - Scaffold from Template — preset/template/title/folder/author → generates `librarian scaffold` command
+  - Shared: sticky command output panel, section collapse, shell quoting, datalist autocomplete, scaffold live preview
+- **Audit & Verify page** (`audit.html`): Unified governance health dashboard with 6 sections:
+  - KPI cards: Registered, Unregistered, Missing, Naming Issues, Chain Integrity
+  - OODA Audit: unregistered/missing/naming/cross-ref/folder findings with severity coloring
+  - File Integrity: SHA-256 hash table with search filter and full-hash toggle
+  - Operation Log: last 20 oplog entries with operation badges and chain status
+  - Manifest Seal: full SHA-256 seal display with copy button and explanation
+  - Recommendations: grouped by category (core/recommended/cross-ref/maturity/compliance)
+  - CLI Commands: 6 copy-to-clipboard cards for forensic commands
+  - Runs actual audit at site-gen time; reads real oplog and chain verification
+- **Nav bar updated**: Added Manage and Audit links (Home → Manage → Audit → Tree → Graph → Templates)
+- **60+ CSS classes**: `.mgr-*` for Manage page, `.aud-*` for Audit page, `.kpi-ok/warn/err` status colors
+- **Adversarial security review**: Found and fixed 2 vulnerability classes:
+  - CRITICAL: `</script>` breakout in all JSON data embedded in `<script>` tags — `_json_safe()` helper escapes `</` → `<\/` in 17 call sites across all pages
+  - HIGH: Path traversal in `_render_file_content()` — added `.resolve()` + `.relative_to()` guard, blocks `../` and symlink escapes
+  - Template engine confirmed safe (no code execution, no builtin access, depth guard works)
+  - Oplog chain integrity verified (detect-only by design, not prevention)
+- **40 new tests** (673 total): Manage page (16), Audit page (17), Folders Only fix (1), script breakout (3), path traversal (3)
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -339,9 +382,10 @@ Commands:
    - ~~G.4: Templates catalog page, site/dashboard integration, custom templates, settings browser, docs~~ ✅ (Session 42/42b)
    - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
 2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
-3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI
+3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI on Audit page
 4. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
 5. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
+6. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention); template for-loop only iterates list/tuple (silently drops dict_keys/set); no output size limit on template engine
 
 ---
 

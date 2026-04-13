@@ -1,0 +1,15 @@
+{
+  "_comment": "Naming enforcement hook — disabled by default. To enable, remove the leading underscore from '_PreToolUse' to make it 'PreToolUse'. See README.md § Setup › Optional: Enable Naming Enforcement Hook.",
+  "_PreToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Check whether the file being written is a governed document (not source code, not infrastructure-exempt). A governed document is any file in the project's tracked_dirs (typically docs/) with extensions like .md, .docx, .pdf, .html, .pptx, .xlsx, .yaml, .json, .sh. If it IS a governed document, validate the filename against the naming convention: descriptive-name-YYYYMMDD-VX.Y.ext. If the filename does NOT match, respond with a JSON object: {\"decision\": \"block\", \"reason\": \"Filename does not follow naming convention. Expected: descriptive-name-YYYYMMDD-VX.Y.ext\"}. If the filename matches OR the file is not a governed document, respond with: {\"decision\": \"approve\", \"reason\": \"OK\"}.",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}

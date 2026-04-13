@@ -370,16 +370,9 @@ def cmd_site(args: argparse.Namespace) -> int:
 
     output_dir = Path(args.output_dir) if args.output_dir else repo_root / "_site"
 
-    # Optionally render dashboard and include it
-    dashboard_path = None
-    if not args.no_dashboard:
-        dashboard_out = output_dir / "dashboard.html"
-        dashboard_out.parent.mkdir(parents=True, exist_ok=True)
-        template_path = Path(args.template) if args.template else None
-        write_dashboard(manifest, dashboard_out, template_path=template_path)
-        dashboard_path = dashboard_out
-
-    site_dir = generate_site(manifest, output_dir, dashboard_path=dashboard_path)
+    # Dashboard is no longer bundled into the site by default —
+    # use `librarian dashboard` for a standalone portable file.
+    site_dir = generate_site(manifest, output_dir)
 
     # Count pages
     pages = list(site_dir.rglob("*.html"))
@@ -833,8 +826,6 @@ def build_parser() -> argparse.ArgumentParser:
     # --- site (Phase E)
     p_site = sub.add_parser("site", help="Generate static HTML site from manifest")
     p_site.add_argument("-o", "--output-dir", help="output directory (default: _site/)")
-    p_site.add_argument("--template", help="path to dashboard template file or directory")
-    p_site.add_argument("--no-dashboard", action="store_true", help="omit dashboard page from site")
     p_site.set_defaults(func=cmd_site)
 
     # --- log (Phase C)

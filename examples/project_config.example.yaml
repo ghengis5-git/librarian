@@ -29,7 +29,7 @@ project_config:
   archive_path: "docs/archive/"
   diagrams_path: "docs/diagrams/"
   operator_path: "operator/phase-specs/"
-  default_author: "Christopher A. Kahn"
+  default_author: "Your Name"
   default_classification: "CONFIDENTIAL"
   classification_levels:
     - "CONFIDENTIAL"
@@ -71,8 +71,8 @@ project_config:
       - pending-review
       - blocked
   staleness_threshold_days: 90
-  git_author_name: "Chris Kahn"
-  git_author_email: "research+ai@brokenwire.org"
+  git_author_name: "Your Name"
+  git_author_email: "you@example.com"
   git_commit_prefixes:
     docs: "docs:"
     registry: "registry:"

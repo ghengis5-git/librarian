@@ -17,8 +17,8 @@ if [ -z "$EXISTING_KEY" ]; then
 %no-protection
 Key-Type: RSA
 Key-Length: 4096
-Name-Real: Chris Kahn
-Name-Email: research+ai@brokenwire.org
+Name-Real: YOUR_NAME
+Name-Email: YOUR_EMAIL
 Expire-Date: 0
 GPGEOF
     EXISTING_KEY=$(gpg --list-secret-keys --keyid-format long 2>/dev/null | grep -A1 "^sec" | grep -oE "[A-F0-9]{16}" | head -1)

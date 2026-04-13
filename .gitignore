@@ -6,9 +6,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-_site/
-_site_preview/
-_site_preview_output/
+_site*/
 site/
 site_output/
+site_preview/
 operator/

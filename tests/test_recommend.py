@@ -70,7 +70,12 @@ class TestComplianceTemplates:
     """Verify the COMPLIANCE_TEMPLATES mapping."""
 
     def test_expected_flags(self):
-        expected = {"hipaa", "dod_5200", "iso_9001", "iso_27001", "sec_finra"}
+        expected = {
+            "hipaa", "dod_5200", "iso_9001", "iso_27001", "sec_finra", "gdpr",
+            "sox", "pci_dss", "soc2", "ccpa", "nist_csf", "fda_21cfr11",
+            "cmmc", "ferpa", "fedramp", "gxp",
+            "itar_ear", "nerc_cip", "nis2", "dora", "pipeda", "lgpd",
+        }
         assert expected == set(COMPLIANCE_TEMPLATES.keys())
 
     def test_each_flag_has_templates(self):

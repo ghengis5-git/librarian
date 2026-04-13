@@ -43,10 +43,26 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .manifest import Manifest
 
+# Module-level search index JSON string — set by generate_site() before page building.
+_SEARCH_INDEX_JSON: str = "[]"
+
 
 def _esc(text: Any) -> str:
     """HTML-escape a value."""
     return html_mod.escape(str(text)) if text else ""
+
+
+def _json_safe(data: Any, **kwargs: Any) -> str:
+    """Serialize *data* to JSON safe for embedding in HTML <script> tags.
+
+    Standard ``json.dumps`` can produce ``</script>`` inside string values,
+    which the browser interprets as the end of the script block — allowing
+    an attacker to inject arbitrary HTML/JS via crafted filenames, titles,
+    or descriptions.  This helper escapes ``</`` → ``<\\/`` after
+    serialization so the JSON remains valid JS while the closing-tag
+    sequence never appears in the HTML source.
+    """
+    return json.dumps(data, **kwargs).replace("</", r"<\/")
 
 
 # ── Markdown → HTML (zero-dep) ────────────────────────────────────────────
@@ -238,6 +254,11 @@ def _render_file_content(doc: dict, repo_root: str | Path) -> str:
         return ""
 
     file_path = Path(repo_root) / path_str
+    # Prevent path traversal — resolved path must stay within repo_root
+    try:
+        file_path.resolve().relative_to(Path(repo_root).resolve())
+    except ValueError:
+        return '<p class="content-missing">Path outside repository.</p>'
     if not file_path.is_file():
         return '<p class="content-missing">File not found on disk.</p>'
 
@@ -305,12 +326,39 @@ def _group_by_path(documents: list[dict]) -> dict:
     for doc in documents:
         path = doc.get("path", doc.get("filename", ""))
         parent = str(PurePosixPath(path).parent) if "/" in path else "."
-        groups[parent].append(doc)
+        # Use friendly labels for display
+        label = parent if parent != "." else "/ (root)"
+        groups[label].append(doc)
     return dict(sorted(groups.items()))
 
 
+def _build_nested_tree(documents: list[dict]) -> dict:
+    """Build a nested folder tree structure for the TREE sidebar mode."""
+    root: dict = {"dirs": {}, "docs": []}
+    for doc in documents:
+        path = doc.get("path", doc.get("filename", ""))
+        parts = PurePosixPath(path).parts if "/" in path else []
+        # Navigate to the correct nested folder
+        node = root
+        for part in parts[:-1]:  # all parts except the filename
+            if part not in node["dirs"]:
+                node["dirs"][part] = {"dirs": {}, "docs": []}
+            node = node["dirs"][part]
+        node["docs"].append({
+            "filename": doc.get("filename", ""),
+            "title": doc.get("title", ""),
+            "status": doc.get("status", ""),
+        })
+    # Sort docs in each node
+    def _sort_tree(node: dict) -> dict:
+        node["docs"] = sorted(node["docs"], key=lambda d: d.get("filename", ""))
+        node["dirs"] = {k: _sort_tree(v) for k, v in sorted(node["dirs"].items())}
+        return node
+    return _sort_tree(root)
+
+
 def _build_tree_json(documents: list[dict]) -> str:
-    """Pre-compute all three grouping structures as JSON for client-side switching."""
+    """Pre-compute all grouping structures as JSON for client-side switching."""
     tree_data = {
         "status": {
             group: [
@@ -334,7 +382,12 @@ def _build_tree_json(documents: list[dict]) -> str:
             for group, docs in _group_by_path(documents).items()
         },
     }
-    return json.dumps(tree_data, indent=2, sort_keys=True)
+    return _json_safe(tree_data, indent=2, sort_keys=True)
+
+
+def _build_nested_tree_json(documents: list[dict]) -> str:
+    """Serialize the nested tree structure for the TREE sidebar mode."""
+    return _json_safe(_build_nested_tree(documents), indent=2, sort_keys=True)
 
 
 # ── Shared CSS ──────────────────────────────────────────────────────────────
@@ -370,6 +423,8 @@ SITE_CSS = """\
   --mono: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
   --sans: "Source Sans 3", "Source Sans Pro", -apple-system, BlinkMacSystemFont,
           "Segoe UI", system-ui, sans-serif;
+  --display: "Playfair Display", "Georgia", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  --gear-color: #b07d2e;
   --sidebar-w: 260px;
   --header-h: 52px;
   --transition: 180ms ease;
@@ -412,14 +467,22 @@ code {
   gap: 24px;
 }
 .site-header .brand {
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--display);
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.site-header .brand span { color: var(--accent); }
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
 
 /* Nav */
 nav {
@@ -442,16 +505,16 @@ nav a.active { color: var(--accent); background: var(--accent-light); font-weigh
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   border-radius: var(--radius);
-  color: var(--text-muted);
+  color: var(--gear-color);
   transition: all var(--transition);
   position: relative;
   margin-left: 8px;
 }
-.settings-gear:hover { color: var(--accent); background: var(--surface-alt); }
-.settings-gear.active { color: var(--accent); background: var(--accent-light); }
-.settings-gear svg { width: 16px; height: 16px; }
+.settings-gear:hover { color: #956a1f; background: #faf3e0; }
+.settings-gear.active { color: #7d5a18; background: #f5ebd0; }
+.settings-gear svg { width: 22px; height: 22px; }
 .settings-gear[title]:hover::after {
   content: attr(title);
   position: absolute;
@@ -468,11 +531,115 @@ nav a.active { color: var(--accent); background: var(--accent-light); font-weigh
   pointer-events: none;
   z-index: 10;
 }
-.header-seal {
-  font-size: 10px;
+.footer-seal {
+  font-size: 11px;
   font-family: var(--mono);
   color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ── Global Search ─────────────────────────────────────────────────────── */
+.global-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+.global-search-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.global-search input {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 10px 6px 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  width: 240px;
+  transition: border-color 0.15s, width 0.2s, box-shadow 0.15s;
+}
+.global-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+  width: 320px;
+}
+.global-search input::placeholder { color: var(--text-muted); opacity: 0.7; }
+.global-search-results {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 200;
+  min-width: 320px;
+}
+.global-search-results.open { display: block; }
+.gsr-section {
+  padding: 6px 12px 2px;
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.gsr-section:first-child { border-top: none; }
+.gsr-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.gsr-item:hover, .gsr-item.gsr-active { background: rgba(37,99,235,0.06); }
+.gsr-item-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.gsr-item-title { font-weight: 500; }
+.gsr-item-meta {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  margin-left: auto;
   white-space: nowrap;
+}
+.gsr-empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.gsr-kbd {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text-muted);
+  margin-left: 8px;
 }
 
 /* ── Layout Shell ───────────────────────────────────────────────────────── */
@@ -511,23 +678,24 @@ nav a.active { color: var(--accent); background: var(--accent-light); font-weigh
 /* Grouping toggles */
 .group-toggles {
   display: flex;
-  gap: 2px;
+  gap: 0;
   padding: 0 16px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .group-btn {
   flex: 1;
-  padding: 5px 0;
-  border: 1px solid var(--border);
+  padding: 6px 0;
+  border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text-muted);
   font-size: 10px;
   font-family: var(--mono);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: all var(--transition);
   text-align: center;
+  font-weight: 500;
 }
 .group-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
 .group-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
@@ -537,18 +705,18 @@ nav a.active { color: var(--accent); background: var(--accent-light); font-weigh
   background: var(--accent);
   color: var(--accent-text);
   border-color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 .group-btn.active + .group-btn { border-left-color: var(--accent); }
 
 /* Tree */
 .tree-container { padding: 0 8px; }
-.tree-group { margin-bottom: 4px; }
+.tree-group { margin-bottom: 2px; }
 .tree-group-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 6px 8px;
   cursor: pointer;
   border-radius: var(--radius);
   user-select: none;
@@ -565,54 +733,66 @@ nav a.active { color: var(--accent); background: var(--accent-light); font-weigh
 .tree-group.collapsed .tree-chevron { transform: rotate(-90deg); }
 .tree-group-label {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--text-primary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-transform: capitalize;
 }
 .tree-group-count {
   font-size: 10px;
   font-family: var(--mono);
-  color: var(--text-muted);
-  background: var(--surface-alt);
-  padding: 1px 6px;
-  border-radius: 8px;
-  min-width: 20px;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 2px 7px;
+  border-radius: 10px;
+  min-width: 22px;
   text-align: center;
+  font-weight: 600;
 }
-.tree-items { padding-left: 12px; }
+.tree-items { padding-left: 14px; border-left: 1.5px solid var(--border); margin-left: 14px; }
 .tree-group.collapsed .tree-items { display: none; }
 .tree-item {
-  display: block;
-  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
   border-radius: var(--radius);
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: all var(--transition);
   text-decoration: none;
+  line-height: 1.4;
 }
 .tree-item:hover {
   background: var(--accent-light);
   color: var(--accent);
   text-decoration: none;
 }
+.tree-item.tree-item--current {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+  border-left: 2.5px solid var(--accent);
+  padding-left: 8px;
+}
 .tree-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  margin-right: 6px;
-  vertical-align: middle;
   flex-shrink: 0;
 }
 .tree-dot--active { background: var(--status-active); }
 .tree-dot--draft { background: var(--status-draft); }
 .tree-dot--superseded { background: var(--status-superseded); }
+.tree-folder-icon { font-size: 13px; flex-shrink: 0; }
+.tree-nested .tree-items { margin-left: 10px; }
 
 /* ── Main Content ───────────────────────────────────────────────────────── */
 .main {
@@ -881,6 +1061,25 @@ footer {
   margin-bottom: 28px;
   overflow-x: auto;
 }
+.tree-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tree-ctrl-btn {
+  font-size: 12px;
+  font-family: var(--sans);
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.tree-ctrl-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
+.tree-ctrl-btn--active { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+.tree-ctrl-btn--active:hover { background: var(--accent-hover); }
 .tree-diagram-title {
   font-size: 11px;
   font-weight: 600;
@@ -986,6 +1185,87 @@ footer {
 }
 
 /* ── Settings Page ────────────────────────────────────────────────────── */
+.settings-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 20px;
+  padding: 0;
+}
+.view-toggle-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.view-toggle-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.view-toggle-btn:nth-child(2) { border-radius: 0 var(--radius) var(--radius) 0; border-left: none; }
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.view-toggle-btn:hover:not(.active) { background: var(--surface-alt); }
+.settings-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.settings-search { position: relative; display: flex; align-items: center; }
+.settings-search-icon { width: 16px; height: 16px; position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
+.settings-search input {
+  font-family: var(--mono); font-size: 12px; padding: 7px 28px 7px 32px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  color: var(--text-primary); width: 220px; transition: border-color 0.15s;
+}
+.settings-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
+.settings-search-clear {
+  position: absolute; right: 8px; cursor: pointer; font-size: 16px; color: var(--text-muted);
+  line-height: 1; padding: 2px;
+}
+.settings-search-clear:hover { color: var(--text-primary); }
+.settings-row.search-highlight { background: rgba(37,99,235,0.08); border-radius: var(--radius); }
+.settings-compliance-btn.search-highlight { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 0 0 4px rgba(37,99,235,0.15); }
+.settings-section.search-no-match { opacity: 0.3; }
+/* Wizard */
+.wizard-container { max-width: 680px; margin: 0 auto; }
+.wizard-progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 32px; overflow: hidden; }
+.wizard-progress-bar { height: 100%; background: var(--accent); transition: width 0.3s ease; border-radius: 2px; }
+.wizard-step { display: none; }
+.wizard-step.active { display: block; animation: wizFadeIn 0.25s ease; }
+@keyframes wizFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.wizard-step h2 { font-size: 18px; font-weight: 700; margin: 0 0 6px; color: var(--text-primary); }
+.wizard-step-number { font-size: 11px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.wizard-desc { font-size: 13px; color: var(--text-secondary); margin: 0 0 20px; }
+.wizard-options { display: flex; gap: 12px; flex-wrap: wrap; }
+.wizard-options--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.wizard-option {
+  flex: 1; min-width: 160px; padding: 16px; border: 2px solid var(--border);
+  border-radius: var(--radius-lg); background: var(--surface); cursor: pointer;
+  text-align: left; transition: all 0.15s; font-family: inherit;
+}
+.wizard-option:hover { border-color: var(--accent); background: var(--surface-alt); }
+.wizard-option.selected { border-color: var(--accent); background: rgba(37,99,235,0.06); box-shadow: 0 0 0 1px var(--accent); }
+.wizard-option--compact { padding: 10px 14px; min-width: 120px; }
+.wizard-option-icon { margin-bottom: 8px; }
+.wizard-option-icon svg { width: 28px; height: 28px; color: var(--accent); }
+.wizard-option-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.wizard-option-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.wizard-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); }
+.wizard-btn {
+  font-family: var(--mono); font-size: 12px; padding: 8px 20px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); color: var(--text-secondary); cursor: pointer;
+}
+.wizard-btn:hover { background: var(--surface-alt); }
+.wizard-btn--next { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wizard-btn--next:hover { background: #1d4ed8; }
+.wizard-btn--next:disabled { opacity: 0.4; cursor: not-allowed; }
+.wizard-btn--finish { background: #059669; border-color: #059669; color: #fff; }
+.wizard-btn--finish:hover { background: #047857; }
+.wizard-fields { display: flex; flex-direction: column; gap: 16px; }
+.wizard-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+.wizard-field input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; font-family: var(--mono); background: var(--surface); color: var(--text-primary); }
+.wizard-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
 .settings-section {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1505,6 +1785,14 @@ footer {
   font-size: 12px; font-family: var(--mono); background: var(--surface);
   color: var(--text-primary); cursor: pointer;
 }
+.tmpl-search { position: relative; display: flex; align-items: center; }
+.tmpl-search-icon { width: 14px; height: 14px; position: absolute; left: 8px; color: var(--text-muted); pointer-events: none; }
+.tmpl-search input {
+  padding: 5px 10px 5px 28px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 12px; font-family: var(--mono); background: var(--surface);
+  color: var(--text-primary); width: 180px;
+}
+.tmpl-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
 .tmpl-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px; margin-top: 16px;
@@ -1582,6 +1870,105 @@ footer {
   nav { gap: 2px; }
   nav a { padding: 6px 8px; font-size: 12px; }
 }
+
+/* ── Project Manager Page ── */
+.mgr-sections { display: flex; flex-direction: column; gap: 16px; }
+.mgr-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.mgr-section-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
+.mgr-section-header:hover { background: var(--surface-alt); }
+.mgr-section-header h2 { margin: 0; font-size: 15px; font-weight: 600; flex: 1; }
+.mgr-section-icon { font-size: 16px; color: var(--accent); width: 20px; text-align: center; }
+.mgr-badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-family: var(--mono); }
+.mgr-chevron { color: var(--text-muted); font-size: 10px; transition: transform 0.2s; }
+.mgr-section.collapsed .mgr-chevron { transform: rotate(-90deg); }
+.mgr-section.collapsed .mgr-section-body { display: none; }
+.mgr-section-body { padding: 0 20px 20px; border-top: 1px solid var(--border); }
+.mgr-hint { font-size: 12px; color: var(--text-muted); margin: 12px 0 16px; }
+.mgr-form { display: flex; flex-direction: column; gap: 12px; }
+.mgr-row { display: flex; align-items: center; gap: 12px; }
+.mgr-row label { width: 120px; font-size: 13px; font-weight: 500; color: var(--text-secondary); flex-shrink: 0; }
+.mgr-row input, .mgr-row select { flex: 1; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; font-family: var(--sans); background: var(--bg); color: var(--text-primary); }
+.mgr-row input:focus, .mgr-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
+.mgr-row-btn { justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.mgr-btn { padding: 7px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: var(--sans); }
+.mgr-btn:hover { background: var(--surface-alt); border-color: var(--accent); }
+.mgr-btn--primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mgr-btn--primary:hover { background: #1d4ed8; }
+.mgr-btn--sm { padding: 4px 10px; font-size: 11px; }
+.mgr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mgr-table th { text-align: left; padding: 8px 12px; background: var(--surface-alt); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+.mgr-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.mgr-filename { font-family: var(--mono); font-size: 12px; }
+.mgr-table tr:hover { background: var(--surface-alt); }
+.mgr-preview { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; }
+.mgr-preview-row { font-size: 12px; padding: 2px 0; }
+.mgr-preview-row code { background: var(--bg); padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+.mgr-output { position: sticky; bottom: 0; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-lg); margin-top: 24px; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); z-index: 50; }
+.mgr-output-header { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.mgr-output-header h3 { margin: 0; font-size: 13px; font-weight: 600; flex: 1; }
+.mgr-output pre { margin: 0; padding: 16px; background: #1e293b; color: #e2e8f0; border-radius: 0; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.mgr-output-hint { font-size: 11px; color: var(--text-muted); padding: 8px 16px; margin: 0; }
+.mgr-folder-ref { font-size: 12px; color: var(--text-muted); padding: 12px 0 0; }
+.mgr-folder-ref code { background: var(--bg); padding: 2px 6px; border-radius: 3px; font-size: 11px; margin: 0 2px; }
+
+/* Audit & Verify page */
+.audit-sections { display: flex; flex-direction: column; gap: 12px; }
+.aud-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.aud-section.collapsed .aud-section-body { display: none; }
+.aud-section.collapsed .mgr-chevron { transform: rotate(-90deg); }
+.aud-section-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
+.aud-section-header:hover { background: var(--surface-alt); }
+.aud-section-header h2 { margin: 0; font-size: 15px; font-weight: 600; flex: 1; }
+.aud-section-body { padding: 0 20px 20px; }
+.aud-status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.03em; text-transform: uppercase; }
+.aud-pass { background: #dcfce7; color: #166534; }
+.aud-fail { background: #fef2f2; color: #991b1b; }
+.aud-info { background: var(--surface-alt); color: var(--text-muted); }
+.aud-ok-banner { padding: 20px; text-align: center; font-size: 14px; color: #166534; background: #f0fdf4; border-radius: var(--radius); }
+.aud-finding { margin-bottom: 16px; }
+.aud-finding-title { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
+.aud-finding-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+.aud-finding--warn { color: #92400e; }
+.aud-finding--err { color: #991b1b; }
+.aud-finding--info { color: #1e40af; }
+.aud-finding-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+.aud-finding-list code { background: var(--bg); padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.aud-dot { font-weight: 700; font-size: 14px; }
+.aud-dot--ok { color: #166534; }
+.aud-dot--err { color: #991b1b; }
+.aud-hash { font-family: var(--mono); font-size: 11px; color: var(--text-muted); word-break: break-all; }
+.aud-row--err { background: #fef2f2; }
+.aud-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.aud-controls input[type="text"] { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); }
+.aud-toggle { font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.aud-chain-status { margin-top: 12px; padding: 10px 16px; border-radius: var(--radius); font-size: 13px; }
+.aud-chain-ok { color: #166534; }
+.aud-chain-broken { color: #991b1b; font-weight: 600; }
+.aud-chain-info { color: var(--text-muted); font-style: italic; }
+.aud-seal-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.aud-seal-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+.aud-seal-label { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 100px; }
+.aud-seal-value { font-family: var(--mono); font-size: 12px; word-break: break-all; background: var(--surface); padding: 6px 10px; border-radius: var(--radius); flex: 1; }
+.aud-seal-explain { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 12px 0 0; }
+.aud-seal-explain code { background: var(--surface); padding: 2px 5px; border-radius: 3px; font-size: 11px; }
+.aud-rec-group { margin-bottom: 16px; }
+.aud-rec-cat { font-size: 13px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.aud-op-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--surface-alt); color: var(--text); text-transform: uppercase; letter-spacing: 0.03em; }
+.aud-op--register { background: #dbeafe; color: #1e40af; }
+.aud-op--bump { background: #fef3c7; color: #92400e; }
+.aud-op--audit { background: #dcfce7; color: #166534; }
+.aud-op--manifest { background: #f3e8ff; color: #6b21a8; }
+.aud-op--evidence { background: #ffe4e6; color: #9f1239; }
+.aud-op--scaffold { background: #e0f2fe; color: #0369a1; }
+.aud-cli-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.aud-cli-card { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.aud-cli-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.aud-cli-card code { display: block; font-size: 12px; font-family: var(--mono); margin-top: 8px; padding: 8px 10px; background: #1e293b; color: #e2e8f0; border-radius: var(--radius); white-space: pre-wrap; word-break: break-all; }
+.aud-cli-title { font-size: 13px; font-weight: 600; }
+.aud-cli-hint { font-size: 11px; color: var(--text-muted); margin-top: 12px; text-align: center; }
+.kpi-ok { color: #166534; }
+.kpi-warn { color: #92400e; }
+.kpi-err { color: #991b1b; }
 """
 
 # SVG icons used in the sidebar
@@ -1594,13 +1981,15 @@ _CHEVRON_SVG = '<svg class="tree-chevron" viewBox="0 0 16 16" fill="none" stroke
 def _nav(active: str, has_dashboard: bool = False, prefix: str = "") -> str:
     """Build the navigation bar HTML."""
     links = [
-        ("index.html", "Index", "index"),
+        ("index.html", "Home", "index"),
+        ("manage.html", "Manage", "manage"),
+        ("audit.html", "Audit", "audit"),
         ("tree.html", "Tree", "tree"),
         ("graph.html", "Graph", "graph"),
         ("templates.html", "Templates", "templates"),
     ]
-    if has_dashboard:
-        links.append(("dashboard.html", "Dashboard", "dashboard"))
+    # Dashboard link intentionally omitted from site nav —
+    # standalone dashboard is available via `librarian dashboard` CLI.
 
     parts = []
     for href, label, key in links:
@@ -1632,22 +2021,80 @@ def _gear_link(active: str = "", prefix: str = "") -> str:
 def _sidebar_html(documents: list[dict], base_prefix: str = "") -> str:
     """Build the sidebar HTML with grouping toggles and tree."""
     tree_json = _build_tree_json(documents)
+    nested_json = _build_nested_tree_json(documents)
 
     return f"""<aside class="sidebar" id="sidebar">
   <div class="sidebar-section">
     <div class="sidebar-heading">Documents</div>
   </div>
   <div class="group-toggles">
-    <button class="group-btn active" data-group="status" onclick="switchGroup(this, 'status')">Status</button>
-    <button class="group-btn" data-group="tag" onclick="switchGroup(this, 'tag')">Tag</button>
-    <button class="group-btn" data-group="path" onclick="switchGroup(this, 'path')">Path</button>
+    <button class="group-btn active" data-group="status" onclick="switchGroup(this, &#39;status&#39;)">Status</button>
+    <button class="group-btn" data-group="tag" onclick="switchGroup(this, &#39;tag&#39;)">Tag</button>
+    <button class="group-btn" data-group="tree" onclick="switchGroup(this, &#39;tree&#39;)">Tree</button>
   </div>
   <div class="tree-container" id="tree-container"></div>
   <script>
   var TREE_DATA = {tree_json};
+  var NESTED_TREE = {nested_json};
   var BASE_PREFIX = "{base_prefix}";
+  var CURRENT_PAGE = window.location.pathname.split("/").pop() || "index.html";
+  function renderDocItems(docs) {{
+    var html = "";
+    docs.forEach(function(d) {{
+      var dotCls = "tree-dot tree-dot--" + (d.status || "");
+      var href = BASE_PREFIX + "docs/" + d.filename + ".html";
+      var isCurrent = href.split("/").pop() === CURRENT_PAGE;
+      var itemCls = "tree-item" + (isCurrent ? " tree-item--current" : "");
+      html += '<a class="' + itemCls + '" href="' + href + '">';
+      html += '<span class="' + dotCls + '"></span>';
+      html += '<span style="overflow:hidden;text-overflow:ellipsis">' + (d.title || d.filename) + '</span>';
+      html += '</a>';
+    }});
+    return html;
+  }}
+  function countAllDocs(node) {{
+    var n = (node.docs || []).length;
+    var dirs = node.dirs || {{}};
+    Object.keys(dirs).forEach(function(k) {{ n += countAllDocs(dirs[k]); }});
+    return n;
+  }}
+  function renderNestedNode(node) {{
+    var html = "";
+    /* Render subfolders first */
+    var dirKeys = Object.keys(node.dirs || {{}}).sort();
+    dirKeys.forEach(function(dirName) {{
+      var child = node.dirs[dirName];
+      var total = countAllDocs(child);
+      html += '<div class="tree-group tree-nested">';
+      html += '<div class="tree-group-header" onclick="this.parentElement.classList.toggle(&#39;collapsed&#39;)">';
+      html += '{_CHEVRON_SVG}';
+      html += '<span class="tree-folder-icon">&#128193;</span>';
+      html += '<span class="tree-group-label">' + dirName + '/</span>';
+      html += '<span class="tree-group-count">' + total + '</span>';
+      html += '</div>';
+      html += '<div class="tree-items">';
+      /* Docs directly in this folder */
+      html += renderDocItems(child.docs || []);
+      /* Recurse into subfolders */
+      html += renderNestedNode(child);
+      html += '</div></div>';
+    }});
+    return html;
+  }}
   function renderTree(mode) {{
     var container = document.getElementById("tree-container");
+    if (mode === "tree") {{
+      var html = "";
+      /* Root-level docs first */
+      var rootDocs = NESTED_TREE.docs || [];
+      if (rootDocs.length) {{
+        html += renderDocItems(rootDocs);
+      }}
+      /* Then top-level folders */
+      html += renderNestedNode(NESTED_TREE);
+      container.innerHTML = html;
+      return;
+    }}
     var groups = TREE_DATA[mode] || {{}};
     var html = "";
     var keys = Object.keys(groups).sort();
@@ -1660,13 +2107,7 @@ def _sidebar_html(documents: list[dict], base_prefix: str = "") -> str:
       html += '<span class="tree-group-count">' + docs.length + '</span>';
       html += '</div>';
       html += '<div class="tree-items">';
-      docs.forEach(function(d) {{
-        var dotCls = "tree-dot tree-dot--" + (d.status || "");
-        html += '<a class="tree-item" href="' + BASE_PREFIX + 'docs/' + d.filename + '.html">';
-        html += '<span class="' + dotCls + '"></span>';
-        html += d.title || d.filename;
-        html += '</a>';
-      }});
+      html += renderDocItems(docs);
       html += '</div></div>';
     }});
     container.innerHTML = html;
@@ -1693,14 +2134,23 @@ def _page(
     has_dashboard: bool = False,
     sidebar: str = "",
     path_prefix: str = "",
+    search_index: str | None = None,
 ) -> str:
     """Wrap body content in the full HTML page shell.
 
     Args:
         path_prefix: Relative path prefix for asset/nav links.
             Root pages use ``""``, pages in ``docs/`` use ``"../"``.
+        search_index: JSON array of search entries for the global search bar.
+            If ``None``, falls back to the module-level ``_SEARCH_INDEX_JSON``.
     """
+    if search_index is None:
+        search_index = _SEARCH_INDEX_JSON
     seal_short = _esc(seal[:16]) + "..." if seal else "N/A"
+    search_icon_svg = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                       'stroke-width="2" class="global-search-icon">'
+                       '<circle cx="11" cy="11" r="8"/>'
+                       '<line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>')
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1708,14 +2158,21 @@ def _page(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{_esc(title)} — {_esc(project_name)}</title>
 <link rel="stylesheet" href="{path_prefix}assets/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 {extra_head}
 </head>
 <body>
 <header class="site-header">
-  <div class="brand"><span>&#9670;</span> {_esc(project_name)}</div>
+  <div class="brand"><svg class="brand-logo" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="16" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 9h8M7 12.5h8M7 16h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 7v14a3 3 0 0 1-3 3H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="21" cy="7" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.2"/><path d="M19.8 7l.8.8 1.6-1.6" stroke="var(--surface)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>{_esc(project_name)}</div>
   {_nav(active_nav, has_dashboard=has_dashboard, prefix=path_prefix)}
   <div class="header-spacer"></div>
-  <div class="header-seal">seal {seal_short}</div>
+  <div class="global-search" id="global-search">
+    {search_icon_svg}
+    <input type="text" id="global-search-input" placeholder="Search docs &amp; settings..." autocomplete="off">
+    <div class="global-search-results" id="global-search-results"></div>
+  </div>
   {_gear_link(active_nav, path_prefix)}
 </header>
 <div class="site-body">
@@ -1724,10 +2181,203 @@ def _page(
 {body}
 <footer>
 <span>Librarian</span>
+<span class="footer-seal">seal {seal_short}</span>
 <span>Generated {_esc(generated_at)}</span>
 </footer>
 </main>
 </div>
+<script>
+(function() {{
+  var SEARCH_INDEX = {search_index};
+  var PREFIX = '{path_prefix}';
+  var input = document.getElementById('global-search-input');
+  var results = document.getElementById('global-search-results');
+  var activeIdx = -1;
+  var currentItems = [];
+
+  // SVG icons for result categories
+  var ICONS = {{
+    document: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gsr-item-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    setting: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gsr-item-icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    page: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gsr-item-icon"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>',
+    template: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gsr-item-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+  }};
+
+  function esc(s) {{
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }}
+
+  // Date range parsing: supports YYYY, YYYY-MM, YYYY-MM-DD, and X..Y ranges
+  var DATE_RE = /^(\d{{4}})(?:-(\d{{2}}))?(?:-(\d{{2}}))?$/;
+  function parseDate(s) {{
+    var m = DATE_RE.exec(s.trim());
+    if (!m) return null;
+    return {{ y: parseInt(m[1],10), m: m[2] ? parseInt(m[2],10) : 0, d: m[3] ? parseInt(m[3],10) : 0 }};
+  }}
+  function dateToNum(d) {{
+    // Convert to YYYYMMDD int for range comparison — fill missing parts
+    return d.y * 10000 + (d.m || 1) * 100 + (d.d || 1);
+  }}
+  function dateToMax(d) {{
+    // Upper bound: if only year, end of year; if year-month, end of month
+    return d.y * 10000 + (d.m || 12) * 100 + (d.d || 31);
+  }}
+  function entryDateNum(e) {{
+    if (!e.date) return 0;
+    var m = DATE_RE.exec(e.date);
+    if (!m) return 0;
+    return parseInt(m[1],10) * 10000 + (m[2] ? parseInt(m[2],10) : 1) * 100 + (m[3] ? parseInt(m[3],10) : 1);
+  }}
+
+  function doSearch(q) {{
+    q = q.toLowerCase().trim();
+    if (!q) {{ results.classList.remove('open'); return; }}
+
+    // Check for date range pattern: "2026-04-01..2026-04-13" or single date "2026-04"
+    var dateFrom = null, dateTo = null, textQuery = q;
+    var rangeMatch = q.match(/^(\d{{4}}(?:-\d{{2}})?(?:-\d{{2}})?)\.\.(\d{{4}}(?:-\d{{2}})?(?:-\d{{2}})?)\s*(.*)$/);
+    if (rangeMatch) {{
+      dateFrom = parseDate(rangeMatch[1]);
+      dateTo = parseDate(rangeMatch[2]);
+      textQuery = (rangeMatch[3] || '').trim();
+    }} else {{
+      var singleMatch = q.match(/^(\d{{4}}(?:-\d{{2}})(?:-\d{{2}})?)\s*(.*)$/);
+      if (!singleMatch) singleMatch = q.match(/^(\d{{4}})\s+(.+)$/);
+      if (!singleMatch && /^\d{{4}}(?:-\d{{2}})?(?:-\d{{2}})?$/.test(q)) {{
+        singleMatch = [null, q, ''];
+      }}
+      if (singleMatch) {{
+        var sd = parseDate(singleMatch[1]);
+        if (sd) {{
+          dateFrom = sd;
+          dateTo = sd;
+          textQuery = (singleMatch[2] || '').trim();
+        }}
+      }}
+    }}
+
+    var hasDateFilter = dateFrom && dateTo;
+    var fromNum = hasDateFilter ? dateToNum(dateFrom) : 0;
+    var toNum = hasDateFilter ? dateToMax(dateTo) : 0;
+
+    var matches = SEARCH_INDEX.filter(function(e) {{
+      // Date filter: only applies to entries that have a date field
+      if (hasDateFilter) {{
+        if (e.date) {{
+          var eNum = entryDateNum(e);
+          if (eNum < fromNum || eNum > toNum) return false;
+        }} else if (!textQuery) {{
+          // Date-only query: skip non-dated entries
+          return false;
+        }}
+      }}
+      // Text filter
+      if (textQuery) {{
+        return e.text.toLowerCase().indexOf(textQuery) >= 0;
+      }}
+      return true;
+    }});
+
+    if (matches.length === 0) {{
+      var hint = hasDateFilter ? '<br><span style="font-size:11px">Try: YYYY-MM-DD, YYYY-MM, or YYYY-MM-DD..YYYY-MM-DD</span>' : '';
+      results.innerHTML = '<div class="gsr-empty">No results for &#34;' + esc(q) + '&#34;' + hint + '</div>';
+      results.classList.add('open');
+      currentItems = [];
+      activeIdx = -1;
+      return;
+    }}
+
+    // Group by category
+    var groups = {{}};
+    matches.forEach(function(m) {{
+      var cat = m.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(m);
+    }});
+
+    var order = ['document', 'setting', 'template', 'page'];
+    var labels = {{ document: 'Documents', setting: 'Settings', template: 'Templates', page: 'Pages' }};
+    var html = '';
+    currentItems = [];
+
+    order.forEach(function(cat) {{
+      if (!groups[cat]) return;
+      html += '<div class="gsr-section">' + (labels[cat] || cat) + '</div>';
+      groups[cat].slice(0, 8).forEach(function(m) {{
+        var idx = currentItems.length;
+        var icon = ICONS[cat] || ICONS.page;
+        var href = m.href ? (m.href.indexOf('://') >= 0 ? m.href : PREFIX + m.href) : '#';
+        var metaText = hasDateFilter && m.date ? m.date : (m.meta || '');
+        html += '<a class="gsr-item" data-idx="' + idx + '" href="' + esc(href) + '">'
+              + icon
+              + '<span class="gsr-item-title">' + esc(m.title) + '</span>'
+              + (metaText ? '<span class="gsr-item-meta">' + esc(metaText) + '</span>' : '')
+              + '</a>';
+        currentItems.push({{ href: href, el: null }});
+      }});
+    }});
+
+    results.innerHTML = html;
+    results.classList.add('open');
+    activeIdx = -1;
+
+    // Cache element references
+    results.querySelectorAll('.gsr-item').forEach(function(el, i) {{
+      currentItems[i].el = el;
+    }});
+  }}
+
+  function setActive(idx) {{
+    if (currentItems[activeIdx] && currentItems[activeIdx].el) {{
+      currentItems[activeIdx].el.classList.remove('gsr-active');
+    }}
+    activeIdx = idx;
+    if (currentItems[activeIdx] && currentItems[activeIdx].el) {{
+      currentItems[activeIdx].el.classList.add('gsr-active');
+      currentItems[activeIdx].el.scrollIntoView({{ block: 'nearest' }});
+    }}
+  }}
+
+  input.addEventListener('input', function() {{ doSearch(this.value); }});
+
+  input.addEventListener('keydown', function(e) {{
+    if (e.key === 'Escape') {{
+      results.classList.remove('open');
+      input.blur();
+      return;
+    }}
+    if (!results.classList.contains('open') || currentItems.length === 0) return;
+    if (e.key === 'ArrowDown') {{
+      e.preventDefault();
+      setActive(Math.min(activeIdx + 1, currentItems.length - 1));
+    }} else if (e.key === 'ArrowUp') {{
+      e.preventDefault();
+      setActive(Math.max(activeIdx - 1, 0));
+    }} else if (e.key === 'Enter' && activeIdx >= 0) {{
+      e.preventDefault();
+      var href = currentItems[activeIdx].href;
+      if (href && href !== '#') window.location.href = href;
+    }}
+  }});
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {{
+    if (!document.getElementById('global-search').contains(e.target)) {{
+      results.classList.remove('open');
+    }}
+  }});
+
+  // Keyboard shortcut: / to focus search
+  document.addEventListener('keydown', function(e) {{
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {{
+      e.preventDefault();
+      input.focus();
+    }}
+  }});
+}})();
+</script>
 </body>
 </html>"""
 
@@ -1837,7 +2487,7 @@ def _build_index(manifest: "Manifest") -> str:
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
     )
 
@@ -2026,8 +2676,50 @@ def _build_tree_page(manifest: "Manifest") -> str:
 
     body = f"""<h1>Folder Structure</h1>
 <div class="subtitle">{len(documents)} files across {total_dirs} directories</div>
+<div class="tree-controls">
+<button class="tree-ctrl-btn" onclick="toggleAllBranches(false)">Collapse All</button>
+<button class="tree-ctrl-btn" onclick="toggleAllBranches(true)">Expand All</button>
+<button class="tree-ctrl-btn" id="folders-only-btn" onclick="toggleFoldersOnly()">Folders Only</button>
+</div>
 {diagram}
-{cards}"""
+<div id="tree-cards-section">
+{cards}
+</div>
+<script>
+function toggleAllBranches(expand) {{
+  document.querySelectorAll('.td-branch').forEach(function(b) {{
+    if (expand) b.classList.remove('collapsed');
+    else b.classList.add('collapsed');
+  }});
+}}
+function toggleFoldersOnly() {{
+  var btn = document.getElementById('folders-only-btn');
+  var section = document.getElementById('tree-cards-section');
+  var diagram = document.querySelector('.tree-diagram');
+  if (section.style.display === 'none') {{
+    section.style.display = '';
+    btn.classList.remove('tree-ctrl-btn--active');
+    if (diagram) {{
+      diagram.querySelectorAll('.td-entry:not(.td-branch)').forEach(function(e) {{
+        e.style.display = '';
+      }});
+    }}
+  }} else {{
+    section.style.display = 'none';
+    btn.classList.add('tree-ctrl-btn--active');
+    if (diagram) {{
+      // Expand all branches so nested folders are visible at every depth
+      diagram.querySelectorAll('.td-branch.collapsed').forEach(function(b) {{
+        b.classList.remove('collapsed');
+      }});
+      // Hide file entries (non-branch entries)
+      diagram.querySelectorAll('.td-entry:not(.td-branch)').forEach(function(e) {{
+        e.style.display = 'none';
+      }});
+    }}
+  }}
+}}
+</script>"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
 
@@ -2038,7 +2730,7 @@ def _build_tree_page(manifest: "Manifest") -> str:
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
     )
 
@@ -2148,7 +2840,7 @@ def _build_doc_page(doc: dict, manifest: "Manifest", repo_root: str | Path = "")
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
         path_prefix="../",
     )
@@ -2200,7 +2892,7 @@ def _build_graph_page(manifest: "Manifest") -> str:
             }
         })
 
-    elements_json = json.dumps(cy_nodes + cy_edges, indent=2, sort_keys=True)
+    elements_json = _json_safe(cy_nodes + cy_edges, indent=2, sort_keys=True)
 
     # Try to read cytoscape.min.js from the dashboard template directory
     cytoscape_js = _load_cytoscape_js()
@@ -2282,7 +2974,7 @@ var ELEMENTS = {elements_json};
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
         extra_head=extra_head,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
     )
 
@@ -2351,11 +3043,11 @@ def _inject_dashboard_nav(dashboard_file: Path) -> None:
 }
 .site-nav-overlay a:hover { color: #1a1816; background: #f3f2ee; }
 .site-nav-overlay a.active { color: #2d6a5a; background: #e6f0ec; font-weight: 600; }
-.site-nav-overlay .brand { font-size: 12px; font-weight: 700; color: #1a1816; }
-.site-nav-overlay .brand span { color: #2d6a5a; }
+.site-nav-overlay .brand { font-size: 16px; font-weight: 800; font-family: "Playfair Display", Georgia, serif; color: #1a1816; display: flex; align-items: center; gap: 6px; }
+.site-nav-overlay .brand-logo { width: 20px; height: 20px; color: #2d6a5a; }
 </style>
 <div class="site-nav-overlay">
-  <div class="brand"><span>&#9670;</span> Librarian</div>
+  <div class="brand"><svg class="brand-logo" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="16" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 9h8M7 12.5h8M7 16h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 7v14a3 3 0 0 1-3 3H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="21" cy="7" r="3.5" fill="#2d6a5a" stroke="white" stroke-width="1.2"/><path d="M19.8 7l.8.8 1.6-1.6" stroke="white" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>Librarian</div>
   <a href="index.html">Index</a>
   <a href="tree.html">Tree</a>
   <a href="graph.html">Graph</a>
@@ -2410,8 +3102,15 @@ def _build_templates_page(manifest: "Manifest") -> str:
             seen_ids.add(card_key)
 
             # Detect compliance conditionals from body
+            _ALL_COMP_FLAGS = (
+                "hipaa", "gdpr", "dod_5200", "iso_9001", "iso_27001",
+                "sec_finra", "sox", "pci_dss", "soc2", "ccpa",
+                "nist_csf", "fda_21cfr11", "cmmc", "ferpa", "fedramp",
+                "gxp", "itar_ear", "nerc_cip", "nis2", "dora",
+                "pipeda", "lgpd",
+            )
             comp_flags: list[str] = []
-            for flag in ("hipaa", "dod_5200", "iso_9001", "iso_27001", "sec_finra"):
+            for flag in _ALL_COMP_FLAGS:
                 if flag in tmpl.body:
                     comp_flags.append(flag)
 
@@ -2442,7 +3141,7 @@ def _build_templates_page(manifest: "Manifest") -> str:
     all_templates.sort(key=lambda t: (source_order.get(t["source"], 10), t["id"]))
 
     # Serialize template data for client-side filtering
-    tmpl_json = json.dumps(all_templates, indent=None)
+    tmpl_json = _json_safe(all_templates, indent=None)
 
     # Preset options for dropdown
     preset_opts = ""
@@ -2466,15 +3165,26 @@ def _build_templates_page(manifest: "Manifest") -> str:
     for key, label in source_labels.items():
         source_opts += f'<option value="{_esc(key)}">{_esc(label)}</option>'
 
-    # Compliance filter options
-    comp_labels = [
-        ("all", "All Compliance"),
-        ("hipaa", "HIPAA"),
-        ("dod_5200", "DoD 5200"),
-        ("iso_9001", "ISO 9001"),
-        ("iso_27001", "ISO 27001"),
-        ("sec_finra", "SEC/FINRA"),
-    ]
+    # Compliance filter options — only show flags that actually appear in templates
+    _active_comp_flags: set[str] = set()
+    for t in all_templates:
+        _active_comp_flags.update(t["compliance"])
+
+    _comp_label_map = {
+        "hipaa": "HIPAA", "gdpr": "GDPR", "dod_5200": "DoD 5200",
+        "iso_9001": "ISO 9001", "iso_27001": "ISO 27001",
+        "sec_finra": "SEC/FINRA", "sox": "SOX", "pci_dss": "PCI DSS",
+        "soc2": "SOC 2", "ccpa": "CCPA/CPRA", "nist_csf": "NIST CSF",
+        "fda_21cfr11": "FDA 21 CFR 11", "cmmc": "CMMC", "ferpa": "FERPA",
+        "fedramp": "FedRAMP", "gxp": "GxP", "itar_ear": "ITAR/EAR",
+        "nerc_cip": "NERC CIP", "nis2": "NIS2", "dora": "DORA",
+        "pipeda": "PIPEDA", "lgpd": "LGPD",
+    }
+    comp_labels: list[tuple[str, str]] = [("all", "All Compliance")]
+    # Stable order: iterate the label map, include only flags with actual templates
+    for flag, label in _comp_label_map.items():
+        if flag in _active_comp_flags:
+            comp_labels.append((flag, label))
     comp_opts = ""
     for val, label in comp_labels:
         comp_opts += f'<option value="{_esc(val)}">{_esc(label)}</option>'
@@ -2489,6 +3199,10 @@ def _build_templates_page(manifest: "Manifest") -> str:
   <select id="tmpl-source" onchange="filterTemplates()">{source_opts}</select>
   <label style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">Compliance:</label>
   <select id="tmpl-compliance" onchange="filterTemplates()">{comp_opts}</select>
+  <div class="tmpl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tmpl-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="tmpl-search" placeholder="Search templates..." oninput="filterTemplates()">
+  </div>
   <span class="tmpl-count" id="tmpl-count"></span>
 </div>
 
@@ -2606,6 +3320,7 @@ def _build_templates_page(manifest: "Manifest") -> str:
     var preset = document.getElementById("tmpl-preset").value;
     var source = document.getElementById("tmpl-source").value;
     var comp = document.getElementById("tmpl-compliance").value;
+    var query = (document.getElementById("tmpl-search").value || "").toLowerCase().trim();
 
     var filtered = TEMPLATES.filter(function(t) {{
       // Preset filter: template must be available to the selected preset
@@ -2614,6 +3329,11 @@ def _build_templates_page(manifest: "Manifest") -> str:
       if (source !== "all" && t.source !== source) return false;
       // Compliance filter
       if (comp !== "all" && t.compliance.indexOf(comp) < 0) return false;
+      // Text search: match against id, name, description, tags, sections, compliance
+      if (query) {{
+        var haystack = (t.id + " " + t.name + " " + t.description + " " + t.tags.join(" ") + " " + t.sections.join(" ") + " " + t.compliance.join(" ")).toLowerCase();
+        if (haystack.indexOf(query) < 0) return false;
+      }}
       return true;
     }});
 
@@ -2634,7 +3354,7 @@ def _build_templates_page(manifest: "Manifest") -> str:
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
     )
 
@@ -2830,7 +3550,7 @@ def _build_settings_page(manifest: "Manifest") -> str:
     )
 
     # Build templates JSON for client-side template application
-    _templates_json = json.dumps({
+    _templates_json = _json_safe({
         name: {k: v for k, v in rules.items()}
         for name, rules in NAMING_TEMPLATES.items()
     })
@@ -2862,52 +3582,195 @@ def _build_settings_page(manifest: "Manifest") -> str:
                 "sections": len(_t.sections), "presets": _avail,
             })
     _settings_templates.sort(key=lambda t: ({"universal": 0, "security": 1, "compliance": 2}.get(t["source"], 10), t["id"]))
-    _settings_tmpl_json = json.dumps(_settings_templates, indent=None)
+    _settings_tmpl_json = _json_safe(_settings_templates, indent=None)
 
     body = f"""<h1>Settings</h1>
 <div class="subtitle">Current configuration for <strong>{_esc(project_name)}</strong> — values reflect your project_config in REGISTRY.yaml</div>
 
+<div class="settings-topbar">
+<div class="settings-view-toggle" id="view-toggle">
+  <button type="button" class="view-toggle-btn active" id="view-basic-btn" onclick="switchSettingsView('basic')">Basic</button>
+  <button type="button" class="view-toggle-btn" id="view-advanced-btn" onclick="switchSettingsView('advanced')">Advanced</button>
+  <span class="settings-hint" style="margin-left:12px" id="view-hint">Showing essential settings only. Switch to Advanced for full control.</span>
+</div>
+<div class="settings-search" id="settings-search">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="settings-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input type="text" id="settings-search-input" placeholder="Search settings..." oninput="searchSettings(this.value)">
+  <span class="settings-search-clear" id="settings-search-clear" onclick="clearSettingsSearch()" style="display:none">&times;</span>
+</div>
+</div>
+
 <div class="settings-layout">
 <div class="settings-forms">
 
-<div class="settings-section">
+<div class="settings-section" data-view="basic">
+<div class="settings-section-header">{FOLDER_ICON} Project Basics</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Preset</div>
+    <div class="settings-control"><select id="cfg-preset" onchange="renderSettingsTemplates()">{preset_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Organization</div>
+    <div class="settings-control"><input type="text" id="cfg-hdr-org-basic" value="{_esc(config.header.organization)}" placeholder="e.g. Acme Corporation" oninput="document.getElementById('cfg-hdr-org').value=this.value;updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Default Author</div>
+    <div class="settings-control"><input type="text" id="cfg-author-basic" value="{_esc(config.default_author)}" oninput="document.getElementById('cfg-author').value=this.value;updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Review Cycle</div>
+    <div class="settings-control"><input type="text" id="cfg-meta-cycle-basic" value="{config.metadata.review_cycle_days}" style="width:80px" oninput="document.getElementById('cfg-meta-cycle').value=this.value;updatePreview()"> <span class="settings-hint">days (0 = none)</span></div>
+  </div>
+</div>
+<div class="settings-hint" style="margin-top:8px">Need a guided setup? <a href="wizard.html" style="color:var(--accent)">Use the Setup Wizard</a></div>
+</div>
+
+<div class="settings-section" data-view="basic">
 <div class="settings-section-header">{COMPLIANCE_ICON} Compliance Standards</div>
-<div class="settings-hint" style="margin:0 0 12px">Toggle a standard to auto-apply its naming, header/footer, and metadata rules</div>
-<div class="settings-compliance-grid">
-  <button type="button" class="settings-compliance-btn" id="std-dod" onclick="applyStandard('dod')" title="DoD 5200.01 — Classification markings, distribution statements, FOUO/CUI banners">
-    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
-    <span class="settings-compliance-name">DoD 5200.01</span>
-    <span class="settings-compliance-desc">Classification Markings</span>
-  </button>
-  <button type="button" class="settings-compliance-btn" id="std-iso9001" onclick="applyStandard('iso9001')" title="ISO 9001:2015 / ISO 10013 — Document control numbering, revision tracking, approval workflows">
-    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
-    <span class="settings-compliance-name">ISO 9001</span>
-    <span class="settings-compliance-desc">Quality Management</span>
-  </button>
-  <button type="button" class="settings-compliance-btn" id="std-hipaa" onclick="applyStandard('hipaa')" title="HIPAA Privacy Rule (45 CFR 164) — PHI protections, 6-year retention, access controls">
+<div class="settings-hint" style="margin:0 0 8px">Toggle a standard to auto-apply its naming, header/footer, and metadata rules</div>
+<div style="margin-bottom:12px">
+  <select id="compliance-industry-filter" onchange="filterComplianceButtons()" style="font-size:12px;font-family:var(--mono);padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text-secondary)">
+    <option value="all">All Industries</option>
+    <option value="privacy">Privacy &amp; Data Protection</option>
+    <option value="financial">Financial &amp; Audit</option>
+    <option value="healthcare">Healthcare &amp; Life Sciences</option>
+    <option value="government">Government &amp; Defense</option>
+    <option value="technology">Technology &amp; Security</option>
+    <option value="quality">Quality &amp; Standards</option>
+    <option value="education">Education</option>
+  </select>
+</div>
+<div class="settings-compliance-grid" id="compliance-grid">
+  <button type="button" class="settings-compliance-btn" id="std-hipaa" data-industry="healthcare" onclick="applyStandard('hipaa')" title="HIPAA Privacy Rule (45 CFR 164) — PHI protections, 6-year retention, access controls">
     <span class="settings-compliance-icon">{HEADER_ICON}</span>
     <span class="settings-compliance-name">HIPAA</span>
     <span class="settings-compliance-desc">Healthcare Privacy</span>
   </button>
-  <button type="button" class="settings-compliance-btn" id="std-sec" onclick="applyStandard('sec')" title="SEC 17a-4 / FINRA 4511 — WORM retention, 6-year records, audit trail requirements">
+  <button type="button" class="settings-compliance-btn" id="std-gdpr" data-industry="privacy" onclick="applyStandard('gdpr')" title="GDPR (EU 2016/679) — Data protection by design, DPIAs, data subject rights, 72-hour breach notification">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">GDPR</span>
+    <span class="settings-compliance-desc">EU Data Protection</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-iso27001" data-industry="technology" onclick="applyStandard('iso27001')" title="ISO/IEC 27001:2022 — Information security management system, Annex A controls, risk treatment">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">ISO 27001</span>
+    <span class="settings-compliance-desc">Information Security</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-sox" data-industry="financial" onclick="applyStandard('sox')" title="Sarbanes-Oxley Act (SOX) — Internal controls over financial reporting, Section 302/404 compliance">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">SOX</span>
+    <span class="settings-compliance-desc">Financial Controls</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-soc2" data-industry="technology" onclick="applyStandard('soc2')" title="SOC 2 Type II — Trust Service Criteria: security, availability, processing integrity, confidentiality, privacy">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">SOC 2</span>
+    <span class="settings-compliance-desc">Trust Services</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-pcidss" data-industry="financial" onclick="applyStandard('pcidss')" title="PCI DSS v4.0 — Payment card data security, network segmentation, encryption, access controls">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">PCI DSS</span>
+    <span class="settings-compliance-desc">Payment Card Security</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-nist" data-industry="government" onclick="applyStandard('nist')" title="NIST CSF 2.0 / SP 800-171 — Identify, Protect, Detect, Respond, Recover + CUI safeguarding">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">NIST CSF</span>
+    <span class="settings-compliance-desc">Cybersecurity Framework</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-ccpa" data-industry="privacy" onclick="applyStandard('ccpa')" title="CCPA/CPRA (Cal. Civ. Code 1798) — Consumer privacy rights, opt-out, data sale restrictions, right to delete">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">CCPA/CPRA</span>
+    <span class="settings-compliance-desc">CA Privacy Rights</span>
+  </button>
+</div>
+<div style="margin:8px 0 4px">
+  <button type="button" class="tree-ctrl-btn" id="show-more-compliance" onclick="toggleMoreCompliance()" style="font-size:11px">Show More Standards</button>
+</div>
+<div class="settings-compliance-grid" id="compliance-grid-more" style="display:none">
+  <button type="button" class="settings-compliance-btn" id="std-sec" data-industry="financial" onclick="applyStandard('sec')" title="SEC 17a-4 / FINRA 4511 — WORM retention, 6-year records, audit trail requirements">
     <span class="settings-compliance-icon">{SHIELD_ICON}</span>
     <span class="settings-compliance-name">SEC / FINRA</span>
     <span class="settings-compliance-desc">Financial Recordkeeping</span>
   </button>
-  <button type="button" class="settings-compliance-btn" id="std-scientific" onclick="applyStandard('scientific')" title="NIH/NSF data management — 10-year retention, PI ownership, revision history, ISO 8601 dates">
+  <button type="button" class="settings-compliance-btn" id="std-iso9001" data-industry="quality" onclick="applyStandard('iso9001')" title="ISO 9001:2015 / ISO 10013 — Document control numbering, revision tracking, approval workflows">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">ISO 9001</span>
+    <span class="settings-compliance-desc">Quality Management</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-dod" data-industry="government" onclick="applyStandard('dod')" title="DoD 5200.01 — Classification markings, distribution statements, FOUO/CUI banners">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">DoD 5200.01</span>
+    <span class="settings-compliance-desc">Classification Markings</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-fda" data-industry="healthcare" onclick="applyStandard('fda')" title="FDA 21 CFR Part 11 — Electronic records and signatures, audit trails, system validation, data integrity">
+    <span class="settings-compliance-icon">{HEADER_ICON}</span>
+    <span class="settings-compliance-name">FDA 21 CFR 11</span>
+    <span class="settings-compliance-desc">Electronic Records</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-cmmc" data-industry="government" onclick="applyStandard('cmmc')" title="CMMC 2.0 Level 2 — 110 NIST SP 800-171 practices, CUI protection, DoD contractor certification">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">CMMC</span>
+    <span class="settings-compliance-desc">DoD Cyber Maturity</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-gxp" data-industry="healthcare" onclick="applyStandard('gxp')" title="GxP (GMP/GLP/GCP) — Good practice regulations for pharma manufacturing, lab, and clinical trials">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">GxP</span>
+    <span class="settings-compliance-desc">Pharma/Life Sciences</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-fedramp" data-industry="government" onclick="applyStandard('fedramp')" title="FedRAMP — Federal cloud security authorization, NIST 800-53 controls, continuous monitoring, ATO process">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">FedRAMP</span>
+    <span class="settings-compliance-desc">Federal Cloud Auth</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-ferpa" data-industry="education" onclick="applyStandard('ferpa')" title="FERPA (20 U.S.C. 1232g) — Student education records privacy, directory information, consent requirements">
+    <span class="settings-compliance-icon">{HEADER_ICON}</span>
+    <span class="settings-compliance-name">FERPA</span>
+    <span class="settings-compliance-desc">Student Records</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-scientific" data-industry="education" onclick="applyStandard('scientific')" title="NIH/NSF data management — 10-year retention, PI ownership, revision history, ISO 8601 dates">
     <span class="settings-compliance-icon">{NAMING_ICON}</span>
     <span class="settings-compliance-name">Research / Academic</span>
     <span class="settings-compliance-desc">Data Management Plans</span>
   </button>
-  <button type="button" class="settings-compliance-btn" id="std-legal" onclick="applyStandard('legal')" title="Legal DMS conventions — privilege markings, matter codes, Bates-style numbering, 7-year retention">
+  <button type="button" class="settings-compliance-btn" id="std-legal" data-industry="financial" onclick="applyStandard('legal')" title="Legal DMS conventions — privilege markings, matter codes, Bates-style numbering, 7-year retention">
     <span class="settings-compliance-icon">{FOLDER_ICON}</span>
     <span class="settings-compliance-name">Legal / Law Firm</span>
     <span class="settings-compliance-desc">Matter Management</span>
   </button>
+  <button type="button" class="settings-compliance-btn" id="std-itar" data-industry="government" onclick="applyStandard('itar')" title="ITAR/EAR — International Traffic in Arms Regulations &amp; Export Administration Regulations, export-controlled technical data">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">ITAR / EAR</span>
+    <span class="settings-compliance-desc">Export Controls</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-nerccip" data-industry="technology" onclick="applyStandard('nerccip')" title="NERC CIP — Critical Infrastructure Protection standards for bulk electric system cybersecurity">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">NERC CIP</span>
+    <span class="settings-compliance-desc">Energy Infrastructure</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-nis2" data-industry="technology" onclick="applyStandard('nis2')" title="NIS2 Directive (EU 2022/2555) — Network and information security, incident reporting, supply chain security">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">NIS2</span>
+    <span class="settings-compliance-desc">EU Network Security</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-dora" data-industry="financial" onclick="applyStandard('dora')" title="DORA (EU 2022/2554) — Digital Operational Resilience Act for financial entities, ICT risk management">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">DORA</span>
+    <span class="settings-compliance-desc">EU Financial Resilience</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-pipeda" data-industry="privacy" onclick="applyStandard('pipeda')" title="PIPEDA — Personal Information Protection and Electronic Documents Act (Canada), consent-based processing">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">PIPEDA</span>
+    <span class="settings-compliance-desc">Canadian Privacy</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-lgpd" data-industry="privacy" onclick="applyStandard('lgpd')" title="LGPD (Lei 13.709/2018) — Brazilian General Data Protection Law, consent, data subject rights, DPO requirement">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">LGPD</span>
+    <span class="settings-compliance-desc">Brazilian Privacy</span>
+  </button>
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{NAMING_ICON} Naming Convention</div>
 <div class="settings-grid">
   <div class="settings-row">
@@ -2954,13 +3817,9 @@ def _build_settings_page(manifest: "Manifest") -> str:
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{FOLDER_ICON} Folder Categories</div>
 <div class="settings-grid">
-  <div class="settings-row">
-    <div class="settings-label">Preset</div>
-    <div class="settings-control"><select id="cfg-preset" onchange="renderSettingsTemplates()">{preset_opts}</select></div>
-  </div>
   <div class="settings-row">
     <div class="settings-label">Strict Mode</div>
     <div class="settings-control">
@@ -2975,14 +3834,14 @@ def _build_settings_page(manifest: "Manifest") -> str:
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{TAG_ICON} Tags Taxonomy</div>
 <div class="settings-grid">
 {tax_html}
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{SHIELD_ICON} Governance</div>
 <div class="settings-grid">
   <div class="settings-row">
@@ -3000,7 +3859,7 @@ def _build_settings_page(manifest: "Manifest") -> str:
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{HEADER_ICON} Document Header / Footer</div>
 <div class="settings-grid">
   <div class="settings-row">
@@ -3075,6 +3934,24 @@ def _build_settings_page(manifest: "Manifest") -> str:
         <option value="government">Government / CUI</option>
         <option value="academic">Academic / Research</option>
         <option value="technology">Technology / IP</option>
+        <option value="gdpr">GDPR / EU Data Protection</option>
+        <option value="iso27001">ISO 27001 / ISMS</option>
+        <option value="sox">SOX / Financial Controls</option>
+        <option value="pcidss">PCI DSS / Payment Cards</option>
+        <option value="soc2">SOC 2 / Trust Services</option>
+        <option value="ccpa">CCPA/CPRA / CA Privacy</option>
+        <option value="nist">NIST CSF / Cybersecurity</option>
+        <option value="fda">FDA 21 CFR Part 11</option>
+        <option value="cmmc">CMMC / DoD Cyber</option>
+        <option value="ferpa">FERPA / Student Records</option>
+        <option value="fedramp">FedRAMP / Federal Cloud</option>
+        <option value="gxp">GxP / Pharma Life Sciences</option>
+        <option value="itar">ITAR/EAR / Export Controls</option>
+        <option value="nerccip">NERC CIP / Energy Infrastructure</option>
+        <option value="nis2">NIS2 / EU Network Security</option>
+        <option value="dora">DORA / EU Financial Resilience</option>
+        <option value="pipeda">PIPEDA / Canadian Privacy</option>
+        <option value="lgpd">LGPD / Brazilian Privacy</option>
       </select>
       <span class="settings-hint">Auto-fills custom footer with industry-standard disclaimer</span>
     </div>
@@ -3082,7 +3959,7 @@ def _build_settings_page(manifest: "Manifest") -> str:
 </div>
 </div>
 
-<div class="settings-section">
+<div class="settings-section" data-view="advanced">
 <div class="settings-section-header">{CHECKLIST_ICON} Required Metadata</div>
 <div class="settings-grid">
   <div class="settings-row">
@@ -3128,7 +4005,7 @@ def _build_settings_page(manifest: "Manifest") -> str:
 </div>
 </div>
 
-<div class="settings-section" id="sect-templates">
+<div class="settings-section" id="sect-templates" data-view="advanced">
   <div class="settings-section-title">{CHECKLIST_ICON} Available Templates</div>
   <div class="settings-hint" style="margin-bottom:10px">Templates available for the selected preset. Click a row to copy the scaffold command.</div>
   <div id="settings-tmpl-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)"></div>
@@ -3255,7 +4132,25 @@ var DISCLAIMERS = {{
   legal: 'PRIVILEGED AND CONFIDENTIAL — This document is protected by attorney-client privilege and/or work product doctrine. If you are not the intended recipient, notify the sender immediately and destroy all copies.',
   government: 'CONTROLLED UNCLASSIFIED INFORMATION (CUI) — Handling, storage, and dissemination must comply with 32 CFR Part 2002. Unauthorized disclosure may result in administrative or legal action.',
   academic: 'This document is shared for research and educational purposes. Citation required for any referenced data or findings. Subject to institutional review board (IRB) protocols where applicable.',
-  technology: 'CONFIDENTIAL — Contains trade secrets and proprietary intellectual property. Protected under applicable trade secret laws and non-disclosure agreements. Do not reverse engineer, copy, or distribute.'
+  technology: 'CONFIDENTIAL — Contains trade secrets and proprietary intellectual property. Protected under applicable trade secret laws and non-disclosure agreements. Do not reverse engineer, copy, or distribute.',
+  gdpr: 'This document contains personal data subject to the General Data Protection Regulation (EU 2016/679). Processing must have a lawful basis under Article 6. Data subjects retain rights under Articles 15\\u201322. Report any breach to the supervisory authority within 72 hours per Article 33.',
+  iso27001: 'ISMS Controlled Document \\u2014 This document is part of the Information Security Management System per ISO/IEC 27001:2022. Changes require approval through the document control process. Unauthorized modification or distribution is prohibited.',
+  sox: 'This document supports internal controls over financial reporting under the Sarbanes-Oxley Act. Retain per Section 802 (minimum 7 years). Destruction, alteration, or falsification of records may result in criminal penalties under 18 U.S.C. \\u00a7 1519.',
+  pcidss: 'RESTRICTED \\u2014 This document pertains to the Cardholder Data Environment (CDE) and is subject to PCI DSS v4.0 requirements. Do not store, process, or transmit cardholder data outside approved systems. Report suspected breaches immediately.',
+  soc2: 'This document supports SOC 2 Type II Trust Service Criteria (AICPA). Covers security, availability, processing integrity, confidentiality, and privacy controls. Subject to annual audit. Retain per organizational control framework.',
+  ccpa: 'This document may contain personal information as defined under the California Consumer Privacy Act (CCPA/CPRA, Cal. Civ. Code \\u00a7 1798). Consumers have the right to know, delete, and opt out of the sale of their personal information.',
+  nist: 'CONTROLLED UNCLASSIFIED INFORMATION (CUI) \\u2014 This document is subject to safeguarding requirements under NIST SP 800-171. Handle, store, and transmit in accordance with CUI handling procedures. Unauthorized disclosure may result in administrative or legal action.',
+  fda: 'GxP CONTROLLED DOCUMENT \\u2014 This document is subject to FDA 21 CFR Part 11 requirements for electronic records and signatures. All changes must be documented with audit trail. System validation required per 11.10(a).',
+  cmmc: 'CUI \\u2014 CMMC Level 2 Controlled Document. Contains Controlled Unclassified Information subject to 110 NIST SP 800-171 security practices. Handle per DFARS 252.204-7012 and organizational CMMC policies.',
+  ferpa: 'This document contains student education records protected under the Family Educational Rights and Privacy Act (FERPA, 20 U.S.C. \\u00a7 1232g). Disclosure without written consent of the eligible student or parent is prohibited except as authorized under 34 CFR \\u00a7 99.31.',
+  fedramp: 'FEDERAL USE ONLY \\u2014 This document supports FedRAMP authorization and contains security control documentation per NIST SP 800-53. Subject to continuous monitoring requirements. Handle per agency-specific CUI procedures.',
+  gxp: 'GxP CONTROLLED DOCUMENT \\u2014 Subject to Good Manufacturing Practice (GMP), Good Laboratory Practice (GLP), or Good Clinical Practice (GCP) regulations as applicable. All copies must be controlled. Superseded versions must be archived per regulatory retention requirements.',
+  itar: 'WARNING \\u2014 This document contains technical data subject to the International Traffic in Arms Regulations (ITAR, 22 CFR 120\\u2013130) and/or the Export Administration Regulations (EAR, 15 CFR 730\\u2013774). Export, re-export, or transfer to foreign persons without prior authorization from the U.S. Department of State or Commerce is strictly prohibited and may result in criminal penalties.',
+  nerccip: 'BES CYBER SYSTEM INFORMATION (BCSI) \\u2014 This document contains information related to Bulk Electric System Cyber Systems and is subject to NERC Critical Infrastructure Protection (CIP) standards. Handle, store, and destroy per CIP-004 and CIP-011 requirements. Unauthorized access or disclosure may result in penalties under the Federal Power Act.',
+  nis2: 'This document supports compliance with the NIS2 Directive (EU 2022/2555) on measures for a high common level of cybersecurity across the Union. Significant incidents must be reported to the relevant CSIRT within 24 hours (early warning) and 72 hours (full notification) per Article 23.',
+  dora: 'This document supports compliance with the Digital Operational Resilience Act (DORA, EU 2022/2554). Financial entities must maintain ICT risk management frameworks, report major ICT-related incidents, and conduct digital operational resilience testing per Articles 5\\u201315.',
+  pipeda: 'This document contains personal information subject to the Personal Information Protection and Electronic Documents Act (PIPEDA, S.C. 2000, c. 5). Collection, use, and disclosure of personal information requires meaningful consent per Principle 3. Report breaches creating a real risk of significant harm to the Privacy Commissioner per section 10.1.',
+  lgpd: 'Este documento cont\\u00e9m dados pessoais sujeitos \\u00e0 Lei Geral de Prote\\u00e7\\u00e3o de Dados (LGPD, Lei 13.709/2018). O tratamento deve ter base legal conforme Art. 7\\u00ba. Titulares de dados t\\u00eam direitos previstos nos Arts. 17\\u201322. Incidentes de seguran\\u00e7a devem ser comunicados \\u00e0 ANPD e aos titulares conforme Art. 48.'
 }};
 
 function applyDisclaimer() {{
@@ -3320,6 +4215,182 @@ var STANDARDS = {{
     custom: 'Privileged and Confidential \\u2014 Do Not Distribute Without Authorization',
     metaOwner: true, metaApprover: true, metaReview: false, metaDist: true, metaRev: true,
     retention: 2555, cycle: 0, cls: 'CONFIDENTIAL'
+  }},
+  gdpr: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'PERSONAL DATA', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Contains personal data subject to GDPR',
+    ret: 'Retain only as long as processing purpose requires (Art. 5(1)(e))', copy: '',
+    custom: 'GDPR (EU 2016/679) \\u2014 Data protection by design and by default (Art. 25)',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'PERSONAL DATA'
+  }},
+  iso27001: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: 'ISMS-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Controlled Document \\u2014 ISMS',
+    ret: '', copy: '', custom: 'ISO/IEC 27001:2022 Information Security Management System',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  sox: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: 'SOX-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 SOX Controlled Document',
+    ret: 'Retain per SOX Section 802 (7 years minimum)', copy: '',
+    custom: 'Sarbanes-Oxley Act \\u2014 Internal controls documentation per Section 302/404',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2555, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  pcidss: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: 'PCI-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Restricted \\u2014 Cardholder Data Environment Documentation',
+    ret: 'Retain for at least one year per PCI DSS Req. 10.7', copy: '',
+    custom: 'PCI DSS v4.0 \\u2014 Payment Card Industry Data Security Standard',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1095, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  soc2: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 SOC 2 Trust Services Documentation',
+    ret: '', copy: '', custom: 'SOC 2 Type II \\u2014 Trust Service Criteria (AICPA)',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  ccpa: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'PERSONAL INFORMATION', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Contains consumer personal information',
+    ret: '', copy: '',
+    custom: 'CCPA/CPRA (Cal. Civ. Code \\u00a7 1798) \\u2014 California Consumer Privacy Rights',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'PERSONAL INFORMATION'
+  }},
+  nist: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CUI', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'CUI \\u2014 Controlled Unclassified Information',
+    ret: '', copy: '', custom: 'NIST SP 800-171 / Cybersecurity Framework 2.0',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CUI'
+  }},
+  fda: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: '', prefix: 'VAL-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'GxP Controlled Document \\u2014 Do Not Copy Without Authorization',
+    ret: 'Retain per 21 CFR 11.10(c) audit trail requirements', copy: '',
+    custom: 'FDA 21 CFR Part 11 \\u2014 Electronic Records and Signatures',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: ''
+  }},
+  cmmc: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: false,
+    hdr: true, org: '', logo: '', banner: 'CUI', prefix: 'SSP-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'CUI \\u2014 CMMC Level 2 Controlled Document',
+    ret: '', copy: '', custom: 'CMMC 2.0 Level 2 \\u2014 110 NIST SP 800-171 practices',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CUI'
+  }},
+  ferpa: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'STUDENT RECORDS', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Contains student education records',
+    ret: 'Retain per institutional records retention schedule', copy: '',
+    custom: 'FERPA (20 U.S.C. \\u00a7 1232g) \\u2014 Student Education Records Privacy',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'STUDENT RECORDS'
+  }},
+  fedramp: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CUI', prefix: 'FR-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'FedRAMP Controlled \\u2014 Federal Use Only',
+    ret: '', copy: '',
+    custom: 'FedRAMP \\u2014 NIST 800-53 controls for federal cloud authorization',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CUI'
+  }},
+  gxp: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: '', prefix: 'SOP-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'GxP Controlled Document \\u2014 Approved Copy Only',
+    ret: 'Retain per applicable GxP regulation', copy: '',
+    custom: 'GxP (GMP/GLP/GCP) \\u2014 Good Practice Regulations',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: ''
+  }},
+  itar: {{
+    sep: '-', 'case': 'uppercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: false,
+    hdr: true, org: '', logo: '', banner: 'EXPORT CONTROLLED', prefix: 'ITAR-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'WARNING \\u2014 This document contains technical data controlled under ITAR/EAR. Export without authorization is prohibited.',
+    ret: '', copy: '',
+    custom: 'ITAR (22 CFR 120\\u2013130) / EAR (15 CFR 730\\u2013774) \\u2014 Export Controlled',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2555, cycle: 365, cls: 'EXPORT CONTROLLED'
+  }},
+  nerccip: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'BCSI', prefix: 'CIP-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'BES Cyber System Information (BCSI) \\u2014 Handle per CIP-004/011',
+    ret: '', copy: '',
+    custom: 'NERC CIP \\u2014 Critical Infrastructure Protection Standards',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'BCSI'
+  }},
+  nis2: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: '', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 NIS2 security documentation',
+    ret: '', copy: '',
+    custom: 'NIS2 Directive (EU 2022/2555) \\u2014 Network and Information Security',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: ''
+  }},
+  dora: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 ICT risk management documentation',
+    ret: '', copy: '',
+    custom: 'DORA (EU 2022/2554) \\u2014 Digital Operational Resilience Act',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  pipeda: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'PERSONAL INFORMATION', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Contains personal information subject to PIPEDA',
+    ret: '', copy: '',
+    custom: 'PIPEDA (S.C. 2000, c. 5) \\u2014 Personal Information Protection (Canada)',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'PERSONAL INFORMATION'
+  }},
+  lgpd: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'DADOS PESSOAIS', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Uso Interno \\u2014 Cont\\u00e9m dados pessoais sujeitos \\u00e0 LGPD',
+    ret: '', copy: '',
+    custom: 'LGPD (Lei 13.709/2018) \\u2014 Lei Geral de Prote\\u00e7\\u00e3o de Dados (Brazil)',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 1825, cycle: 365, cls: 'DADOS PESSOAIS'
   }}
 }};
 
@@ -3387,6 +4458,46 @@ function applyFields(s) {{
   document.getElementById('cfg-meta-cycle').value = s.cycle;
   document.getElementById('cfg-class').value = s.cls;
   updatePreview();
+}}
+
+function toggleMoreCompliance() {{
+  var more = document.getElementById('compliance-grid-more');
+  var btn = document.getElementById('show-more-compliance');
+  if (more.style.display === 'none') {{
+    more.style.display = '';
+    btn.textContent = 'Show Fewer Standards';
+    btn.classList.add('tree-ctrl-btn--active');
+  }} else {{
+    more.style.display = 'none';
+    btn.textContent = 'Show More Standards';
+    btn.classList.remove('tree-ctrl-btn--active');
+  }}
+}}
+
+function filterComplianceButtons() {{
+  var sel = document.getElementById('compliance-industry-filter').value;
+  var grids = [document.getElementById('compliance-grid'), document.getElementById('compliance-grid-more')];
+  // When filtering, always show the "more" section
+  var more = document.getElementById('compliance-grid-more');
+  var moreBtn = document.getElementById('show-more-compliance');
+  if (sel !== 'all') {{
+    more.style.display = '';
+    moreBtn.style.display = 'none';
+  }} else {{
+    more.style.display = 'none';
+    moreBtn.style.display = '';
+    moreBtn.textContent = 'Show More Standards';
+    moreBtn.classList.remove('tree-ctrl-btn--active');
+  }}
+  grids.forEach(function(grid) {{
+    grid.querySelectorAll('.settings-compliance-btn').forEach(function(btn) {{
+      if (sel === 'all') {{
+        btn.style.display = '';
+      }} else {{
+        btn.style.display = (btn.getAttribute('data-industry') === sel) ? '' : 'none';
+      }}
+    }});
+  }});
 }}
 
 function applyStandard(name) {{
@@ -3641,7 +4752,7 @@ function renderSettingsTemplates() {{
   var preset = document.getElementById('cfg-preset') ? document.getElementById('cfg-preset').value : '{_esc(_active_preset)}';
   var el = document.getElementById('settings-tmpl-list');
   if (!el) return;
-  var filtered = SETTINGS_TEMPLATES.filter(function(t) {{ return t.presets.indexOf(preset) >= 0; }});
+  var filtered = preset ? SETTINGS_TEMPLATES.filter(function(t) {{ return t.presets.indexOf(preset) >= 0; }}) : SETTINGS_TEMPLATES;
   var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">';
   html += '<thead><tr style="background:var(--surface-alt);text-align:left">';
   html += '<th style="padding:6px 10px">Template ID</th><th style="padding:6px 10px">Name</th>';
@@ -3664,8 +4775,117 @@ function renderSettingsTemplates() {{
   el.innerHTML = html;
 }}
 
-// Initialize: snapshot defaults then render preview
-document.addEventListener('DOMContentLoaded', function() {{ captureDefaults(); updatePreview(); renderSettingsTemplates(); }});
+// Settings search
+function searchSettings(query) {{
+  var q = query.toLowerCase().trim();
+  var clearBtn = document.getElementById('settings-search-clear');
+  clearBtn.style.display = q ? '' : 'none';
+  // Remove old highlights
+  document.querySelectorAll('.search-highlight').forEach(function(el) {{ el.classList.remove('search-highlight'); }});
+  document.querySelectorAll('.search-no-match').forEach(function(el) {{ el.classList.remove('search-no-match'); }});
+  if (!q) return;
+
+  // Switch to Advanced view so all sections are visible for searching
+  switchSettingsView('advanced');
+
+  // Search through settings sections and rows
+  var sections = document.querySelectorAll('.settings-section');
+  sections.forEach(function(section) {{
+    var hasMatch = false;
+    // Check section header
+    var header = section.querySelector('.settings-section-header');
+    if (header && header.textContent.toLowerCase().indexOf(q) >= 0) {{
+      hasMatch = true;
+    }}
+    // Check individual rows
+    var rows = section.querySelectorAll('.settings-row');
+    rows.forEach(function(row) {{
+      var label = row.querySelector('.settings-label');
+      var hint = row.querySelector('.settings-hint');
+      var labelText = label ? label.textContent.toLowerCase() : '';
+      var hintText = hint ? hint.textContent.toLowerCase() : '';
+      if (labelText.indexOf(q) >= 0 || hintText.indexOf(q) >= 0) {{
+        row.classList.add('search-highlight');
+        hasMatch = true;
+      }}
+    }});
+    // Check compliance buttons
+    var compBtns = section.querySelectorAll('.settings-compliance-btn');
+    compBtns.forEach(function(btn) {{
+      if (btn.textContent.toLowerCase().indexOf(q) >= 0) {{
+        btn.classList.add('search-highlight');
+        hasMatch = true;
+      }}
+    }});
+    // Check select/dropdown option labels
+    var selects = section.querySelectorAll('select');
+    selects.forEach(function(sel) {{
+      for (var i = 0; i < sel.options.length; i++) {{
+        if (sel.options[i].text.toLowerCase().indexOf(q) >= 0) {{
+          hasMatch = true;
+          var row = sel.closest('.settings-row');
+          if (row) row.classList.add('search-highlight');
+          break;
+        }}
+      }}
+    }});
+    if (!hasMatch) section.classList.add('search-no-match');
+  }});
+
+  // Scroll to first highlighted element
+  var first = document.querySelector('.search-highlight');
+  if (first) first.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+}}
+
+function clearSettingsSearch() {{
+  document.getElementById('settings-search-input').value = '';
+  searchSettings('');
+}}
+
+// View toggle — Basic / Advanced
+function switchSettingsView(mode) {{
+  var sections = document.querySelectorAll('.settings-section[data-view]');
+  var basicBtn = document.getElementById('view-basic-btn');
+  var advBtn = document.getElementById('view-advanced-btn');
+  var hint = document.getElementById('view-hint');
+  var previewPanel = document.getElementById('preview-panel');
+  if (mode === 'advanced') {{
+    sections.forEach(function(s) {{ s.style.display = ''; }});
+    basicBtn.classList.remove('active');
+    advBtn.classList.add('active');
+    hint.textContent = 'Showing all settings. Switch to Basic for a simplified view.';
+    if (previewPanel) previewPanel.style.display = '';
+  }} else {{
+    sections.forEach(function(s) {{
+      s.style.display = (s.getAttribute('data-view') === 'basic') ? '' : 'none';
+    }});
+    basicBtn.classList.add('active');
+    advBtn.classList.remove('active');
+    hint.textContent = 'Showing essential settings only. Switch to Advanced for full control.';
+    if (previewPanel) previewPanel.style.display = 'none';
+  }}
+}}
+
+// Sync basic fields into advanced when they exist
+function syncBasicFields() {{
+  var orgBasic = document.getElementById('cfg-hdr-org-basic');
+  var orgAdv = document.getElementById('cfg-hdr-org');
+  if (orgBasic && orgAdv && orgBasic.value !== orgAdv.value) orgBasic.value = orgAdv.value;
+  var authorBasic = document.getElementById('cfg-author-basic');
+  var authorAdv = document.getElementById('cfg-author');
+  if (authorBasic && authorAdv && authorBasic.value !== authorAdv.value) authorBasic.value = authorAdv.value;
+  var cycleBasic = document.getElementById('cfg-meta-cycle-basic');
+  var cycleAdv = document.getElementById('cfg-meta-cycle');
+  if (cycleBasic && cycleAdv && cycleBasic.value !== cycleAdv.value) cycleBasic.value = cycleAdv.value;
+}}
+
+// Initialize: snapshot defaults, render preview, start in Basic mode
+document.addEventListener('DOMContentLoaded', function() {{
+  captureDefaults();
+  updatePreview();
+  renderSettingsTemplates();
+  switchSettingsView('basic');
+}});
 </script>"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
@@ -3676,9 +4896,1465 @@ document.addEventListener('DOMContentLoaded', function() {{ captureDefaults(); u
         project_name=project_name,
         generated_at=manifest.generated_at,
         seal=manifest.manifest_sha256,
-        has_dashboard=True,
+        has_dashboard=False,
         sidebar=sidebar,
     )
+
+
+def _build_wizard_page(manifest: "Manifest") -> str:
+    """Build a setup wizard page — guided questionnaire to generate project_config."""
+    from .config import PRESETS, NAMING_TEMPLATES
+
+    snapshot = manifest.registry_snapshot
+    pc = snapshot.get("project_config", {})
+    documents = snapshot.get("documents", [])
+    project_name = pc.get("project_name", "Untitled Project")
+
+    # Wizard SVG icons
+    WAND_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                 '<path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/>'
+                 '<path d="M17.8 11.8L19 13"/><path d="M15 9h0"/><path d="M17.8 6.2L19 5"/>'
+                 '<path d="M3 21l9-9"/><path d="M12.2 6.2L11 5"/></svg>')
+
+    body = f"""<h1>{WAND_ICON} Setup Wizard</h1>
+<div class="subtitle">Answer a few questions and we will generate your project configuration.</div>
+
+<div class="wizard-container" id="wizard">
+  <div class="wizard-progress">
+    <div class="wizard-progress-bar" id="wizard-progress-bar" style="width:20%"></div>
+  </div>
+  <div class="wizard-steps">
+
+    <!-- Step 1: Use Case -->
+    <div class="wizard-step active" id="step-1">
+      <div class="wizard-step-number">Step 1 of 5</div>
+      <h2>What type of project is this?</h2>
+      <p class="wizard-desc">This determines the level of formality and document types we recommend.</p>
+      <div class="wizard-options" id="wiz-usecase">
+        <button type="button" class="wizard-option" data-value="personal" onclick="wizSelect(this)">
+          <div class="wizard-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="wizard-option-title">Personal</div>
+          <div class="wizard-option-desc">Solo projects, notes, personal knowledge base. Minimal governance.</div>
+        </button>
+        <button type="button" class="wizard-option" data-value="business" onclick="wizSelect(this)">
+          <div class="wizard-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+          <div class="wizard-option-title">Business</div>
+          <div class="wizard-option-desc">Team or company projects. Standard naming, versioning, and review cycles.</div>
+        </button>
+        <button type="button" class="wizard-option" data-value="both" onclick="wizSelect(this)">
+          <div class="wizard-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <div class="wizard-option-title">Both</div>
+          <div class="wizard-option-desc">Mix of personal and business docs. Moderate governance with flexibility.</div>
+        </button>
+      </div>
+      <div class="wizard-nav">
+        <span></span>
+        <button type="button" class="wizard-btn wizard-btn--next" id="btn-next-1" onclick="wizNext(2)" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Industry -->
+    <div class="wizard-step" id="step-2">
+      <div class="wizard-step-number">Step 2 of 5</div>
+      <h2>What industry or domain?</h2>
+      <p class="wizard-desc">This selects the right document templates and naming patterns for your field.</p>
+      <div class="wizard-options wizard-options--grid" id="wiz-industry">
+        <button type="button" class="wizard-option wizard-option--compact" data-value="software" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Software / Technology</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="business" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Business / Consulting</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="legal" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Legal</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="scientific" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Scientific / Research</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="healthcare" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Healthcare</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="finance" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Finance</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="government" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Government / Defense</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact" data-value="general" onclick="wizSelect(this)">
+          <div class="wizard-option-title">General / Other</div>
+        </button>
+      </div>
+      <div class="wizard-nav">
+        <button type="button" class="wizard-btn" onclick="wizBack(1)">Back</button>
+        <button type="button" class="wizard-btn wizard-btn--next" id="btn-next-2" onclick="wizNext(3)" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Compliance -->
+    <div class="wizard-step" id="step-3">
+      <div class="wizard-step-number">Step 3 of 5</div>
+      <h2>Any compliance requirements?</h2>
+      <p class="wizard-desc">Select all that apply. These add required document types and metadata rules. Skip if none.</p>
+      <div class="wizard-options wizard-options--grid wizard-options--multi" id="wiz-compliance">
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="hipaa" onclick="wizToggle(this)">
+          <div class="wizard-option-title">HIPAA</div>
+          <div class="wizard-option-desc">Healthcare Privacy</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="gdpr" onclick="wizToggle(this)">
+          <div class="wizard-option-title">GDPR</div>
+          <div class="wizard-option-desc">EU Data Protection</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="iso_27001" onclick="wizToggle(this)">
+          <div class="wizard-option-title">ISO 27001</div>
+          <div class="wizard-option-desc">Information Security</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="sox" onclick="wizToggle(this)">
+          <div class="wizard-option-title">SOX</div>
+          <div class="wizard-option-desc">Financial Controls</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="pci_dss" onclick="wizToggle(this)">
+          <div class="wizard-option-title">PCI DSS</div>
+          <div class="wizard-option-desc">Payment Cards</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="soc2" onclick="wizToggle(this)">
+          <div class="wizard-option-title">SOC 2</div>
+          <div class="wizard-option-desc">Trust Services</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="dod_5200" onclick="wizToggle(this)">
+          <div class="wizard-option-title">DoD 5200</div>
+          <div class="wizard-option-desc">Classification</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="iso_9001" onclick="wizToggle(this)">
+          <div class="wizard-option-title">ISO 9001</div>
+          <div class="wizard-option-desc">Quality Mgmt</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="sec_finra" onclick="wizToggle(this)">
+          <div class="wizard-option-title">SEC / FINRA</div>
+          <div class="wizard-option-desc">Financial Records</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="ccpa" onclick="wizToggle(this)">
+          <div class="wizard-option-title">CCPA</div>
+          <div class="wizard-option-desc">CA Privacy</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="nist_csf" onclick="wizToggle(this)">
+          <div class="wizard-option-title">NIST CSF</div>
+          <div class="wizard-option-desc">Cybersecurity</div>
+        </button>
+        <button type="button" class="wizard-option wizard-option--compact wizard-option--toggle" data-value="none" onclick="wizToggle(this)">
+          <div class="wizard-option-title">None</div>
+          <div class="wizard-option-desc">No compliance</div>
+        </button>
+      </div>
+      <div class="wizard-nav">
+        <button type="button" class="wizard-btn" onclick="wizBack(2)">Back</button>
+        <button type="button" class="wizard-btn wizard-btn--next" id="btn-next-3" onclick="wizNext(4)">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Formality -->
+    <div class="wizard-step" id="step-4">
+      <div class="wizard-step-number">Step 4 of 5</div>
+      <h2>How formal should documents be?</h2>
+      <p class="wizard-desc">This controls headers, footers, metadata requirements, and review cycles.</p>
+      <div class="wizard-options" id="wiz-formality">
+        <button type="button" class="wizard-option" data-value="minimal" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Minimal</div>
+          <div class="wizard-option-desc">Just file naming and version tracking. No headers, footers, or mandatory metadata.</div>
+        </button>
+        <button type="button" class="wizard-option" data-value="standard" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Standard</div>
+          <div class="wizard-option-desc">Headers with org name, version tracking, 90-day review cycle. Good default for most teams.</div>
+        </button>
+        <button type="button" class="wizard-option" data-value="strict" onclick="wizSelect(this)">
+          <div class="wizard-option-title">Strict</div>
+          <div class="wizard-option-desc">Full headers/footers, classification banners, mandatory approvals, revision history, retention policies.</div>
+        </button>
+      </div>
+      <div class="wizard-nav">
+        <button type="button" class="wizard-btn" onclick="wizBack(3)">Back</button>
+        <button type="button" class="wizard-btn wizard-btn--next" id="btn-next-4" onclick="wizNext(5)" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Details -->
+    <div class="wizard-step" id="step-5">
+      <div class="wizard-step-number">Step 5 of 5</div>
+      <h2>A few final details</h2>
+      <p class="wizard-desc">Optional — you can always change these later in Settings.</p>
+      <div class="wizard-fields">
+        <div class="wizard-field">
+          <label for="wiz-org">Organization Name</label>
+          <input type="text" id="wiz-org" placeholder="e.g. Acme Corporation">
+        </div>
+        <div class="wizard-field">
+          <label for="wiz-author">Default Author</label>
+          <input type="text" id="wiz-author" placeholder="e.g. Jane Smith">
+        </div>
+        <div class="wizard-field">
+          <label for="wiz-project">Project Name</label>
+          <input type="text" id="wiz-project" placeholder="e.g. Q4 Product Launch" value="{_esc(project_name)}">
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button type="button" class="wizard-btn" onclick="wizBack(4)">Back</button>
+        <button type="button" class="wizard-btn wizard-btn--next wizard-btn--finish" onclick="wizFinish()">Generate Configuration</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="wizard-step" id="step-result" style="display:none">
+      <div class="wizard-step-number">Done!</div>
+      <h2>Your configuration is ready</h2>
+      <p class="wizard-desc">Copy this YAML block into the <code>project_config</code> section of your <code>REGISTRY.yaml</code>. Or use <a href="settings.html" style="color:var(--accent)">Settings</a> to fine-tune.</p>
+      <pre class="settings-yaml visible" id="wizard-yaml"></pre>
+      <div class="settings-actions" style="margin-top:16px">
+        <button type="button" class="settings-btn settings-btn--primary" onclick="wizCopy()">Copy to Clipboard</button>
+        <button type="button" class="settings-btn" onclick="wizRestart()">Start Over</button>
+        <span class="settings-copied" id="wizard-copied">Copied!</span>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:var(--surface-alt);border-radius:var(--radius-lg);font-size:13px;line-height:1.6">
+        <strong>What to do next:</strong><br>
+        1. Paste this into your REGISTRY.yaml under <code>project_config:</code><br>
+        2. Run <code>python -m librarian site</code> to regenerate your site<br>
+        3. Use <code>python -m librarian scaffold --list</code> to see available templates<br>
+        4. Visit <a href="settings.html" style="color:var(--accent)">Settings</a> to fine-tune any option
+      </div>
+    </div>
+
+  </div><!-- /wizard-steps -->
+</div><!-- /wizard-container -->
+
+<script>
+var wizData = {{}};
+
+function wizSelect(btn) {{
+  var group = btn.parentElement;
+  group.querySelectorAll('.wizard-option').forEach(function(b) {{ b.classList.remove('selected'); }});
+  btn.classList.add('selected');
+  wizData[group.id] = btn.getAttribute('data-value');
+  // Enable the Next button for this step
+  var stepEl = btn.closest('.wizard-step');
+  var nextBtn = stepEl.querySelector('.wizard-btn--next');
+  if (nextBtn) nextBtn.disabled = false;
+}}
+
+function wizToggle(btn) {{
+  // For compliance: "none" clears others, selecting a compliance clears "none"
+  var val = btn.getAttribute('data-value');
+  var group = btn.parentElement;
+  if (val === 'none') {{
+    group.querySelectorAll('.wizard-option').forEach(function(b) {{ b.classList.remove('selected'); }});
+    btn.classList.add('selected');
+  }} else {{
+    group.querySelector('[data-value="none"]').classList.remove('selected');
+    btn.classList.toggle('selected');
+  }}
+  // Collect selected values
+  var selected = [];
+  group.querySelectorAll('.wizard-option.selected').forEach(function(b) {{
+    selected.push(b.getAttribute('data-value'));
+  }});
+  wizData['wiz-compliance'] = selected;
+}}
+
+function wizNext(step) {{
+  document.querySelectorAll('.wizard-step').forEach(function(s) {{ s.classList.remove('active'); }});
+  document.getElementById('step-' + step).classList.add('active');
+  var pct = Math.min(100, step * 20);
+  document.getElementById('wizard-progress-bar').style.width = pct + '%';
+}}
+
+function wizBack(step) {{
+  document.querySelectorAll('.wizard-step').forEach(function(s) {{ s.classList.remove('active'); }});
+  document.getElementById('step-' + step).classList.add('active');
+  var pct = Math.min(100, step * 20);
+  document.getElementById('wizard-progress-bar').style.width = pct + '%';
+}}
+
+function wizFinish() {{
+  var useCase = wizData['wiz-usecase'] || 'personal';
+  var industry = wizData['wiz-industry'] || 'general';
+  var compliance = wizData['wiz-compliance'] || [];
+  var formality = wizData['wiz-formality'] || 'standard';
+  var org = document.getElementById('wiz-org').value;
+  var author = document.getElementById('wiz-author').value;
+  var project = document.getElementById('wiz-project').value;
+
+  // Map industry to preset
+  var presetMap = {{
+    'software': 'software', 'business': 'business', 'legal': 'legal',
+    'scientific': 'scientific', 'healthcare': 'healthcare',
+    'finance': 'finance', 'government': 'government', 'general': 'software'
+  }};
+  var preset = presetMap[industry] || 'software';
+
+  // Map formality to naming template + governance settings
+  var formalityMap = {{
+    'minimal': {{ template: 'default', cycle: 0, retention: 0, hdr: false, ftr: false, strict: false,
+                  metaOwner: false, metaApprover: false, metaReview: false, metaDist: false, metaRev: false }},
+    'standard': {{ template: 'default', cycle: 90, retention: 0, hdr: true, ftr: false, strict: false,
+                   metaOwner: true, metaApprover: false, metaReview: true, metaDist: false, metaRev: false }},
+    'strict': {{ template: 'default', cycle: 365, retention: 2190, hdr: true, ftr: true, strict: true,
+                 metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true }}
+  }};
+  var fm = formalityMap[formality] || formalityMap['standard'];
+
+  // Industry-specific naming template overrides
+  if (industry === 'legal') fm.template = 'legal';
+  else if (industry === 'scientific') fm.template = 'scientific';
+  else if (industry === 'healthcare') fm.template = 'healthcare';
+  else if (industry === 'finance') fm.template = 'finance';
+  else if (industry === 'government') fm.template = 'corporate';
+
+  function yq(v) {{
+    var s = String(v);
+    if (/[:\\#\\[\\]\\{{\\}},&*?|\\-<>=!%@'"]/.test(s) || s !== s.trim() || s === '') {{
+      return "'" + s.replace(/'/g, "''") + "'";
+    }}
+    return s;
+  }}
+
+  var yaml = 'project_config:\\n';
+  yaml += '  preset: ' + preset + '\\n';
+  if (project) yaml += '  project_name: ' + yq(project) + '\\n';
+  yaml += '  naming_rules:\\n';
+  yaml += '    template: ' + fm.template + '\\n';
+  if (author) yaml += '  default_author: ' + yq(author) + '\\n';
+  if (fm.strict) yaml += '  categories:\\n    strict_mode: true\\n';
+
+  // Compliance
+  var compFiltered = compliance.filter(function(c) {{ return c !== 'none'; }});
+  if (compFiltered.length) {{
+    yaml += '  compliance_standards:\\n';
+    compFiltered.forEach(function(c) {{ yaml += '    - ' + c + '\\n'; }});
+  }}
+
+  // Header
+  if (fm.hdr) {{
+    yaml += '  document_header:\\n';
+    yaml += '    enabled: true\\n';
+    if (org) yaml += '    organization: ' + yq(org) + '\\n';
+    yaml += '    show_version: true\\n';
+    yaml += '    show_date: true\\n';
+    yaml += '    show_status: true\\n';
+  }}
+
+  // Footer
+  if (fm.ftr) {{
+    yaml += '  document_footer:\\n';
+    yaml += '    enabled: true\\n';
+  }}
+
+  // Metadata
+  if (fm.metaOwner || fm.metaApprover || fm.metaReview || fm.cycle || fm.retention) {{
+    yaml += '  document_metadata:\\n';
+    if (fm.metaOwner) yaml += '    require_owner: true\\n';
+    if (fm.metaApprover) yaml += '    require_approver: true\\n';
+    if (fm.metaReview) yaml += '    require_review_date: true\\n';
+    if (fm.metaDist) yaml += '    require_distribution_list: true\\n';
+    if (fm.metaRev) yaml += '    require_revision_history: true\\n';
+    if (fm.cycle) yaml += '    review_cycle_days: ' + fm.cycle + '\\n';
+    if (fm.retention) yaml += '    retention_period_days: ' + fm.retention + '\\n';
+  }}
+
+  document.getElementById('wizard-yaml').textContent = yaml;
+  document.querySelectorAll('.wizard-step').forEach(function(s) {{ s.classList.remove('active'); s.style.display = 'none'; }});
+  var result = document.getElementById('step-result');
+  result.style.display = '';
+  result.classList.add('active');
+  document.getElementById('wizard-progress-bar').style.width = '100%';
+}}
+
+function wizCopy() {{
+  var text = document.getElementById('wizard-yaml').textContent;
+  navigator.clipboard.writeText(text).then(function() {{
+    var msg = document.getElementById('wizard-copied');
+    msg.classList.add('show');
+    setTimeout(function() {{ msg.classList.remove('show'); }}, 1500);
+  }});
+}}
+
+function wizRestart() {{
+  wizData = {{}};
+  document.querySelectorAll('.wizard-step').forEach(function(s) {{
+    s.style.display = '';
+    s.classList.remove('active');
+    s.querySelectorAll('.wizard-option').forEach(function(b) {{ b.classList.remove('selected'); }});
+    var nextBtn = s.querySelector('.wizard-btn--next');
+    if (nextBtn) nextBtn.disabled = true;
+  }});
+  document.getElementById('step-result').style.display = 'none';
+  document.getElementById('step-1').classList.add('active');
+  document.getElementById('wizard-progress-bar').style.width = '20%';
+  document.getElementById('btn-next-3').disabled = false; // compliance is optional
+}}
+</script>"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+    return _page(
+        "Setup Wizard",
+        body,
+        "wizard",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=False,
+        sidebar=sidebar,
+    )
+
+
+def _build_audit_page(manifest: "Manifest") -> str:
+    """Build the Audit & Verify page (audit.html).
+
+    Shows a unified view of document governance health:
+    1. OODA audit results (unregistered, missing, naming violations, cross-refs)
+    2. File integrity table (SHA-256 hashes, exists/missing, size)
+    3. Operation log (recent activity from the hash-chained oplog)
+    4. Manifest seal and verification status
+    5. CLI commands for deeper forensics
+    """
+    from .audit import audit as run_audit
+    from .oplog import verify_chain
+    from .recommend import generate_recommendations
+
+    snapshot = manifest.registry_snapshot
+    config = snapshot.get("project_config", {})
+    project_name = config.get("project_name", "Librarian")
+    documents = snapshot.get("documents", [])
+    repo_root = manifest.repo_root or "."
+
+    # --- Run audit ---
+    from .registry import Registry
+    registry_path = manifest.registry_path or "docs/REGISTRY.yaml"
+    try:
+        registry = Registry.load(registry_path)
+        report = run_audit(registry, repo_root)
+    except Exception:
+        report = None
+
+    # --- File integrity data ---
+    file_data: list[dict[str, Any]] = []
+    for h in sorted(manifest.file_hashes, key=lambda x: x.filename):
+        file_data.append({
+            "filename": h.filename,
+            "sha256": h.sha256,
+            "size": h.size_bytes,
+            "exists": h.exists,
+        })
+    file_json = _json_safe(file_data, indent=None)
+
+    # --- Oplog data ---
+    log_path = Path(repo_root) / "operator" / "librarian-audit.jsonl"
+    if not log_path.exists():
+        # Try docs/.librarian.log as fallback
+        log_path = Path(repo_root) / "docs" / ".librarian.log"
+
+    oplog_entries: list[dict[str, Any]] = []
+    if log_path.exists():
+        try:
+            from .oplog import OpLogEntry
+            lines = log_path.read_text(encoding="utf-8").strip().splitlines()
+            for line in lines[-20:]:  # last 20 entries
+                try:
+                    entry = OpLogEntry.from_json_line(line.strip())
+                    oplog_entries.append({
+                        "ts": entry.timestamp,
+                        "op": entry.operation,
+                        "actor": entry.actor,
+                        "files": entry.files[:3],  # limit for display
+                        "commit": entry.commit_hash[:8] if entry.commit_hash else "",
+                        "chained": bool(entry.prev_hash),
+                    })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    oplog_json = _json_safe(list(reversed(oplog_entries)), indent=None)
+
+    # --- Chain verification ---
+    chain_result = {"valid": True, "total_entries": 0, "chained_entries": 0, "error": ""}
+    if log_path.exists():
+        try:
+            chain_result = verify_chain(log_path)
+        except Exception:
+            chain_result["error"] = "verification failed"
+
+    chain_json = _json_safe(chain_result, indent=None)
+
+    # --- Audit findings as JSON ---
+    audit_data: dict[str, Any] = {
+        "files_on_disk": len(report.on_disk) if report else 0,
+        "registered": len(report.registered) if report else len(documents),
+        "unregistered": list(report.unregistered) if report else [],
+        "missing": list(report.missing) if report else [],
+        "naming_violations": [
+            {"file": f, "errors": errs}
+            for f, errs in (report.naming_violations if report else [])
+        ],
+        "pending_cross_refs": list(report.pending_cross_refs) if report else [],
+        "folder_suggestions": [
+            {"group": s.group_name, "count": s.count, "suggestion": s.suggestion}
+            for s in (report.folder_suggestions if report else [])
+        ],
+        "clean": report.clean if report else True,
+    }
+    audit_json = _json_safe(audit_data, indent=None)
+
+    # --- Recommendations ---
+    rec_data: list[dict[str, Any]] = []
+    try:
+        recs = generate_recommendations(registry)
+        for r in recs:
+            rec_data.append(r.to_dict())
+    except Exception:
+        pass
+    rec_json = _json_safe(rec_data, indent=None)
+
+    # --- Seal info ---
+    seal = manifest.manifest_sha256 or "N/A"
+    generated_at = manifest.generated_at or "N/A"
+
+    # --- Status summary for KPI cards ---
+    n_ok = sum(1 for h in manifest.file_hashes if h.exists)
+    n_miss = sum(1 for h in manifest.file_hashes if not h.exists)
+    n_unreg = len(audit_data["unregistered"])
+    n_violations = len(audit_data["naming_violations"])
+    n_pending = len(audit_data["pending_cross_refs"])
+    chain_ok = chain_result.get("valid", True)
+    _check = "\u2713"
+    _cross = "\u2717"
+    chain_icon = _check if chain_ok else _cross
+
+    body = f"""<h1>Audit &amp; Verify</h1>
+<div class="subtitle">Document governance health report &mdash; generated {_esc(generated_at)}</div>
+
+<!-- KPI Cards -->
+<div class="kpi-row" style="margin-bottom:24px">
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if n_unreg == 0 else 'kpi-warn'}">{audit_data['registered']}</div>
+    <div class="kpi-label">Registered</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if n_unreg == 0 else 'kpi-warn'}">{n_unreg}</div>
+    <div class="kpi-label">Unregistered</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if n_miss == 0 else 'kpi-err'}">{n_miss}</div>
+    <div class="kpi-label">Missing</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if n_violations == 0 else 'kpi-warn'}">{n_violations}</div>
+    <div class="kpi-label">Naming Issues</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if chain_ok else 'kpi-err'}">{chain_icon}</div>
+    <div class="kpi-label">Chain Integrity</div>
+  </div>
+</div>
+
+<div class="audit-sections">
+
+  <!-- Section 1: OODA Audit -->
+  <div class="aud-section" id="aud-ooda">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-ooda')">
+      <h2>OODA Audit</h2>
+      <span class="aud-status {'aud-pass' if audit_data['clean'] else 'aud-fail'}">
+        {"PASS" if audit_data['clean'] else "FINDINGS"}
+      </span>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div id="ooda-results"></div>
+    </div>
+  </div>
+
+  <!-- Section 2: File Integrity -->
+  <div class="aud-section" id="aud-integrity">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-integrity')">
+      <h2>File Integrity</h2>
+      <span class="aud-status {'aud-pass' if n_miss == 0 else 'aud-fail'}">
+        {n_ok}/{len(manifest.file_hashes)} verified
+      </span>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div class="aud-controls">
+        <input type="text" id="integrity-search" placeholder="Filter files..." oninput="filterIntegrity()">
+        <label class="aud-toggle"><input type="checkbox" id="show-hashes" onchange="toggleHashes()"> Show full hashes</label>
+      </div>
+      <div id="integrity-table"></div>
+    </div>
+  </div>
+
+  <!-- Section 3: Operation Log -->
+  <div class="aud-section" id="aud-oplog">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-oplog')">
+      <h2>Operation Log</h2>
+      <span class="aud-status aud-info">{len(oplog_entries)} entries</span>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div id="oplog-table"></div>
+      <div class="aud-chain-status" id="chain-status"></div>
+    </div>
+  </div>
+
+  <!-- Section 4: Manifest Seal -->
+  <div class="aud-section" id="aud-seal">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-seal')">
+      <h2>Manifest Seal</h2>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div class="aud-seal-box">
+        <div class="aud-seal-row">
+          <span class="aud-seal-label">SHA-256 Seal</span>
+          <code class="aud-seal-value" id="seal-full">{_esc(seal)}</code>
+          <button class="mgr-btn mgr-btn--sm" onclick="copyText(document.getElementById('seal-full').textContent)">Copy</button>
+        </div>
+        <div class="aud-seal-row">
+          <span class="aud-seal-label">Generated</span>
+          <span>{_esc(generated_at)}</span>
+        </div>
+        <div class="aud-seal-row">
+          <span class="aud-seal-label">Files Hashed</span>
+          <span>{len(manifest.file_hashes)}</span>
+        </div>
+        <div class="aud-seal-row">
+          <span class="aud-seal-label">Edges</span>
+          <span>{manifest.total_edges}</span>
+        </div>
+        <p class="aud-seal-explain">
+          The seal is a SHA-256 hash computed from the sorted <code>filename:sha256</code> pairs
+          of every governed file. If any file is added, removed, or modified, this seal changes &mdash;
+          making the manifest tamper-evident.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Recommendations -->
+  <div class="aud-section" id="aud-recs">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-recs')">
+      <h2>Recommendations</h2>
+      <span class="aud-status aud-info" id="rec-count">0</span>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div id="rec-results"></div>
+    </div>
+  </div>
+
+  <!-- Section 6: CLI Commands -->
+  <div class="aud-section" id="aud-cli">
+    <div class="aud-section-header" onclick="toggleAudSection('aud-cli')">
+      <h2>CLI Commands</h2>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="aud-section-body">
+      <div class="aud-cli-grid">
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Run Full Audit</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml audit --recommend</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Export Audit as JSON</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml audit --recommend --json</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Generate Manifest</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml manifest -o manifest.json</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Generate Evidence Pack</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml evidence -o evidence.json</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Diff Two Manifests</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml diff old.json new.json</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">View Operation Log</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml log --last 20</code>
+        </div>
+      </div>
+      <p class="aud-cli-hint">Click any card to copy the command.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var AUDIT = {audit_json};
+var FILES = {file_json};
+var OPLOG = {oplog_json};
+var CHAIN = {chain_json};
+var RECS = {rec_json};
+
+function toggleAudSection(id) {{
+  document.getElementById(id).classList.toggle('collapsed');
+}}
+
+function copyText(text) {{
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(text);
+  }}
+}}
+
+// --- OODA Results ---
+(function() {{
+  var el = document.getElementById('ooda-results');
+  var html = '';
+
+  if (AUDIT.clean) {{
+    html += '<div class="aud-ok-banner">\\u2713 All checks passed &mdash; no findings.</div>';
+  }}
+
+  if (AUDIT.unregistered.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--warn">Unregistered Files (' + AUDIT.unregistered.length + ')</h3>';
+    html += '<p class="aud-finding-hint">Files on disk not in the registry. Use <a href="manage.html">Project Manager</a> to register them.</p>';
+    html += '<ul class="aud-finding-list">';
+    AUDIT.unregistered.forEach(function(f) {{ html += '<li><code>' + f + '</code></li>'; }});
+    html += '</ul></div>';
+  }}
+
+  if (AUDIT.missing.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--err">Missing Files (' + AUDIT.missing.length + ')</h3>';
+    html += '<p class="aud-finding-hint">Registered in REGISTRY.yaml but not found on disk.</p>';
+    html += '<ul class="aud-finding-list">';
+    AUDIT.missing.forEach(function(f) {{ html += '<li><code>' + f + '</code></li>'; }});
+    html += '</ul></div>';
+  }}
+
+  if (AUDIT.naming_violations.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--warn">Naming Violations (' + AUDIT.naming_violations.length + ')</h3>';
+    html += '<ul class="aud-finding-list">';
+    AUDIT.naming_violations.forEach(function(v) {{
+      html += '<li><code>' + v.file + '</code> &mdash; ' + v.errors.join('; ') + '</li>';
+    }});
+    html += '</ul></div>';
+  }}
+
+  if (AUDIT.pending_cross_refs.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--info">Pending Cross-References (' + AUDIT.pending_cross_refs.length + ')</h3>';
+    html += '<ul class="aud-finding-list">';
+    AUDIT.pending_cross_refs.forEach(function(r) {{ html += '<li><code>' + r + '</code></li>'; }});
+    html += '</ul></div>';
+  }}
+
+  if (AUDIT.folder_suggestions.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--info">Folder Suggestions</h3>';
+    html += '<ul class="aud-finding-list">';
+    AUDIT.folder_suggestions.forEach(function(s) {{
+      html += '<li><strong>' + s.group + '</strong> (' + s.count + ' files) &mdash; ' + s.suggestion + '</li>';
+    }});
+    html += '</ul></div>';
+  }}
+
+  if (!html) html = '<div class="aud-ok-banner">\\u2713 All checks passed.</div>';
+  el.innerHTML = html;
+}})();
+
+// --- File Integrity Table ---
+var showFull = false;
+function renderIntegrity(filter) {{
+  var el = document.getElementById('integrity-table');
+  var q = (filter || '').toLowerCase();
+  var html = '<table class="mgr-table"><thead><tr>';
+  html += '<th style="width:24px"></th><th>Filename</th><th>SHA-256</th><th style="text-align:right">Size</th>';
+  html += '</tr></thead><tbody>';
+  var shown = 0;
+  FILES.forEach(function(f) {{
+    if (q && f.filename.toLowerCase().indexOf(q) < 0) return;
+    var icon = f.exists ? '<span class="aud-dot aud-dot--ok">\\u2713</span>' : '<span class="aud-dot aud-dot--err">\\u2717</span>';
+    var hash = showFull ? f.sha256 : f.sha256.substring(0, 16) + '...';
+    var size = f.size > 1024 ? (f.size / 1024).toFixed(1) + ' KB' : f.size + ' B';
+    html += '<tr' + (f.exists ? '' : ' class="aud-row--err"') + '>';
+    html += '<td>' + icon + '</td>';
+    html += '<td class="mgr-filename">' + f.filename + '</td>';
+    html += '<td class="aud-hash" title="' + f.sha256 + '">' + hash + '</td>';
+    html += '<td style="text-align:right;font-family:var(--mono);font-size:11px">' + size + '</td>';
+    html += '</tr>';
+    shown++;
+  }});
+  html += '</tbody></table>';
+  if (shown === 0) html += '<div style="padding:16px;text-align:center;color:var(--text-muted)">No files match filter.</div>';
+  el.innerHTML = html;
+}}
+function filterIntegrity() {{
+  renderIntegrity(document.getElementById('integrity-search').value);
+}}
+function toggleHashes() {{
+  showFull = document.getElementById('show-hashes').checked;
+  filterIntegrity();
+}}
+renderIntegrity();
+
+// --- Operation Log ---
+(function() {{
+  var el = document.getElementById('oplog-table');
+  if (OPLOG.length === 0) {{
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-style:italic">No operation log entries found.</div>';
+    return;
+  }}
+  var html = '<table class="mgr-table"><thead><tr>';
+  html += '<th>Timestamp</th><th>Operation</th><th>Actor</th><th>Files</th><th>Commit</th><th style="width:20px">\\u26d3</th>';
+  html += '</tr></thead><tbody>';
+  OPLOG.forEach(function(e) {{
+    html += '<tr>';
+    html += '<td style="font-family:var(--mono);font-size:11px;white-space:nowrap">' + e.ts + '</td>';
+    html += '<td><span class="aud-op-badge aud-op--' + e.op + '">' + e.op + '</span></td>';
+    html += '<td style="font-size:12px">' + e.actor + '</td>';
+    html += '<td style="font-size:11px;font-family:var(--mono)">' + (e.files.length ? e.files.join(', ') : '&mdash;') + '</td>';
+    html += '<td style="font-family:var(--mono);font-size:11px">' + (e.commit || '&mdash;') + '</td>';
+    html += '<td style="text-align:center">' + (e.chained ? '\\u26d3' : '') + '</td>';
+    html += '</tr>';
+  }});
+  html += '</tbody></table>';
+  el.innerHTML = html;
+
+  // Chain status
+  var cs = document.getElementById('chain-status');
+  if (CHAIN.total_entries === 0) {{
+    cs.innerHTML = '<span class="aud-chain-info">No log entries to verify.</span>';
+  }} else if (CHAIN.valid) {{
+    cs.innerHTML = '<span class="aud-chain-ok">\\u2713 Hash chain intact &mdash; ' + CHAIN.chained_entries + '/' + CHAIN.total_entries + ' entries chained.</span>';
+  }} else {{
+    cs.innerHTML = '<span class="aud-chain-broken">\\u2717 Chain broken: ' + CHAIN.error + '</span>';
+  }}
+}})();
+
+// --- Recommendations ---
+(function() {{
+  var el = document.getElementById('rec-results');
+  var badge = document.getElementById('rec-count');
+  badge.textContent = RECS.length;
+
+  if (RECS.length === 0) {{
+    el.innerHTML = '<div class="aud-ok-banner">No recommendations &mdash; project is well-covered.</div>';
+    return;
+  }}
+
+  // Group by category
+  var groups = {{}};
+  var order = ['core', 'recommended', 'cross_ref', 'maturity', 'compliance'];
+  var labels = {{core: 'Core Templates', recommended: 'Recommended', cross_ref: 'Cross-Reference Gaps', maturity: 'Maturity Progression', compliance: 'Compliance'}};
+  RECS.forEach(function(r) {{
+    var cat = r.category || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(r);
+  }});
+
+  var html = '';
+  order.forEach(function(cat) {{
+    if (!groups[cat]) return;
+    html += '<div class="aud-rec-group">';
+    html += '<h3 class="aud-rec-cat">' + (labels[cat] || cat) + ' (' + groups[cat].length + ')</h3>';
+    html += '<ul class="aud-finding-list">';
+    groups[cat].forEach(function(r) {{
+      html += '<li><code>' + r.template_id + '</code> &mdash; ' + r.reason + '</li>';
+    }});
+    html += '</ul></div>';
+  }});
+  el.innerHTML = html;
+}})();
+</script>"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+
+    return _page(
+        "Audit",
+        body,
+        "audit",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=False,
+        sidebar=sidebar,
+    )
+
+
+def _build_manage_page(manifest: "Manifest") -> str:
+    """Build the Project Manager page (manage.html).
+
+    Provides four client-side tools for managing project documents:
+    1. Unregistered Files — files on disk not yet in the registry
+    2. Register Existing File — manual form for any file
+    3. Create Folder — generate mkdir commands for new directories
+    4. Scaffold from Template — generate scaffold CLI commands
+    """
+    from .templates import discover_templates, CROSS_CUTTING
+
+    snapshot = manifest.registry_snapshot
+    config = snapshot.get("project_config", {})
+    project_name = config.get("project_name", "Librarian")
+    active_preset = config.get("preset", "")
+    documents = snapshot.get("documents", [])
+    custom_dir = config.get("custom_templates_dir", None)
+
+    # Compute unregistered files from manifest data
+    registered_names = {d.get("filename", "") for d in documents}
+    exempt = set(config.get("infrastructure_exempt", [
+        "REGISTRY.yaml", "README.md", "CLAUDE.md", ".gitignore",
+    ]))
+    on_disk = {h.filename for h in manifest.file_hashes if h.exists}
+    unregistered = sorted(on_disk - registered_names - exempt)
+    unreg_json = _json_safe(unregistered, indent=None)
+
+    # Existing folders for reference
+    folders = set()
+    for doc in documents:
+        p = doc.get("path", "")
+        if "/" in p:
+            folders.add("/".join(p.split("/")[:-1]))
+    for h in manifest.file_hashes:
+        if "/" in h.filename:
+            folders.add("/".join(h.filename.split("/")[:-1]))
+    folder_list = sorted(folders)
+    folder_json = _json_safe(folder_list, indent=None)
+
+    # Template data for scaffold section
+    all_presets = [
+        "software", "business", "legal", "scientific",
+        "healthcare", "finance", "government",
+    ]
+    tmpl_data: list[dict[str, Any]] = []
+    for preset in all_presets:
+        for t in discover_templates(preset, custom_dir).values():
+            # Deduplicate by template_id
+            if not any(x["id"] == t.template_id for x in tmpl_data):
+                tmpl_data.append({
+                    "id": t.template_id,
+                    "name": t.display_name,
+                    "source": t.preset or preset,
+                    "presets": [preset],
+                })
+            else:
+                existing = next(x for x in tmpl_data if x["id"] == t.template_id)
+                if preset not in existing["presets"]:
+                    existing["presets"].append(preset)
+    tmpl_json = _json_safe(tmpl_data, indent=None)
+
+    # Existing tags for autocomplete
+    all_tags = set()
+    for doc in documents:
+        for tag in doc.get("tags", []):
+            all_tags.add(tag)
+    tags_json = _json_safe(sorted(all_tags), indent=None)
+
+    # Status options
+    statuses = ["active", "draft", "superseded", "archived"]
+
+    body = f"""<h1>Project Manager</h1>
+<div class="subtitle">Add files, create folders, and scaffold new documents</div>
+
+<div class="mgr-sections">
+
+  <!-- Section 1: Unregistered Files -->
+  <div class="mgr-section" id="mgr-unreg">
+    <div class="mgr-section-header" onclick="toggleMgrSection('mgr-unreg')">
+      <span class="mgr-section-icon">&#9679;</span>
+      <h2>Unregistered Files</h2>
+      <span class="mgr-badge" id="unreg-count">{len(unregistered)}</span>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="mgr-section-body">
+      <p class="mgr-hint">Files found on disk but not yet registered. Click a file to register it.</p>
+      <div id="unreg-list"></div>
+      <div id="unreg-empty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);font-style:italic">
+        All files are registered. Nothing to do here.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Register Existing File -->
+  <div class="mgr-section" id="mgr-register">
+    <div class="mgr-section-header" onclick="toggleMgrSection('mgr-register')">
+      <span class="mgr-section-icon">&#43;</span>
+      <h2>Register Existing File</h2>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="mgr-section-body">
+      <p class="mgr-hint">Manually register a file that already exists on disk.</p>
+      <div class="mgr-form">
+        <div class="mgr-row">
+          <label>Filename</label>
+          <input type="text" id="reg-filename" placeholder="e.g. design-spec-20260413-V1.0.md">
+        </div>
+        <div class="mgr-row">
+          <label>Path (relative)</label>
+          <input type="text" id="reg-path" placeholder="e.g. docs/design-spec-20260413-V1.0.md" list="reg-path-list">
+          <datalist id="reg-path-list"></datalist>
+        </div>
+        <div class="mgr-row">
+          <label>Status</label>
+          <select id="reg-status">
+            {"".join(f'<option value="{s}">{_esc(s.title())}</option>' for s in statuses)}
+          </select>
+        </div>
+        <div class="mgr-row">
+          <label>Description</label>
+          <input type="text" id="reg-desc" placeholder="Brief description of the document">
+        </div>
+        <div class="mgr-row">
+          <label>Tags</label>
+          <input type="text" id="reg-tags" placeholder="Comma-separated: governance, phase-a" list="reg-tags-list">
+          <datalist id="reg-tags-list"></datalist>
+        </div>
+        <div class="mgr-row mgr-row-btn">
+          <button type="button" class="mgr-btn mgr-btn--primary" onclick="generateRegister()">Generate Command</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Create Folder -->
+  <div class="mgr-section" id="mgr-folder">
+    <div class="mgr-section-header" onclick="toggleMgrSection('mgr-folder')">
+      <span class="mgr-section-icon">&#128193;</span>
+      <h2>Create Folder</h2>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="mgr-section-body">
+      <p class="mgr-hint">Define new directories for your project structure.</p>
+      <div class="mgr-form">
+        <div class="mgr-row">
+          <label>Folder Path</label>
+          <input type="text" id="folder-path" placeholder="e.g. docs/security" list="folder-path-list">
+          <datalist id="folder-path-list"></datalist>
+        </div>
+        <div class="mgr-row mgr-row-btn">
+          <button type="button" class="mgr-btn mgr-btn--primary" onclick="generateMkdir()">Generate Command</button>
+        </div>
+        <div class="mgr-existing-folders" id="existing-folders"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Scaffold from Template -->
+  <div class="mgr-section" id="mgr-scaffold">
+    <div class="mgr-section-header" onclick="toggleMgrSection('mgr-scaffold')">
+      <span class="mgr-section-icon">&#128196;</span>
+      <h2>Scaffold from Template</h2>
+      <span class="mgr-chevron">&#9660;</span>
+    </div>
+    <div class="mgr-section-body">
+      <p class="mgr-hint">Create a new document from a template with proper naming, registration, and cross-references.</p>
+      <div class="mgr-form">
+        <div class="mgr-row">
+          <label>Preset</label>
+          <select id="scaf-preset" onchange="updateTemplateList()">
+            {"".join(f'<option value="{_esc(p)}"{"selected" if p == active_preset else ""}>{_esc(p.title())}</option>' for p in all_presets)}
+          </select>
+        </div>
+        <div class="mgr-row">
+          <label>Template</label>
+          <select id="scaf-template" onchange="updateScaffoldPreview()">
+            <option value="">— select template —</option>
+          </select>
+        </div>
+        <div class="mgr-row">
+          <label>Title</label>
+          <input type="text" id="scaf-title" placeholder="e.g. Q2 Security Assessment" oninput="updateScaffoldPreview()">
+        </div>
+        <div class="mgr-row">
+          <label>Folder</label>
+          <input type="text" id="scaf-folder" placeholder="e.g. docs/" value="docs/" list="scaf-folder-list">
+          <datalist id="scaf-folder-list"></datalist>
+        </div>
+        <div class="mgr-row">
+          <label>Author</label>
+          <input type="text" id="scaf-author" placeholder="Optional author name">
+        </div>
+        <div id="scaf-preview" class="mgr-preview" style="display:none"></div>
+        <div class="mgr-row mgr-row-btn">
+          <button type="button" class="mgr-btn mgr-btn--primary" onclick="generateScaffold()">Generate Command</button>
+          <button type="button" class="mgr-btn" onclick="generateScaffold(true)">Dry Run (preview only)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Command Output Panel -->
+<div id="mgr-output" class="mgr-output" style="display:none">
+  <div class="mgr-output-header">
+    <h3>Command</h3>
+    <button type="button" class="mgr-btn mgr-btn--sm" onclick="copyCommand()">Copy</button>
+    <button type="button" class="mgr-btn mgr-btn--sm" onclick="closeMgrOutput()">Close</button>
+  </div>
+  <pre id="mgr-output-cmd"></pre>
+  <p class="mgr-output-hint">Paste this command into your terminal to execute.</p>
+</div>
+
+<script>
+var UNREG = {unreg_json};
+var FOLDERS = {folder_json};
+var TEMPLATES = {tmpl_json};
+var ALL_TAGS = {tags_json};
+
+// Populate datalists
+(function() {{
+  var tagList = document.getElementById('reg-tags-list');
+  ALL_TAGS.forEach(function(t) {{
+    var o = document.createElement('option');
+    o.value = t;
+    tagList.appendChild(o);
+  }});
+  ['reg-path-list', 'folder-path-list', 'scaf-folder-list'].forEach(function(id) {{
+    var dl = document.getElementById(id);
+    FOLDERS.forEach(function(f) {{
+      var o = document.createElement('option');
+      o.value = f + '/';
+      dl.appendChild(o);
+    }});
+  }});
+}})();
+
+// Section toggle
+function toggleMgrSection(id) {{
+  var el = document.getElementById(id);
+  el.classList.toggle('collapsed');
+}}
+
+// --- Unregistered Files ---
+function renderUnreg() {{
+  var list = document.getElementById('unreg-list');
+  var empty = document.getElementById('unreg-empty');
+  if (UNREG.length === 0) {{
+    list.style.display = 'none';
+    empty.style.display = '';
+    return;
+  }}
+  var html = '<table class="mgr-table"><thead><tr><th>Filename</th><th>Action</th></tr></thead><tbody>';
+  for (var i = 0; i < UNREG.length; i++) {{
+    var fn = UNREG[i];
+    var safe = fn.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+    html += '<tr id="unreg-row-' + i + '">';
+    html += '<td class="mgr-filename">' + safe + '</td>';
+    html += '<td><button class="mgr-btn mgr-btn--sm mgr-btn--primary" onclick="quickRegister(' + i + ')">Register</button></td>';
+    html += '</tr>';
+  }}
+  html += '</tbody></table>';
+  list.innerHTML = html;
+}}
+renderUnreg();
+
+function quickRegister(idx) {{
+  var fn = UNREG[idx];
+  // Pre-fill the register form
+  document.getElementById('reg-filename').value = fn;
+  // Guess path from filename
+  document.getElementById('reg-path').value = fn;
+  document.getElementById('reg-status').value = 'active';
+  document.getElementById('reg-desc').value = '';
+  document.getElementById('reg-tags').value = '';
+  // Open register section, scroll to it
+  var sect = document.getElementById('mgr-register');
+  sect.classList.remove('collapsed');
+  sect.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+  document.getElementById('reg-filename').focus();
+}}
+
+// --- Register Existing File ---
+function generateRegister() {{
+  var fn = document.getElementById('reg-filename').value.trim();
+  if (!fn) {{ alert('Filename is required'); return; }}
+  var path = document.getElementById('reg-path').value.trim() || fn;
+  var status = document.getElementById('reg-status').value;
+  var desc = document.getElementById('reg-desc').value.trim();
+  var tags = document.getElementById('reg-tags').value.trim();
+
+  var cmd = 'python -m librarian --registry docs/REGISTRY.yaml register';
+  cmd += ' --filename ' + shellQuote(fn);
+  cmd += ' --path ' + shellQuote(path);
+  cmd += ' --status ' + status;
+  if (desc) cmd += ' --description ' + shellQuote(desc);
+  if (tags) {{
+    tags.split(',').forEach(function(t) {{
+      t = t.trim();
+      if (t) cmd += ' --tag ' + shellQuote(t);
+    }});
+  }}
+  showCommand(cmd);
+}}
+
+// --- Create Folder ---
+function generateMkdir() {{
+  var path = document.getElementById('folder-path').value.trim();
+  if (!path) {{ alert('Folder path is required'); return; }}
+  // Sanitize: no .., no leading /
+  path = path.replace(/\\.\\./g, '').replace(/^\\/+/, '');
+  var cmd = 'mkdir -p ' + shellQuote(path);
+  showCommand(cmd);
+}}
+
+// Render existing folders
+(function() {{
+  var el = document.getElementById('existing-folders');
+  if (FOLDERS.length === 0) {{ el.style.display = 'none'; return; }}
+  var html = '<div class="mgr-folder-ref"><strong>Existing folders:</strong> ';
+  html += FOLDERS.map(function(f) {{
+    return '<code>' + f.replace(/</g, '&lt;') + '/</code>';
+  }}).join(' ');
+  html += '</div>';
+  el.innerHTML = html;
+}})();
+
+// --- Scaffold from Template ---
+function updateTemplateList() {{
+  var preset = document.getElementById('scaf-preset').value;
+  var sel = document.getElementById('scaf-template');
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">\\u2014 select template \\u2014</option>';
+
+  // Group by source
+  var groups = {{}};
+  TEMPLATES.forEach(function(t) {{
+    if (t.presets.indexOf(preset) < 0) return;
+    var src = t.source;
+    if (!groups[src]) groups[src] = [];
+    groups[src].push(t);
+  }});
+
+  var order = ['universal', 'security', 'compliance', preset, 'custom'];
+  order.forEach(function(src) {{
+    if (!groups[src]) return;
+    var grp = document.createElement('optgroup');
+    grp.label = src.charAt(0).toUpperCase() + src.slice(1);
+    groups[src].forEach(function(t) {{
+      var o = document.createElement('option');
+      o.value = t.id;
+      o.textContent = t.name + ' (' + t.id + ')';
+      grp.appendChild(o);
+    }});
+    sel.appendChild(grp);
+  }});
+
+  // Try to restore previous selection
+  if (prev) sel.value = prev;
+  updateScaffoldPreview();
+}}
+updateTemplateList();
+
+function updateScaffoldPreview() {{
+  var tmplId = document.getElementById('scaf-template').value;
+  var title = document.getElementById('scaf-title').value.trim();
+  var prev = document.getElementById('scaf-preview');
+  if (!tmplId) {{ prev.style.display = 'none'; return; }}
+
+  var tmpl = TEMPLATES.find(function(t) {{ return t.id === tmplId; }});
+  if (!tmpl) {{ prev.style.display = 'none'; return; }}
+
+  // Generate expected filename
+  var slug = tmplId;
+  if (title) {{
+    slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }}
+  var today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  var expectedName = slug + '-' + today + '-V1.0.md';
+
+  var html = '<div class="mgr-preview-inner">';
+  html += '<div class="mgr-preview-row"><strong>Template:</strong> ' + tmpl.name + '</div>';
+  html += '<div class="mgr-preview-row"><strong>Expected file:</strong> <code>' + expectedName + '</code></div>';
+  html += '<div class="mgr-preview-row"><strong>Source:</strong> ' + tmpl.source + '</div>';
+  html += '</div>';
+  prev.innerHTML = html;
+  prev.style.display = '';
+}}
+
+function generateScaffold(dryRun) {{
+  var tmplId = document.getElementById('scaf-template').value;
+  if (!tmplId) {{ alert('Select a template first'); return; }}
+  var title = document.getElementById('scaf-title').value.trim();
+  var folder = document.getElementById('scaf-folder').value.trim();
+  var author = document.getElementById('scaf-author').value.trim();
+  var preset = document.getElementById('scaf-preset').value;
+
+  var cmd = 'python -m librarian --registry docs/REGISTRY.yaml scaffold';
+  cmd += ' --template ' + shellQuote(tmplId);
+  if (title) cmd += ' --title ' + shellQuote(title);
+  if (folder) cmd += ' --folder ' + shellQuote(folder);
+  if (author) cmd += ' --author ' + shellQuote(author);
+  cmd += ' --preset ' + preset;
+  if (dryRun) cmd += ' --dry-run';
+  showCommand(cmd);
+}}
+
+// --- Shared helpers ---
+function shellQuote(s) {{
+  if (/^[a-zA-Z0-9_.\\/-]+$/.test(s)) return s;
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}}
+
+function showCommand(cmd) {{
+  var out = document.getElementById('mgr-output');
+  document.getElementById('mgr-output-cmd').textContent = cmd;
+  out.style.display = '';
+  out.scrollIntoView({{behavior: 'smooth', block: 'nearest'}});
+}}
+
+function closeMgrOutput() {{
+  document.getElementById('mgr-output').style.display = 'none';
+}}
+
+function copyCommand() {{
+  var text = document.getElementById('mgr-output-cmd').textContent;
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(text);
+    var btn = document.querySelector('.mgr-output-header .mgr-btn--sm');
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function() {{ btn.textContent = orig; }}, 1500);
+  }}
+}}
+</script>"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+
+    return _page(
+        "Manage",
+        body,
+        "manage",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=False,
+        sidebar=sidebar,
+    )
+
+
+def _build_search_index(manifest: "Manifest") -> str:
+    """Build the global search index JSON for the header search bar.
+
+    Returns a JSON string with entries for documents, settings fields,
+    site pages, and template catalog items.
+    """
+    entries: list[dict[str, str]] = []
+    snapshot = manifest.registry_snapshot
+    documents = snapshot.get("documents", [])
+
+    # ── Documents ──────────────────────────────────────────────────────
+    _date_re = re.compile(r"(\d{4})-?(\d{2})-?(\d{2})")
+    for doc in documents:
+        fn = doc.get("filename", "")
+        title = doc.get("title", fn)
+        status = doc.get("status", "")
+        tags = doc.get("tags", [])
+        # Extract a normalized YYYY-MM-DD date from registry field or filename
+        raw_date = doc.get("date", "") or ""
+        dm = _date_re.search(str(raw_date)) or _date_re.search(fn)
+        norm_date = f"{dm.group(1)}-{dm.group(2)}-{dm.group(3)}" if dm else ""
+        text_parts = [fn, title, status] + tags
+        entry: dict[str, str] = {
+            "category": "document",
+            "title": title,
+            "text": " ".join(text_parts).lower(),
+            "href": f"docs/{fn}.html",
+            "meta": status,
+        }
+        if norm_date:
+            entry["date"] = norm_date
+        entries.append(entry)
+
+    # ── Settings fields ────────────────────────────────────────────────
+    settings_items = [
+        ("Preset", "Project Basics", "cfg-preset"),
+        ("Organization", "Project Basics", "cfg-hdr-org"),
+        ("Default Author", "Project Basics", "cfg-author"),
+        ("Review Cycle", "Project Basics", "cfg-meta-cycle"),
+        ("Naming Template", "Naming Convention", "cfg-template"),
+        ("Separator", "Naming Convention", "cfg-sep"),
+        ("Case", "Naming Convention", "cfg-case"),
+        ("Date Format", "Naming Convention", "cfg-date"),
+        ("Version Format", "Naming Convention", "cfg-ver"),
+        ("Domain Prefix", "Naming Convention", "cfg-domain"),
+        ("Tracked Directories", "Folder Categories", "folders"),
+        ("Forbidden Words", "Tags Taxonomy", "forbidden"),
+        ("Exempt Files", "Tags Taxonomy", "exempt"),
+        ("Tags Taxonomy", "Tags Taxonomy", "tags"),
+        ("Category Strictness", "Governance", "strictness"),
+        ("Default Author", "Governance", "author"),
+        ("Classification Banner", "Governance", "classification"),
+        ("Header Enabled", "Document Header / Footer", "cfg-hdr-enabled"),
+        ("Header Organization", "Document Header / Footer", "cfg-hdr-org"),
+        ("Logo URL", "Document Header / Footer", "cfg-hdr-logo"),
+        ("Classification Banner", "Document Header / Footer", "cfg-hdr-banner"),
+        ("Document ID Prefix", "Document Header / Footer", "cfg-hdr-prefix"),
+        ("Show Version", "Document Header / Footer", "cfg-hdr-ver"),
+        ("Show Date", "Document Header / Footer", "cfg-hdr-date"),
+        ("Show Status", "Document Header / Footer", "cfg-hdr-status"),
+        ("Footer Copyright", "Document Header / Footer", "footer"),
+        ("Footer Custom Text", "Document Header / Footer", "footer-custom"),
+        ("Legal Disclaimer", "Document Header / Footer", "disclaimer"),
+        ("Require Author", "Required Metadata", "metadata"),
+        ("Require Reviewer", "Required Metadata", "metadata"),
+        ("Require Revision History", "Required Metadata", "metadata"),
+        ("Review Cycle Days", "Required Metadata", "metadata"),
+        ("Retention Period Days", "Required Metadata", "metadata"),
+        # Compliance standards
+        ("HIPAA", "Compliance Standards", "hipaa"),
+        ("GDPR", "Compliance Standards", "gdpr"),
+        ("ISO 27001", "Compliance Standards", "iso27001"),
+        ("SOX", "Compliance Standards", "sox"),
+        ("SOC 2", "Compliance Standards", "soc2"),
+        ("DoD 5200", "Compliance Standards", "dod5200"),
+        ("PCI DSS", "Compliance Standards", "pci-dss"),
+        ("NIST CSF", "Compliance Standards", "nist-csf"),
+        ("ISO 9001", "Compliance Standards", "iso9001"),
+        ("CCPA", "Compliance Standards", "ccpa"),
+        ("FERPA", "Compliance Standards", "ferpa"),
+        ("FedRAMP", "Compliance Standards", "fedramp"),
+    ]
+    for label, section, field_id in settings_items:
+        entries.append({
+            "category": "setting",
+            "title": label,
+            "text": f"{label} {section} {field_id}".lower(),
+            "href": f"settings.html#cfg-{field_id}" if field_id.startswith("cfg-") else "settings.html",
+            "meta": section,
+        })
+
+    # ── Site pages ─────────────────────────────────────────────────────
+    pages = [
+        ("Home", "Document registry and overview", "index.html"),
+        ("Folder Structure", "Tree view of project directories", "tree.html"),
+        ("Cross-Reference Graph", "Dependency graph visualization", "graph.html"),
+        ("Template Catalog", "Browse available document templates", "templates.html"),
+        ("Settings", "Project configuration and compliance", "settings.html"),
+        ("Setup Wizard", "Guided project setup questionnaire", "wizard.html"),
+        ("Project Manager", "Add files, create folders, scaffold documents", "manage.html"),
+        ("Audit & Verify", "OODA audit file integrity operation log seal recommendations", "audit.html"),
+    ]
+    for title, desc, href in pages:
+        entries.append({
+            "category": "page",
+            "title": title,
+            "text": f"{title} {desc}".lower(),
+            "href": href,
+            "meta": "",
+        })
+
+    # ── Templates ──────────────────────────────────────────────────────
+    try:
+        from .templates import discover_templates
+        pc = snapshot.get("project_config", {})
+        preset = pc.get("preset", "software")
+        tmps = discover_templates(preset=preset or "software")
+        for tid, tmpl in tmps.items():
+            tags = " ".join(tmpl.suggested_tags) if tmpl.suggested_tags else ""
+            entries.append({
+                "category": "template",
+                "title": tmpl.display_name,
+                "text": f"{tid} {tmpl.display_name} {tmpl.description} {tags}".lower(),
+                "href": f"templates.html#tmpl-{tid}",
+                "meta": tmpl.preset,
+            })
+    except Exception:
+        pass  # templates not available
+
+    return _json_safe(entries, separators=(",", ":"))
 
 
 def generate_site(
@@ -3692,33 +6368,26 @@ def generate_site(
     Args:
         manifest: A populated Manifest dataclass.
         output_dir: Directory to write the site into (created if needed).
-        dashboard_path: Optional path to a pre-rendered dashboard HTML.
-            If provided, it is copied into the site as ``dashboard.html``.
+        dashboard_path: Deprecated — ignored. Standalone dashboards are
+            generated separately via ``librarian dashboard``.
 
     Returns:
         The resolved output directory path.
     """
+    global _SEARCH_INDEX_JSON  # noqa: PLW0603
+
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+
+    # Build global search index before any pages
+    _SEARCH_INDEX_JSON = _build_search_index(manifest)
 
     # Assets
     assets = out / "assets"
     assets.mkdir(exist_ok=True)
     (assets / "style.css").write_text(SITE_CSS, encoding="utf-8")
 
-    # Determine if dashboard exists
-    has_dashboard = False
-    if dashboard_path:
-        dp = Path(dashboard_path).resolve()
-        dest = (out / "dashboard.html").resolve()
-        if dp.is_file() and dp != dest:
-            shutil.copy2(dp, dest)
-        has_dashboard = dest.is_file()
-        # Inject site navigation bar into the dashboard
-        if has_dashboard:
-            _inject_dashboard_nav(dest)
-
-    # Index
+    # Index (Home)
     (out / "index.html").write_text(_build_index(manifest), encoding="utf-8")
 
     # Per-document pages
@@ -3744,5 +6413,14 @@ def generate_site(
 
     # Templates catalog page
     (out / "templates.html").write_text(_build_templates_page(manifest), encoding="utf-8")
+
+    # Setup wizard page
+    (out / "wizard.html").write_text(_build_wizard_page(manifest), encoding="utf-8")
+
+    # Audit & Verify page
+    (out / "audit.html").write_text(_build_audit_page(manifest), encoding="utf-8")
+
+    # Project Manager page
+    (out / "manage.html").write_text(_build_manage_page(manifest), encoding="utf-8")
 
     return out.resolve()
