@@ -478,12 +478,35 @@ documents:
   tags:
   - governance
   - report
+- filename: phase-f-plugin-and-release-20260413-V1.0.md
+  title: Phase F — Plugin Packaging + Open-Source Release
+  description: Scope plan for Claude Code plugin, PyPI package, and GitHub public release
+  format: md
+  version: '1.0'
+  date: '2026-04-13'
+  status: draft
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - librarian-buildout-plan-20260411-V1.2.md
+  cross_references: []
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - planning
+  - infrastructure
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 18
+  total_documents: 19
   active: 15
-  draft: 1
+  draft: 2
   superseded: 2
   not_in_repo: 0
   archived: 0
