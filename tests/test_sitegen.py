@@ -22,6 +22,7 @@ from librarian.sitegen import (
     _group_by_tag,
     _group_by_path,
     _build_tree_json,
+    _build_tree_diagram,
     _md_to_html,
     _inline,
     _render_file_content,
@@ -440,6 +441,76 @@ class TestTreeJSON:
             assert "status" in doc
 
 
+# ─── Tree Diagram ─────────────────────────────────────────────────────────
+
+
+class TestTreeDiagram:
+    """Tests for the interactive folder-tree diagram."""
+
+    def test_diagram_renders_root(self):
+        dirs = {".": [{"filename": "readme.md", "status": "active"}]}
+        html = _build_tree_diagram(dirs)
+        assert "project root" in html
+        assert "tree-diagram" in html
+
+    def test_diagram_shows_folders(self):
+        dirs = {
+            "docs": [{"filename": "alpha.md", "status": "active"}],
+            "specs": [{"filename": "beta.yaml", "status": "draft"}],
+        }
+        html = _build_tree_diagram(dirs)
+        assert "docs/" in html
+        assert "specs/" in html
+
+    def test_diagram_shows_files(self):
+        dirs = {
+            "docs": [{"filename": "alpha.md", "status": "active"}],
+        }
+        html = _build_tree_diagram(dirs)
+        assert "alpha.md" in html
+        assert 'href="docs/alpha.md.html"' in html
+
+    def test_diagram_status_dots(self):
+        dirs = {
+            ".": [
+                {"filename": "a.md", "status": "active"},
+                {"filename": "b.md", "status": "draft"},
+            ],
+        }
+        html = _build_tree_diagram(dirs)
+        assert "td-status-dot--active" in html
+        assert "td-status-dot--draft" in html
+
+    def test_diagram_toggle_script(self):
+        dirs = {".": [{"filename": "x.md", "status": "active"}]}
+        html = _build_tree_diagram(dirs)
+        assert "td-toggle" in html
+        assert "<script>" in html
+
+    def test_diagram_file_count_badge(self):
+        dirs = {
+            "docs": [
+                {"filename": "a.md", "status": "active"},
+                {"filename": "b.md", "status": "active"},
+            ],
+        }
+        html = _build_tree_diagram(dirs)
+        assert "td-file-count" in html
+
+    def test_diagram_in_tree_page(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "tree.html").read_text()
+        assert "tree-diagram" in html
+        assert "Interactive Folder Map" in html
+
+    def test_diagram_folder_click_scrolls(self):
+        dirs = {"docs": [{"filename": "a.md", "status": "active"}]}
+        html = _build_tree_diagram(dirs)
+        assert "data-folder" in html
+        assert "scrollIntoView" in html
+
+
 # ─── Sidebar in Pages ──────────────────────────────────────────────────────
 
 
@@ -683,3 +754,453 @@ class TestDocPageContent:
         generate_site(multi_doc_manifest, out)
         html = (out / "docs" / "alpha-doc-20260101-V1.0.md.html").read_text()
         assert "Cross-References" in html
+
+
+# ─── Settings Page ────────────────────────────────────────────────────────
+
+
+class TestSettingsPage:
+    def test_settings_page_generated(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        assert (out / "settings.html").is_file()
+
+    def test_settings_has_naming_section(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "Naming Convention" in html
+        assert "cfg-sep" in html
+        assert "cfg-case" in html
+
+    def test_settings_has_categories_section(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "Folder Categories" in html
+        assert "cfg-preset" in html
+
+    def test_settings_has_live_preview(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "preview-filename" in html
+        assert "updatePreview" in html
+        assert "preview-panel" in html
+
+    def test_settings_has_yaml_export(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "generateYaml" in html
+        assert "yaml-output" in html
+
+    def test_settings_has_governance_section(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "Governance" in html
+        assert "cfg-author" in html
+
+    def test_settings_has_compliance_standards(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "Compliance Standards" in html
+        assert "std-dod" in html
+        assert "std-hipaa" in html
+        assert "std-sec" in html
+        assert "std-scientific" in html
+        assert "std-legal" in html
+        assert "applyStandard" in html
+
+    def test_settings_has_preview_panel(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "settings.html").read_text()
+        assert "settings-preview-panel" in html
+        assert "preview-header-card" in html
+        assert "preview-footer-card" in html
+        assert "preview-meta" in html
+
+    def test_nav_has_gear_icon(self, tmp_path: Path, multi_doc_manifest: Manifest):
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        html = (out / "index.html").read_text()
+        assert "settings.html" in html
+        assert "Settings" in html
+
+
+class TestSettingsInteractivity:
+    """Comprehensive validation that every interactive element on the settings
+    page is wired correctly — proper onclick quoting, ID consistency between
+    HTML elements and JS references, compliance standard completeness,
+    toggle/deselect support, and YAML export coverage."""
+
+    @pytest.fixture()
+    def settings_html(self, tmp_path: Path, multi_doc_manifest: Manifest) -> str:
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        return (out / "settings.html").read_text()
+
+    # ── onclick quoting ──────────────────────────────────────────────
+
+    def test_no_backslash_x27_in_html_onclick(self, settings_html: str):
+        """\\x27 is only valid inside JS string literals, not HTML onclick
+        attributes.  All onclick handlers must use real single quotes."""
+        import re
+        # Split out <script> blocks — \\x27 is fine there
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        onclicks = re.findall(r'onclick="[^"]*"', outside_script)
+        for oc in onclicks:
+            assert "\\x27" not in oc, f"Bad \\x27 in HTML onclick: {oc}"
+
+    def test_all_onclick_use_single_quotes(self, settings_html: str):
+        """Every onclick that passes a string arg must use actual ' chars."""
+        import re
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        onclicks = re.findall(r'onclick="[^"]*"', outside_script)
+        for oc in onclicks:
+            if "applyStandard" in oc:
+                assert "applyStandard('" in oc, f"Missing quote: {oc}"
+            if "classList.toggle" in oc:
+                assert "toggle('on')" in oc, f"Missing quote: {oc}"
+
+    # ── compliance buttons ───────────────────────────────────────────
+
+    def test_all_six_compliance_buttons_present(self, settings_html: str):
+        standards = ["dod", "iso9001", "hipaa", "sec", "scientific", "legal"]
+        for std in standards:
+            assert f'id="std-{std}"' in settings_html, f"Missing button: std-{std}"
+            assert f"applyStandard('{std}')" in settings_html, (
+                f"Missing onclick for {std}"
+            )
+
+    def test_compliance_buttons_have_type_button(self, settings_html: str):
+        """Buttons without type=button default to submit, causing page reload."""
+        import re
+        buttons = re.findall(
+            r"<button[^>]*settings-compliance-btn[^>]*>", settings_html
+        )
+        assert len(buttons) == 6
+        for btn in buttons:
+            assert 'type="button"' in btn, f"Missing type=button: {btn[:80]}"
+
+    def test_compliance_active_css_distinct_from_hover(
+        self, tmp_path: Path, multi_doc_manifest: Manifest
+    ):
+        """Active state must use a solid accent background, not just a border."""
+        import re
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        css = (out / "assets" / "style.css").read_text()
+        match = re.search(
+            r"\.settings-compliance-btn\.active\s*\{([^}]+)\}", css
+        )
+        assert match, "Missing .settings-compliance-btn.active CSS rule"
+        rule = match.group(1)
+        assert "background: var(--accent)" in rule, (
+            "Active bg should be solid accent, not accent-light"
+        )
+        assert "color: #fff" in rule, "Active text should be white"
+
+    def test_compliance_deselect_restores_defaults(self, settings_html: str):
+        """applyStandard must toggle off when clicking an already-active button
+        and restore PROJECT_DEFAULTS."""
+        assert "captureDefaults" in settings_html
+        assert "PROJECT_DEFAULTS" in settings_html
+        assert "wasActive" in settings_html
+        assert "applyFields(PROJECT_DEFAULTS)" in settings_html
+
+    def test_capture_defaults_called_on_load(self, settings_html: str):
+        assert "captureDefaults();" in settings_html
+        assert "DOMContentLoaded" in settings_html
+
+    # ── STANDARDS object completeness ────────────────────────────────
+
+    def test_standards_object_has_all_required_fields(self, settings_html: str):
+        """Each compliance standard must set every form field."""
+        import re
+        required_fields = [
+            "sep", "case", "date", "ver", "domain",
+            "hdr", "org", "banner", "prefix",
+            "hdrVer", "hdrDate", "hdrStatus", "hdrPages",
+            "ftr", "dist", "ret", "copy", "custom",
+            "metaOwner", "metaApprover", "metaReview", "metaDist", "metaRev",
+            "retention", "cycle", "cls",
+        ]
+        standards = ["dod", "iso9001", "hipaa", "sec", "scientific", "legal"]
+        # Extract the STANDARDS block from a <script> tag
+        match = re.search(
+            r"var STANDARDS\s*=\s*\{(.+?)\n\};", settings_html, re.DOTALL
+        )
+        assert match, "STANDARDS object not found"
+        block = match.group(1)
+        for std in standards:
+            # Find this standard's block
+            std_match = re.search(
+                rf"{std}\s*:\s*\{{([^}}]+)\}}", block
+            )
+            assert std_match, f"Standard '{std}' not in STANDARDS object"
+            std_body = std_match.group(1)
+            for field in required_fields:
+                # 'case' is a JS reserved-ish word, stored as 'case'
+                if field == "case":
+                    assert "'case'" in std_body, (
+                        f"Standard '{std}' missing field: {field}"
+                    )
+                else:
+                    assert f"{field}:" in std_body or f"{field} :" in std_body, (
+                        f"Standard '{std}' missing field: {field}"
+                    )
+
+    # ── form element ID consistency ──────────────────────────────────
+
+    def test_all_js_getelementbyid_targets_exist_in_html(self, settings_html: str):
+        """Every getElementById call must reference an existing HTML id."""
+        import re
+        # Extract IDs from getElementById calls
+        js_ids = set(re.findall(r"getElementById\(['\"]([^'\"]+)['\"]\)", settings_html))
+        # Extract IDs from HTML id= attributes
+        html_ids = set(re.findall(r'id="([^"]+)"', settings_html))
+        missing = js_ids - html_ids
+        assert not missing, f"JS references missing HTML elements: {missing}"
+
+    # ── toggle sliders ───────────────────────────────────────────────
+
+    def test_all_toggles_call_update_preview(self, settings_html: str):
+        """Every settings toggle must trigger updatePreview on click."""
+        import re
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        toggles = re.findall(
+            r'<button[^>]*settings-toggle[^>]*onclick="([^"]*)"[^>]*>',
+            outside_script,
+        )
+        # cfg-strict is the only toggle that doesn't need preview update
+        # (it's a category setting, not a visual preview setting)
+        for oc in toggles:
+            assert "classList.toggle('on')" in oc, f"Toggle missing toggle('on'): {oc}"
+
+    def test_toggle_count_matches_expected(self, settings_html: str):
+        """Exactly 13 toggle buttons: domain, strict, hdr-enabled,
+        hdr-ver/date/status/pages, ftr-enabled, meta-owner/approver/
+        review/distlist/revhist."""
+        import re
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        toggles = re.findall(r"settings-toggle\b", outside_script)
+        assert len(toggles) == 13, f"Expected 13 toggles, found {len(toggles)}"
+
+    # ── select dropdowns ─────────────────────────────────────────────
+
+    def test_select_dropdowns_have_onchange(self, settings_html: str):
+        """All naming/interactive select elements must trigger updatePreview or
+        applyTemplate on change.  cfg-preset is display-only (informational)."""
+        import re
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        # Selects that must have onchange handlers
+        interactive_selects = ["cfg-template", "cfg-sep", "cfg-case", "cfg-date", "cfg-ver"]
+        for sid in interactive_selects:
+            match = re.search(rf'<select[^>]*id="{sid}"[^>]*>', outside_script)
+            assert match, f"Select {sid} not found"
+            assert "onchange=" in match.group(0), f"Select {sid} missing onchange"
+
+    # ── text inputs ──────────────────────────────────────────────────
+
+    def test_text_inputs_have_oninput(self, settings_html: str):
+        """Editable text inputs should trigger updatePreview on input."""
+        import re
+        outside_script = re.sub(
+            r"<script[\s>].*?</script>", "", settings_html, flags=re.DOTALL
+        )
+        inputs = re.findall(r'<input[^>]*id="(cfg-[^"]+)"[^>]*>', outside_script)
+        # These inputs should have oninput for live preview
+        preview_inputs = [
+            "cfg-author", "cfg-class", "cfg-hdr-org", "cfg-hdr-banner",
+            "cfg-hdr-prefix", "cfg-ftr-dist", "cfg-ftr-ret", "cfg-ftr-copy",
+            "cfg-ftr-custom", "cfg-meta-retention", "cfg-meta-cycle",
+        ]
+        for inp_id in preview_inputs:
+            pattern = rf'<input[^>]*id="{inp_id}"[^>]*>'
+            match = re.search(pattern, outside_script)
+            assert match, f"Input {inp_id} not found"
+            assert "oninput=" in match.group(0), (
+                f"Input {inp_id} missing oninput handler"
+            )
+
+    # ── YAML export ──────────────────────────────────────────────────
+
+    def test_yaml_export_reads_all_form_fields(self, settings_html: str):
+        """generateYaml must read every configurable field."""
+        import re
+        match = re.search(
+            r"function generateYaml\(\)\s*\{(.+?)\n\}", settings_html, re.DOTALL
+        )
+        assert match, "generateYaml function not found"
+        body = match.group(1)
+        required_ids = [
+            "cfg-sep", "cfg-case", "cfg-date", "cfg-ver", "cfg-domain",
+            "cfg-strict", "cfg-author", "cfg-class", "cfg-stale",
+            "cfg-hdr-enabled", "cfg-hdr-org", "cfg-hdr-banner", "cfg-hdr-prefix",
+            "cfg-hdr-ver", "cfg-hdr-date", "cfg-hdr-status", "cfg-hdr-pages",
+            "cfg-ftr-enabled", "cfg-ftr-dist", "cfg-ftr-ret", "cfg-ftr-copy",
+            "cfg-ftr-custom",
+            "cfg-meta-owner", "cfg-meta-approver", "cfg-meta-review",
+            "cfg-meta-distlist", "cfg-meta-revhist",
+            "cfg-meta-retention", "cfg-meta-cycle",
+        ]
+        for fid in required_ids:
+            assert fid in body, f"generateYaml missing field: {fid}"
+
+    # ── templates ────────────────────────────────────────────────────
+
+    def test_all_eight_templates_in_dropdown(self, settings_html: str):
+        templates = [
+            "default", "legal", "engineering", "corporate",
+            "dateless", "scientific", "healthcare", "finance",
+        ]
+        for t in templates:
+            assert f'value="{t}"' in settings_html, f"Template missing: {t}"
+
+    def test_apply_template_function_exists(self, settings_html: str):
+        assert "function applyTemplate()" in settings_html
+
+    # ── preview panel structure ───────────────────────────────────────
+
+    def test_preview_always_visible_with_opacity(self, settings_html: str):
+        """Header/footer cards use opacity dimming, not display:none."""
+        assert "hdrCard.style.opacity" in settings_html
+        assert "ftrCard.style.opacity" in settings_html
+        assert "hdrCard.style.display" not in settings_html
+        assert "ftrCard.style.display" not in settings_html
+
+    def test_preview_shows_disabled_label(self, settings_html: str):
+        assert "Document Header (disabled)" in settings_html
+        assert "Document Footer (disabled)" in settings_html
+
+
+class TestEditableTagsAndNewFields:
+    """Tests for editable tag lists, logo URL field, disclaimer dropdown,
+    and YAML export coverage for these new features."""
+
+    @pytest.fixture()
+    def settings_html(self, tmp_path: Path, multi_doc_manifest: Manifest) -> str:
+        out = tmp_path / "site_out"
+        generate_site(multi_doc_manifest, out)
+        return (out / "settings.html").read_text()
+
+    # ── editable tag lists ──────────────────────────────────────────
+
+    def test_forbidden_words_list_has_id(self, settings_html: str):
+        assert 'id="cfg-forbidden"' in settings_html
+
+    def test_exempt_files_list_has_id(self, settings_html: str):
+        assert 'id="cfg-exempt"' in settings_html
+
+    def test_tag_remove_buttons_present(self, settings_html: str):
+        assert "tag-remove" in settings_html
+        assert "removeTag(this)" in settings_html
+
+    def test_add_tag_inputs_present(self, settings_html: str):
+        """Each editable list should have an add-tag input + button."""
+        assert "addTag(" in settings_html
+
+    def test_remove_tag_function_defined(self, settings_html: str):
+        assert "function removeTag(" in settings_html
+
+    def test_add_tag_function_defined(self, settings_html: str):
+        assert "function addTag(" in settings_html
+
+    def test_get_tag_values_function_defined(self, settings_html: str):
+        assert "function getTagValues(" in settings_html
+
+    # ── logo URL field ──────────────────────────────────────────────
+
+    def test_logo_url_field_present(self, settings_html: str):
+        assert 'id="cfg-hdr-logo"' in settings_html
+
+    def test_logo_in_yaml_export(self, settings_html: str):
+        assert "logo_url:" in settings_html
+        assert "hdrLogo" in settings_html
+
+    def test_logo_in_preview(self, settings_html: str):
+        assert 'id="preview-logo"' in settings_html
+
+    def test_logo_in_capture_defaults(self, settings_html: str):
+        """captureDefaults must snapshot the logo field."""
+        assert "cfg-hdr-logo" in settings_html
+
+    def test_logo_in_standards_objects(self, settings_html: str):
+        """All STANDARDS entries should include a logo key.
+        Count occurrences of 'logo:' inside STANDARDS — should be >= 6 (one per standard)."""
+        import re
+        standards_match = re.search(
+            r"var STANDARDS\s*=\s*\{(.*?)\n\};", settings_html, re.DOTALL
+        )
+        assert standards_match, "STANDARDS object not found"
+        body = standards_match.group(1)
+        logo_count = body.count("logo:")
+        assert logo_count >= 6, f"Expected 6+ logo: entries in STANDARDS, found {logo_count}"
+
+    # ── legal disclaimer dropdown ───────────────────────────────────
+
+    def test_disclaimer_dropdown_present(self, settings_html: str):
+        assert 'id="cfg-ftr-disclaimer"' in settings_html
+
+    def test_disclaimers_object_defined(self, settings_html: str):
+        assert "var DISCLAIMERS" in settings_html
+
+    def test_apply_disclaimer_function_defined(self, settings_html: str):
+        assert "function applyDisclaimer()" in settings_html
+
+    def test_disclaimer_options_count(self, settings_html: str):
+        """Should have at least 7 industry disclaimer options plus a 'none' option."""
+        import re
+        options = re.findall(
+            r'<option\s+value="[^"]*"[^>]*>', settings_html
+        )
+        # Filter to just the disclaimer select options
+        select_start = settings_html.find('id="cfg-ftr-disclaimer"')
+        assert select_start > 0
+        select_block = settings_html[select_start:select_start + 2000]
+        select_end = select_block.find("</select>")
+        select_block = select_block[:select_end]
+        opts = re.findall(r"<option", select_block)
+        assert len(opts) >= 7, f"Expected 7+ disclaimer options, found {len(opts)}"
+
+    def test_disclaimers_keys_match_options(self, settings_html: str):
+        """DISCLAIMERS object keys should match dropdown option values."""
+        import re
+        disclaimers_match = re.search(
+            r"var DISCLAIMERS\s*=\s*\{(.*?)\};", settings_html, re.DOTALL
+        )
+        assert disclaimers_match, "DISCLAIMERS object not found"
+        keys = re.findall(r"(\w+):", disclaimers_match.group(1))
+        expected_keys = ["general", "hipaa", "financial", "legal",
+                         "government", "academic", "technology"]
+        for k in expected_keys:
+            assert k in keys, f"DISCLAIMERS missing key: {k}"
+
+    # ── YAML export coverage for new fields ─────────────────────────
+
+    def test_yaml_exports_forbidden_words(self, settings_html: str):
+        assert "forbidden_words:" in settings_html
+        assert "getTagValues('cfg-forbidden')" in settings_html or \
+               'getTagValues("cfg-forbidden")' in settings_html
+
+    def test_yaml_exports_exempt_files(self, settings_html: str):
+        assert "exempt_files:" in settings_html
+        assert "getTagValues('cfg-exempt')" in settings_html or \
+               'getTagValues("cfg-exempt")' in settings_html
+
+    def test_yaml_exports_tags_taxonomy(self, settings_html: str):
+        assert "tags_taxonomy:" in settings_html

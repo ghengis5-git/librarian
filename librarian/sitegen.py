@@ -412,6 +412,36 @@ nav a:hover { color: var(--text-primary); background: var(--surface-alt); text-d
 nav a.active { color: var(--accent); background: var(--accent-light); font-weight: 600; }
 
 .header-spacer { flex: 1; }
+.settings-gear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  transition: all var(--transition);
+  position: relative;
+  margin-left: 8px;
+}
+.settings-gear:hover { color: var(--accent); background: var(--surface-alt); }
+.settings-gear.active { color: var(--accent); background: var(--accent-light); }
+.settings-gear svg { width: 16px; height: 16px; }
+.settings-gear[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: var(--sans);
+  color: var(--accent-text);
+  background: var(--text-primary);
+  border-radius: var(--radius);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
 .header-seal {
   font-size: 10px;
   font-family: var(--mono);
@@ -815,6 +845,498 @@ footer {
 .tree-table td { padding: 8px 12px; font-size: 12px; }
 .tree-table .size-col { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
 
+/* ── Interactive Tree Diagram ─────────────────────────────────────────── */
+.tree-diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+.tree-diagram-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.td-node { list-style: none; padding-left: 0; margin: 0; }
+.td-node .td-node { padding-left: 22px; }
+.td-entry {
+  position: relative;
+  padding: 3px 0;
+}
+/* vertical + horizontal connector lines */
+.td-node .td-node .td-entry::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 0;
+  width: 14px;
+  height: 13px;
+  border-left: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  border-bottom-left-radius: 4px;
+}
+.td-node .td-node .td-entry:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 13px;
+  bottom: -3px;
+  border-left: 1px solid var(--border-strong);
+}
+.td-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family: var(--mono);
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  cursor: default;
+  transition: background var(--transition);
+  color: var(--text-primary);
+}
+.td-label--folder {
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--accent);
+}
+.td-label--folder:hover {
+  background: var(--accent-light);
+}
+.td-label--file a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.td-label--file a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.td-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.td-icon--folder { color: var(--accent); }
+.td-icon--file { color: var(--text-muted); }
+.td-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+.td-toggle svg { width: 12px; height: 12px; }
+.td-branch.collapsed > .td-entry > .td-label > .td-toggle { transform: rotate(-90deg); }
+.td-branch.collapsed > .td-node { display: none; }
+.td-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.td-status-dot--active { background: var(--status-active); }
+.td-status-dot--draft { background: var(--status-draft); }
+.td-status-dot--superseded { background: var(--status-superseded); }
+.td-file-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* ── Settings Page ────────────────────────────────────────────────────── */
+.settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.settings-section-header svg {
+  width: 16px; height: 16px; color: var(--accent); flex-shrink: 0;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0;
+  padding: 0;
+}
+.settings-row {
+  display: contents;
+}
+.settings-row:hover .settings-label,
+.settings-row:hover .settings-control {
+  background: var(--surface-alt);
+}
+.settings-label {
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.settings-control {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-control select,
+.settings-control input[type="text"] {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.settings-control select:focus,
+.settings-control input[type="text"]:focus {
+  border-color: var(--accent);
+}
+.settings-control select { min-width: 160px; cursor: pointer; }
+.settings-control input[type="text"] { width: 100%; max-width: 300px; }
+.settings-toggle {
+  position: relative;
+  width: 36px; height: 20px;
+  background: var(--border-strong);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border: none;
+  padding: 0;
+}
+.settings-toggle.on { background: var(--accent); }
+.settings-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--transition);
+}
+.settings-toggle.on::after { transform: translateX(16px); }
+.settings-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+.settings-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.settings-tag-item {
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.settings-tag-item .tag-remove {
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 14px;
+  line-height: 1;
+  font-style: normal;
+  color: var(--danger, #d32f2f);
+  margin-left: 2px;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+.settings-tag-item .tag-remove:hover { opacity: 1; background: var(--danger, #d32f2f); color: #fff; }
+.settings-tag-add {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+.settings-tag-add input {
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 140px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.settings-tag-add button {
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent-light);
+  color: var(--accent);
+  cursor: pointer;
+}
+.settings-tag-add button:hover { background: var(--accent); color: #fff; }
+.settings-disclaimer-select {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  width: 100%;
+  margin-top: 4px;
+}
+.settings-preview {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin: 16px 20px 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.settings-preview-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-family: var(--sans);
+}
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.settings-btn:hover {
+  background: var(--surface-alt);
+  border-color: var(--border-strong);
+}
+.settings-btn--primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.settings-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.settings-btn svg { width: 14px; height: 14px; }
+.settings-yaml {
+  background: var(--text-primary);
+  color: #e8e6e1;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 12px;
+  display: none;
+}
+.settings-yaml.visible { display: block; }
+.settings-copied {
+  font-size: 11px;
+  color: var(--status-active);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.settings-copied.show { opacity: 1; }
+
+/* Settings layout: forms + preview side-by-side */
+.settings-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.settings-forms { flex: 1; min-width: 0; }
+.settings-preview-panel {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  font-size: 12px;
+}
+.settings-preview-panel-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.settings-preview-card {
+  margin-bottom: 14px;
+}
+.settings-preview-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.settings-preview-card-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  word-break: break-all;
+}
+.settings-preview-doc {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 11px;
+}
+.preview-banner {
+  text-align: center;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 0;
+}
+.banner-green { background: #d5e8d4; color: #2d6a2d; }
+.banner-amber { background: #fef3cd; color: #856404; }
+.banner-red { background: #f8d7da; color: #721c24; }
+.banner-purple { background: #e8d5f5; color: #5b2d8e; }
+.preview-hdr-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px 2px;
+  color: var(--text-muted);
+}
+.preview-hdr-org { font-weight: 600; color: var(--text-primary); }
+.preview-hdr-meta { font-size: 10px; }
+.preview-hdr-title {
+  padding: 2px 10px 8px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.preview-ftr-row {
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.settings-preview-meta {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.settings-preview-meta div { padding: 1px 0; }
+
+/* Compliance standards grid */
+.settings-compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.settings-compliance-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+.settings-compliance-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.settings-compliance-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--accent), 0 2px 8px rgba(0,0,0,0.15);
+}
+.settings-compliance-btn.active .settings-compliance-icon svg { color: #fff; }
+.settings-compliance-btn.active .settings-compliance-name { color: #fff; }
+.settings-compliance-btn.active .settings-compliance-desc { color: rgba(255,255,255,0.85); }
+.settings-compliance-icon svg { width: 20px; height: 20px; color: var(--accent); }
+.settings-compliance-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.settings-compliance-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+@media (max-width: 900px) {
+  .settings-layout { flex-direction: column; }
+  .settings-preview-panel { width: 100%; position: static; }
+  .settings-compliance-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── Search & Filter ───────────────────────────────────────────────────── */
 .search-bar {
   display: flex;
@@ -986,7 +1508,27 @@ def _nav(active: str, has_dashboard: bool = False, prefix: str = "") -> str:
     for href, label, key in links:
         cls = ' class="active"' if key == active else ""
         parts.append(f'<a href="{prefix}{href}"{cls}>{label}</a>')
+
     return "<nav>" + "".join(parts) + "</nav>"
+
+
+def _gear_link(active: str = "", prefix: str = "") -> str:
+    """Gear icon link — rendered far right in header, tooltip only, no text."""
+    GEAR_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+                'style="width:14px;height:14px;vertical-align:-2px">'
+                '<circle cx="12" cy="12" r="3"/>'
+                '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06'
+                'a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09'
+                'A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83'
+                'l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09'
+                'A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83'
+                'l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09'
+                'a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83'
+                'l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09'
+                'a1.65 1.65 0 0 0-1.51 1z"/></svg>')
+    cls = "settings-gear active" if active == "settings" else "settings-gear"
+    return (f'<a href="{prefix}settings.html" class="{cls}" '
+            f'title="Settings" aria-label="Settings">{GEAR_SVG}</a>')
 
 
 def _sidebar_html(documents: list[dict], base_prefix: str = "") -> str:
@@ -1076,6 +1618,7 @@ def _page(
   {_nav(active_nav, has_dashboard=has_dashboard, prefix=path_prefix)}
   <div class="header-spacer"></div>
   <div class="header-seal">seal {seal_short}</div>
+  {_gear_link(active_nav, path_prefix)}
 </header>
 <div class="site-body">
 {sidebar}
@@ -1197,6 +1740,125 @@ def _build_index(manifest: "Manifest") -> str:
     )
 
 
+def _build_tree_diagram(dirs: dict[str, list[dict]]) -> str:
+    """Build an interactive folder-tree diagram as nested HTML lists."""
+    FOLDER_SVG = ('<svg class="td-icon td-icon--folder" viewBox="0 0 24 24" '
+                  'fill="none" stroke="currentColor" stroke-width="2">'
+                  '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 '
+                  '1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>')
+    FILE_SVG = ('<svg class="td-icon td-icon--file" viewBox="0 0 24 24" '
+                'fill="none" stroke="currentColor" stroke-width="2">'
+                '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 '
+                '0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>')
+    CHEVRON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               'stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>')
+
+    # Build a nested tree: project root -> intermediate dirs -> files
+    # First decompose paths into a nested dict
+    tree: dict = {}  # nested: key = segment, value = dict or None (leaf)
+    for dir_path, docs in sorted(dirs.items()):
+        parts = [] if dir_path == "." else dir_path.split("/")
+        node = tree
+        for part in parts:
+            if part not in node:
+                node[part] = {}
+            node = node[part]
+        # Store docs at this level under a sentinel key
+        node["__docs__"] = docs
+
+    def _render_node(subtree: dict, depth: int = 0) -> str:
+        """Recursively render tree nodes as <ul>/<li> elements."""
+        html = '<ul class="td-node">'
+        # Render sub-folders first, then files
+        folders = sorted(k for k in subtree if k != "__docs__" and isinstance(subtree[k], dict))
+        docs = subtree.get("__docs__", [])
+
+        for folder_name in folders:
+            child = subtree[folder_name]
+            # Count total docs recursively under this folder
+            def _count(n: dict) -> int:
+                c = len(n.get("__docs__", []))
+                for k, v in n.items():
+                    if k != "__docs__" and isinstance(v, dict):
+                        c += _count(v)
+                return c
+            count = _count(child)
+            # Build an anchor-safe id from the full path
+            folder_id = _esc(folder_name).replace("/", "-").replace(" ", "-").lower()
+
+            html += (f'<li class="td-entry td-branch">'
+                     f'<span class="td-label td-label--folder" '
+                     f'data-folder="{_esc(folder_name)}">'
+                     f'<button class="td-toggle" aria-label="Toggle">{CHEVRON}</button>'
+                     f'{FOLDER_SVG} {_esc(folder_name)}/'
+                     f'<span class="td-file-count">{count}</span>'
+                     f'</span>')
+            html += _render_node(child, depth + 1)
+            html += '</li>'
+
+        # Render files at this level
+        for doc in sorted(docs, key=lambda d: d.get("filename", "")):
+            fn = doc.get("filename", "")
+            status = doc.get("status", "")
+            dot_cls = f"td-status-dot--{status}" if status in ("active", "draft", "superseded") else ""
+            html += (f'<li class="td-entry">'
+                     f'<span class="td-label td-label--file">'
+                     f'{FILE_SVG} '
+                     f'<span class="td-status-dot {dot_cls}"></span>'
+                     f'<a href="docs/{_esc(fn)}.html">{_esc(fn)}</a>'
+                     f'</span></li>')
+        html += '</ul>'
+        return html
+
+    # Wrap in root node
+    root_docs = tree.get("__docs__", [])
+    root_folders = sorted(k for k in tree if k != "__docs__" and isinstance(tree[k], dict))
+
+    diagram_inner = '<ul class="td-node">'
+    diagram_inner += ('<li class="td-entry td-branch">'
+                      '<span class="td-label td-label--folder">'
+                      f'<button class="td-toggle" aria-label="Toggle">{CHEVRON}</button>'
+                      f'{FOLDER_SVG} <strong>project root</strong>'
+                      '</span>')
+    # Render root children
+    root_subtree = {k: tree[k] for k in root_folders}
+    root_subtree["__docs__"] = root_docs
+    diagram_inner += _render_node(root_subtree, 1)
+    diagram_inner += '</li></ul>'
+
+    # JS for toggle + click-to-scroll
+    js = """<script>
+document.querySelectorAll('.td-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var branch = btn.closest('.td-branch');
+    if(branch) branch.classList.toggle('collapsed');
+  });
+});
+document.querySelectorAll('.td-label--folder[data-folder]').forEach(function(lbl){
+  lbl.addEventListener('click', function(e){
+    if(e.target.closest('.td-toggle')) return;
+    var name = lbl.getAttribute('data-folder');
+    var cards = document.querySelectorAll('.tree-card-path code');
+    for(var i=0;i<cards.length;i++){
+      if(cards[i].textContent.indexOf(name) !== -1){
+        cards[i].closest('.tree-card').scrollIntoView({behavior:'smooth',block:'start'});
+        cards[i].closest('.tree-card').style.boxShadow='0 0 0 2px var(--accent)';
+        setTimeout(function(){cards[i].closest('.tree-card').style.boxShadow='';},1500);
+        break;
+      }
+    }
+  });
+});
+</script>"""
+
+    return f"""<div class="tree-diagram">
+<div class="tree-diagram-title">Interactive Folder Map</div>
+{diagram_inner}
+</div>
+{js}"""
+
+
 def _build_tree_page(manifest: "Manifest") -> str:
     """Build a folder-tree page showing directory structure with files."""
     config = manifest.registry_snapshot.get("project_config", {})
@@ -1213,6 +1875,9 @@ def _build_tree_page(manifest: "Manifest") -> str:
     # Sort dirs and files
     sorted_dirs = sorted(dirs.items())
     total_dirs = len(sorted_dirs)
+
+    # Build interactive tree diagram
+    diagram = _build_tree_diagram(dict(sorted_dirs))
 
     # Build folder cards
     cards = ""
@@ -1259,6 +1924,7 @@ def _build_tree_page(manifest: "Manifest") -> str:
 
     body = f"""<h1>Folder Structure</h1>
 <div class="subtitle">{len(documents)} files across {total_dirs} directories</div>
+{diagram}
 {cards}"""
 
     sidebar = _sidebar_html(documents, base_prefix="")
@@ -1592,6 +2258,7 @@ def _inject_dashboard_nav(dashboard_file: Path) -> None:
   <a href="tree.html">Tree</a>
   <a href="graph.html">Graph</a>
   <a href="dashboard.html" class="active">Dashboard</a>
+  <a href="settings.html" title="Settings" aria-label="Settings" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
 </div>
 <style>body { padding-top: 36px; }</style>
 """
@@ -1601,6 +2268,927 @@ def _inject_dashboard_nav(dashboard_file: Path) -> None:
 
 
 # ── Main entry ───────────────────────────────────────────────────────────
+
+
+def _build_settings_page(manifest: "Manifest") -> str:
+    """Build an interactive settings page to view/edit configuration."""
+    from .config import PRESETS, NAMING_TEMPLATES, load_config
+
+    snapshot = manifest.registry_snapshot
+    pc = snapshot.get("project_config", {})
+    config = load_config(project_config=pc)
+    documents = snapshot.get("documents", [])
+    project_name = config.project_name
+
+    # SVG icons
+    NAMING_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+                   '<polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>'
+                   '<line x1="16" y1="17" x2="8" y2="17"/></svg>')
+    FOLDER_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                   '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>')
+    TAG_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>'
+                '<line x1="7" y1="7" x2="7.01" y2="7"/></svg>')
+    COPY_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                 '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>'
+                 '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')
+    DOWNLOAD_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                     '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
+                     '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>')
+    SHIELD_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                   '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')
+    HEADER_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                   '<rect x="3" y="3" width="18" height="18" rx="2"/>'
+                   '<line x1="3" y1="9" x2="21" y2="9"/></svg>')
+    CHECKLIST_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                      '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5'
+                      'a2 2 0 0 1 2-2h11"/></svg>')
+
+    # Detect active preset and template from project_config
+    active_preset = pc.get("preset", "")
+    active_template = pc.get("naming_rules", {}).get("template", "")
+
+    # Build preset options
+    preset_opts = '<option value="">— none —</option>'
+    for name in PRESETS:
+        sel = " selected" if name == active_preset else ""
+        preset_opts += f'<option value="{_esc(name)}"{sel}>{_esc(name)}</option>'
+
+    # Build naming template options
+    template_opts = '<option value="">— custom —</option>'
+    for name, rules in NAMING_TEMPLATES.items():
+        from .config import NamingConfig as _NC
+        nc = _NC(**{k: v for k, v in rules.items() if k in _NC.__dataclass_fields__})
+        sel = " selected" if name == active_template else ""
+        template_opts += f'<option value="{_esc(name)}"{sel}>{_esc(name)} — {_esc(nc.human_pattern)}</option>'
+
+    # Build separator options
+    sep_opts = ""
+    for val, label in [("-", "Hyphen (-)"), ("_", "Underscore (_)"), (".", "Dot (.)")]:
+        sel = " selected" if config.naming.separator == val else ""
+        sep_opts += f'<option value="{_esc(val)}"{sel}>{_esc(label)}</option>'
+
+    # Case options
+    case_opts = ""
+    for val in ["lowercase", "mixed", "uppercase"]:
+        sel = " selected" if config.naming.case == val else ""
+        case_opts += f'<option value="{val}"{sel}>{val}</option>'
+
+    # Date format options
+    date_opts = ""
+    for val, label in [("YYYYMMDD", "YYYYMMDD"), ("YYYY-MM-DD", "YYYY-MM-DD"), ("off", "Off (no date)")]:
+        sel = " selected" if config.naming.date_format == val else ""
+        date_opts += f'<option value="{val}"{sel}>{_esc(label)}</option>'
+
+    # Version format options
+    ver_opts = ""
+    for val in ["VX.Y", "vX.Y", "X.Y"]:
+        sel = " selected" if config.naming.version_format == val else ""
+        ver_opts += f'<option value="{val}"{sel}>{val}</option>'
+
+    # Domain prefix toggle
+    domain_on = "on" if config.naming.domain_prefix else ""
+
+    # Strict mode toggle
+    strict_on = "on" if config.categories.strict_mode else ""
+
+    # Folder list
+    folder_tags = ""
+    for f in config.categories.folders:
+        label = config.categories.labels.get(f.rstrip("/"), "")
+        display = f"{f} — {label}" if label else f
+        folder_tags += f'<span class="settings-tag-item">{_esc(display)}</span>'
+    if not folder_tags:
+        folder_tags = '<span class="settings-hint">No folders configured</span>'
+
+    # Tags taxonomy (editable)
+    tax_html = ""
+    for group, tags in config.tags_taxonomy.items():
+        gid = f"cfg-tax-{_esc(group)}"
+        tag_spans = "".join(
+            f'<span class="settings-tag-item">{_esc(t)}<i class="tag-remove" onclick="removeTag(this)">&times;</i></span>'
+            for t in tags
+        )
+        tax_html += f"""<div class="settings-row">
+<div class="settings-label">{_esc(group)}</div>
+<div class="settings-control">
+  <div class="settings-tag-list" id="{gid}">{tag_spans}</div>
+  <div class="settings-tag-add"><input type="text" id="{gid}-input" placeholder="add tag" onkeydown="if(event.key==='Enter')addTag('{gid}','{gid}-input')"><button type="button" onclick="addTag('{gid}','{gid}-input')">+ Add</button></div>
+</div>
+</div>"""
+    if not tax_html:
+        tax_html = """<div class="settings-row">
+<div class="settings-label">tags</div>
+<div class="settings-control"><span class="settings-hint">No taxonomy configured</span></div>
+</div>"""
+
+    # Exempt files (editable)
+    exempt_tags = "".join(
+        f'<span class="settings-tag-item">{_esc(e)}<i class="tag-remove" onclick="removeTag(this)">&times;</i></span>'
+        for e in config.naming.infrastructure_exempt
+    )
+    if not exempt_tags:
+        exempt_tags = ''
+
+    # Forbidden words (editable)
+    forbidden_tags = "".join(
+        f'<span class="settings-tag-item">{_esc(w)}<i class="tag-remove" onclick="removeTag(this)">&times;</i></span>'
+        for w in config.naming.forbidden_words
+    )
+
+    # Build templates JSON for client-side template application
+    _templates_json = json.dumps({
+        name: {k: v for k, v in rules.items()}
+        for name, rules in NAMING_TEMPLATES.items()
+    })
+
+    # Build compliance standards data for toggles
+    # Each standard maps to a preset + specific settings it enables
+    COMPLIANCE_ICON = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                       '<path d="M9 12l2 2 4-4"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2'
+                       ' 2 6.477 2 12s4.477 10 10 10z"/></svg>')
+
+    body = f"""<h1>Settings</h1>
+<div class="subtitle">Current configuration for <strong>{_esc(project_name)}</strong> — values reflect your project_config in REGISTRY.yaml</div>
+
+<div class="settings-layout">
+<div class="settings-forms">
+
+<div class="settings-section">
+<div class="settings-section-header">{COMPLIANCE_ICON} Compliance Standards</div>
+<div class="settings-hint" style="margin:0 0 12px">Toggle a standard to auto-apply its naming, header/footer, and metadata rules</div>
+<div class="settings-compliance-grid">
+  <button type="button" class="settings-compliance-btn" id="std-dod" onclick="applyStandard('dod')" title="DoD 5200.01 — Classification markings, distribution statements, FOUO/CUI banners">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">DoD 5200.01</span>
+    <span class="settings-compliance-desc">Classification Markings</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-iso9001" onclick="applyStandard('iso9001')" title="ISO 9001:2015 / ISO 10013 — Document control numbering, revision tracking, approval workflows">
+    <span class="settings-compliance-icon">{CHECKLIST_ICON}</span>
+    <span class="settings-compliance-name">ISO 9001</span>
+    <span class="settings-compliance-desc">Quality Management</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-hipaa" onclick="applyStandard('hipaa')" title="HIPAA Privacy Rule (45 CFR 164) — PHI protections, 6-year retention, access controls">
+    <span class="settings-compliance-icon">{HEADER_ICON}</span>
+    <span class="settings-compliance-name">HIPAA</span>
+    <span class="settings-compliance-desc">Healthcare Privacy</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-sec" onclick="applyStandard('sec')" title="SEC 17a-4 / FINRA 4511 — WORM retention, 6-year records, audit trail requirements">
+    <span class="settings-compliance-icon">{SHIELD_ICON}</span>
+    <span class="settings-compliance-name">SEC / FINRA</span>
+    <span class="settings-compliance-desc">Financial Recordkeeping</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-scientific" onclick="applyStandard('scientific')" title="NIH/NSF data management — 10-year retention, PI ownership, revision history, ISO 8601 dates">
+    <span class="settings-compliance-icon">{NAMING_ICON}</span>
+    <span class="settings-compliance-name">Research / Academic</span>
+    <span class="settings-compliance-desc">Data Management Plans</span>
+  </button>
+  <button type="button" class="settings-compliance-btn" id="std-legal" onclick="applyStandard('legal')" title="Legal DMS conventions — privilege markings, matter codes, Bates-style numbering, 7-year retention">
+    <span class="settings-compliance-icon">{FOLDER_ICON}</span>
+    <span class="settings-compliance-name">Legal / Law Firm</span>
+    <span class="settings-compliance-desc">Matter Management</span>
+  </button>
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{NAMING_ICON} Naming Convention</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Template</div>
+    <div class="settings-control"><select id="cfg-template" onchange="applyTemplate();updatePreview()">{template_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Separator</div>
+    <div class="settings-control"><select id="cfg-sep" onchange="updatePreview()">{sep_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Case</div>
+    <div class="settings-control"><select id="cfg-case" onchange="updatePreview()">{case_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Date Format</div>
+    <div class="settings-control"><select id="cfg-date" onchange="updatePreview()">{date_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Version Format</div>
+    <div class="settings-control"><select id="cfg-ver" onchange="updatePreview()">{ver_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Domain Prefix</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {domain_on}" id="cfg-domain" onclick="this.classList.toggle('on');updatePreview()"></button>
+      <span class="settings-hint">Prepend category domain to filenames</span>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Forbidden Words</div>
+    <div class="settings-control">
+      <div class="settings-tag-list" id="cfg-forbidden">{forbidden_tags}</div>
+      <div class="settings-tag-add"><input type="text" id="cfg-forbidden-input" placeholder="add word" onkeydown="if(event.key==='Enter')addTag('cfg-forbidden','cfg-forbidden-input')"><button type="button" onclick="addTag('cfg-forbidden','cfg-forbidden-input')">+ Add</button></div>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Exempt Files</div>
+    <div class="settings-control">
+      <div class="settings-tag-list" id="cfg-exempt">{exempt_tags}</div>
+      <div class="settings-tag-add"><input type="text" id="cfg-exempt-input" placeholder="add filename" onkeydown="if(event.key==='Enter')addTag('cfg-exempt','cfg-exempt-input')"><button type="button" onclick="addTag('cfg-exempt','cfg-exempt-input')">+ Add</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{FOLDER_ICON} Folder Categories</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Preset</div>
+    <div class="settings-control"><select id="cfg-preset">{preset_opts}</select></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Strict Mode</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {strict_on}" id="cfg-strict" onclick="this.classList.toggle('on')"></button>
+      <span class="settings-hint">Reject files outside declared categories</span>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Folders</div>
+    <div class="settings-control"><div class="settings-tag-list">{folder_tags}</div></div>
+  </div>
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{TAG_ICON} Tags Taxonomy</div>
+<div class="settings-grid">
+{tax_html}
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{SHIELD_ICON} Governance</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Default Author</div>
+    <div class="settings-control"><input type="text" id="cfg-author" value="{_esc(config.default_author)}" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Classification</div>
+    <div class="settings-control"><input type="text" id="cfg-class" value="{_esc(config.default_classification)}" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Staleness</div>
+    <div class="settings-control"><input type="text" id="cfg-stale" value="{config.staleness_threshold_days}" style="width:80px"> <span class="settings-hint">days</span></div>
+  </div>
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{HEADER_ICON} Document Header / Footer</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Header Enabled</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.header.enabled else ""}" id="cfg-hdr-enabled" onclick="this.classList.toggle('on');updatePreview()"></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Organization</div>
+    <div class="settings-control"><input type="text" id="cfg-hdr-org" value="{_esc(config.header.organization)}" placeholder="e.g. Acme Corporation" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Logo URL</div>
+    <div class="settings-control"><input type="text" id="cfg-hdr-logo" value="{_esc(getattr(config.header, 'logo_url', ''))}" placeholder="e.g. https://example.com/logo.png or ./assets/logo.png" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Classification Banner</div>
+    <div class="settings-control"><input type="text" id="cfg-hdr-banner" value="{_esc(config.header.classification_banner)}" placeholder="e.g. UNCLASSIFIED, CUI, CONFIDENTIAL" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Doc ID Prefix</div>
+    <div class="settings-control"><input type="text" id="cfg-hdr-prefix" value="{_esc(config.header.document_id_prefix)}" placeholder="e.g. DOC-, POL-, SOP-" style="width:140px" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Show Version</div>
+    <div class="settings-control"><button type="button" class="settings-toggle {"on" if config.header.show_version else ""}" id="cfg-hdr-ver" onclick="this.classList.toggle('on');updatePreview()"></button></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Show Date</div>
+    <div class="settings-control"><button type="button" class="settings-toggle {"on" if config.header.show_date else ""}" id="cfg-hdr-date" onclick="this.classList.toggle('on');updatePreview()"></button></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Show Status</div>
+    <div class="settings-control"><button type="button" class="settings-toggle {"on" if config.header.show_status else ""}" id="cfg-hdr-status" onclick="this.classList.toggle('on');updatePreview()"></button></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Page Numbers</div>
+    <div class="settings-control"><button type="button" class="settings-toggle {"on" if config.header.show_page_numbers else ""}" id="cfg-hdr-pages" onclick="this.classList.toggle('on');updatePreview()"></button></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Footer Enabled</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.footer.enabled else ""}" id="cfg-ftr-enabled" onclick="this.classList.toggle('on');updatePreview()"></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Distribution</div>
+    <div class="settings-control"><input type="text" id="cfg-ftr-dist" value="{_esc(config.footer.distribution_statement)}" placeholder="e.g. Distribution A: Public release" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Retention Notice</div>
+    <div class="settings-control"><input type="text" id="cfg-ftr-ret" value="{_esc(config.footer.retention_notice)}" placeholder="e.g. Retain for 7 years per policy" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Copyright</div>
+    <div class="settings-control"><input type="text" id="cfg-ftr-copy" value="{_esc(config.footer.copyright_notice)}" placeholder="e.g. &copy; 2026 Acme Corp." oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Custom Footer</div>
+    <div class="settings-control"><input type="text" id="cfg-ftr-custom" value="{_esc(config.footer.custom_text)}" placeholder="Any additional footer text" oninput="updatePreview()"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Legal Disclaimer</div>
+    <div class="settings-control">
+      <select class="settings-disclaimer-select" id="cfg-ftr-disclaimer" onchange="applyDisclaimer();updatePreview()">
+        <option value="">— none —</option>
+        <option value="general">General Business</option>
+        <option value="hipaa">Healthcare / HIPAA</option>
+        <option value="financial">Financial Services</option>
+        <option value="legal">Legal / Privilege</option>
+        <option value="government">Government / CUI</option>
+        <option value="academic">Academic / Research</option>
+        <option value="technology">Technology / IP</option>
+      </select>
+      <span class="settings-hint">Auto-fills custom footer with industry-standard disclaimer</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="settings-section">
+<div class="settings-section-header">{CHECKLIST_ICON} Required Metadata</div>
+<div class="settings-grid">
+  <div class="settings-row">
+    <div class="settings-label">Require Owner</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.metadata.require_owner else ""}" id="cfg-meta-owner" onclick="this.classList.toggle('on');updatePreview()"></button>
+      <span class="settings-hint">Responsible owner</span>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Require Approver</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.metadata.require_approver else ""}" id="cfg-meta-approver" onclick="this.classList.toggle('on');updatePreview()"></button>
+      <span class="settings-hint">Approval authority</span>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Require Review Date</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.metadata.require_review_date else ""}" id="cfg-meta-review" onclick="this.classList.toggle('on');updatePreview()"></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Require Distribution List</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.metadata.require_distribution_list else ""}" id="cfg-meta-distlist" onclick="this.classList.toggle('on');updatePreview()"></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Require Revision History</div>
+    <div class="settings-control">
+      <button type="button" class="settings-toggle {"on" if config.metadata.require_revision_history else ""}" id="cfg-meta-revhist" onclick="this.classList.toggle('on');updatePreview()"></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Retention Period</div>
+    <div class="settings-control"><input type="text" id="cfg-meta-retention" value="{config.metadata.retention_period_days}" style="width:80px" oninput="updatePreview()"> <span class="settings-hint">days (0 = none)</span></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-label">Review Cycle</div>
+    <div class="settings-control"><input type="text" id="cfg-meta-cycle" value="{config.metadata.review_cycle_days}" style="width:80px" oninput="updatePreview()"> <span class="settings-hint">days (0 = none)</span></div>
+  </div>
+</div>
+</div>
+
+<div class="settings-actions">
+  <button type="button" class="settings-btn settings-btn--primary" onclick="generateYaml()">
+    {DOWNLOAD_ICON} Generate YAML
+  </button>
+  <button type="button" class="settings-btn" id="copy-btn" onclick="copyYaml()">
+    {COPY_ICON} Copy to Clipboard
+  </button>
+  <span class="settings-copied" id="copied-msg">Copied!</span>
+</div>
+<pre class="settings-yaml" id="yaml-output"></pre>
+
+</div><!-- /settings-forms -->
+
+<div class="settings-preview-panel" id="preview-panel">
+  <div class="settings-preview-panel-header">Live Preview</div>
+
+  <div class="settings-preview-card">
+    <div class="settings-preview-card-label">Filename</div>
+    <div class="settings-preview-card-value" id="preview-filename">{_esc(config.naming.human_pattern)}</div>
+  </div>
+
+  <div class="settings-preview-card" id="preview-header-card">
+    <div class="settings-preview-card-label">Document Header</div>
+    <div class="settings-preview-doc" id="preview-header">
+      <div class="preview-banner" id="preview-banner-top"></div>
+      <div class="preview-hdr-row">
+        <span class="preview-hdr-org" id="preview-org"></span>
+        <span class="preview-hdr-logo" id="preview-logo" style="display:none;font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span>
+        <span class="preview-hdr-meta" id="preview-hdr-meta"></span>
+      </div>
+      <div class="preview-hdr-title" id="preview-title"></div>
+    </div>
+  </div>
+
+  <div class="settings-preview-card" id="preview-footer-card">
+    <div class="settings-preview-card-label">Document Footer</div>
+    <div class="settings-preview-doc" id="preview-footer">
+      <div class="preview-ftr-row" id="preview-ftr-text"></div>
+      <div class="preview-banner" id="preview-banner-bottom"></div>
+    </div>
+  </div>
+
+  <div class="settings-preview-card">
+    <div class="settings-preview-card-label">Metadata Requirements</div>
+    <div class="settings-preview-meta" id="preview-meta"></div>
+  </div>
+</div>
+</div><!-- /settings-layout -->
+
+<script>
+var TEMPLATES = {_templates_json};
+
+function applyTemplate() {{
+  var name = document.getElementById('cfg-template').value;
+  if (!name || !TEMPLATES[name]) return;
+  var t = TEMPLATES[name];
+  if (t.separator) setSelect('cfg-sep', t.separator);
+  if (t.case) setSelect('cfg-case', t['case']);
+  if (t.date_format) setSelect('cfg-date', t.date_format);
+  if (t.version_format) setSelect('cfg-ver', t.version_format);
+  var domBtn = document.getElementById('cfg-domain');
+  if (t.domain_prefix) domBtn.classList.add('on'); else domBtn.classList.remove('on');
+  updatePreview();
+}}
+
+function setSelect(id, val) {{
+  var el = document.getElementById(id);
+  for (var i = 0; i < el.options.length; i++) {{
+    if (el.options[i].value === val) {{ el.selectedIndex = i; break; }}
+  }}
+}}
+
+function setToggle(id, on) {{
+  var el = document.getElementById(id);
+  if (on) el.classList.add('on'); else el.classList.remove('on');
+}}
+
+function escHtml(s) {{
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(s));
+  return d.innerHTML;
+}}
+
+function renderLines(el, lines) {{
+  el.innerHTML = lines.map(function(l) {{ return '<div>' + escHtml(l) + '</div>'; }}).join('');
+}}
+
+function removeTag(el) {{
+  el.parentElement.remove();
+}}
+
+function addTag(listId, inputId) {{
+  var input = document.getElementById(inputId);
+  var val = input.value.trim();
+  if (!val) return;
+  var list = document.getElementById(listId);
+  var span = document.createElement('span');
+  span.className = 'settings-tag-item';
+  span.innerHTML = escHtml(val) + '<i class="tag-remove" onclick="removeTag(this)">&times;</i>';
+  list.appendChild(span);
+  input.value = '';
+}}
+
+function getTagValues(listId) {{
+  var tags = [];
+  var items = document.getElementById(listId).querySelectorAll('.settings-tag-item');
+  items.forEach(function(el) {{
+    // Text content minus the × remove button
+    var t = el.firstChild.textContent.trim();
+    if (t) tags.push(t);
+  }});
+  return tags;
+}}
+
+var DISCLAIMERS = {{
+  general: 'This document is proprietary and confidential. Unauthorized distribution, copying, or disclosure is strictly prohibited.',
+  hipaa: 'This document may contain Protected Health Information (PHI) subject to HIPAA Privacy Rule (45 CFR Part 164). Unauthorized disclosure may result in civil and criminal penalties.',
+  financial: 'This document contains confidential financial information subject to SEC Rule 17a-4 and FINRA Rule 4511. Not for public distribution. Unauthorized trading on material non-public information is a federal offense.',
+  legal: 'PRIVILEGED AND CONFIDENTIAL — This document is protected by attorney-client privilege and/or work product doctrine. If you are not the intended recipient, notify the sender immediately and destroy all copies.',
+  government: 'CONTROLLED UNCLASSIFIED INFORMATION (CUI) — Handling, storage, and dissemination must comply with 32 CFR Part 2002. Unauthorized disclosure may result in administrative or legal action.',
+  academic: 'This document is shared for research and educational purposes. Citation required for any referenced data or findings. Subject to institutional review board (IRB) protocols where applicable.',
+  technology: 'CONFIDENTIAL — Contains trade secrets and proprietary intellectual property. Protected under applicable trade secret laws and non-disclosure agreements. Do not reverse engineer, copy, or distribute.'
+}};
+
+function applyDisclaimer() {{
+  var sel = document.getElementById('cfg-ftr-disclaimer').value;
+  if (sel && DISCLAIMERS[sel]) {{
+    document.getElementById('cfg-ftr-custom').value = DISCLAIMERS[sel];
+    updatePreview();
+  }}
+}}
+
+var STANDARDS = {{
+  dod: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: false,
+    hdr: true, org: '', logo: '', banner: 'UNCLASSIFIED', prefix: 'DOC-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Distribution A: Approved for public release; distribution unlimited.',
+    ret: '', copy: '', custom: '',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2555, cycle: 365, cls: 'UNCLASSIFIED'
+  }},
+  iso9001: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: '', prefix: 'QMS-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Controlled Document — Do Not Copy Without Authorization',
+    ret: '', copy: '', custom: 'ISO 9001:2015 Controlled Document',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: ''
+  }},
+  hipaa: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: 'POL-',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Contains Protected Health Information',
+    ret: 'Retain per facility records retention schedule', copy: '',
+    custom: 'HIPAA Privacy Rule (45 CFR Part 164) applies to all PHI',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  sec: {{
+    sep: '-', 'case': 'lowercase', date: 'YYYYMMDD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: 'Internal Use Only \\u2014 Not for Public Distribution',
+    ret: '', copy: '', custom: 'SEC Rule 17a-4 / FINRA Rule 4511 retention applies',
+    metaOwner: true, metaApprover: true, metaReview: true, metaDist: true, metaRev: true,
+    retention: 2190, cycle: 365, cls: 'CONFIDENTIAL'
+  }},
+  scientific: {{
+    sep: '_', 'case': 'mixed', date: 'YYYY-MM-DD', ver: 'vX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: '', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: false, dist: '', ret: '', copy: '', custom: '',
+    metaOwner: true, metaApprover: false, metaReview: true, metaDist: false, metaRev: true,
+    retention: 3650, cycle: 180, cls: ''
+  }},
+  legal: {{
+    sep: '-', 'case': 'mixed', date: 'YYYY-MM-DD', ver: 'VX.Y', domain: true,
+    hdr: true, org: '', logo: '', banner: 'CONFIDENTIAL', prefix: '',
+    hdrVer: true, hdrDate: true, hdrStatus: true, hdrPages: true,
+    ftr: true, dist: '', ret: '', copy: '',
+    custom: 'Privileged and Confidential \\u2014 Do Not Distribute Without Authorization',
+    metaOwner: true, metaApprover: true, metaReview: false, metaDist: true, metaRev: true,
+    retention: 2555, cycle: 0, cls: 'CONFIDENTIAL'
+  }}
+}};
+
+// Snapshot of project defaults — captured on first load
+var PROJECT_DEFAULTS = null;
+
+function captureDefaults() {{
+  PROJECT_DEFAULTS = {{
+    sep: document.getElementById('cfg-sep').value,
+    'case': document.getElementById('cfg-case').value,
+    date: document.getElementById('cfg-date').value,
+    ver: document.getElementById('cfg-ver').value,
+    domain: document.getElementById('cfg-domain').classList.contains('on'),
+    hdr: document.getElementById('cfg-hdr-enabled').classList.contains('on'),
+    org: document.getElementById('cfg-hdr-org').value,
+    logo: document.getElementById('cfg-hdr-logo').value,
+    banner: document.getElementById('cfg-hdr-banner').value,
+    prefix: document.getElementById('cfg-hdr-prefix').value,
+    hdrVer: document.getElementById('cfg-hdr-ver').classList.contains('on'),
+    hdrDate: document.getElementById('cfg-hdr-date').classList.contains('on'),
+    hdrStatus: document.getElementById('cfg-hdr-status').classList.contains('on'),
+    hdrPages: document.getElementById('cfg-hdr-pages').classList.contains('on'),
+    ftr: document.getElementById('cfg-ftr-enabled').classList.contains('on'),
+    dist: document.getElementById('cfg-ftr-dist').value,
+    ret: document.getElementById('cfg-ftr-ret').value,
+    copy: document.getElementById('cfg-ftr-copy').value,
+    custom: document.getElementById('cfg-ftr-custom').value,
+    metaOwner: document.getElementById('cfg-meta-owner').classList.contains('on'),
+    metaApprover: document.getElementById('cfg-meta-approver').classList.contains('on'),
+    metaReview: document.getElementById('cfg-meta-review').classList.contains('on'),
+    metaDist: document.getElementById('cfg-meta-distlist').classList.contains('on'),
+    metaRev: document.getElementById('cfg-meta-revhist').classList.contains('on'),
+    retention: document.getElementById('cfg-meta-retention').value,
+    cycle: document.getElementById('cfg-meta-cycle').value,
+    cls: document.getElementById('cfg-class').value
+  }};
+}}
+
+function applyFields(s) {{
+  setSelect('cfg-sep', s.sep);
+  setSelect('cfg-case', s['case']);
+  setSelect('cfg-date', s.date);
+  setSelect('cfg-ver', s.ver);
+  setToggle('cfg-domain', s.domain);
+  setToggle('cfg-hdr-enabled', s.hdr);
+  document.getElementById('cfg-hdr-org').value = s.org;
+  document.getElementById('cfg-hdr-logo').value = s.logo || '';
+  document.getElementById('cfg-hdr-banner').value = s.banner;
+  document.getElementById('cfg-hdr-prefix').value = s.prefix;
+  setToggle('cfg-hdr-ver', s.hdrVer);
+  setToggle('cfg-hdr-date', s.hdrDate);
+  setToggle('cfg-hdr-status', s.hdrStatus);
+  setToggle('cfg-hdr-pages', s.hdrPages);
+  setToggle('cfg-ftr-enabled', s.ftr);
+  document.getElementById('cfg-ftr-dist').value = s.dist;
+  document.getElementById('cfg-ftr-ret').value = s.ret;
+  document.getElementById('cfg-ftr-copy').value = s.copy;
+  document.getElementById('cfg-ftr-custom').value = s.custom;
+  setToggle('cfg-meta-owner', s.metaOwner);
+  setToggle('cfg-meta-approver', s.metaApprover);
+  setToggle('cfg-meta-review', s.metaReview);
+  setToggle('cfg-meta-distlist', s.metaDist);
+  setToggle('cfg-meta-revhist', s.metaRev);
+  document.getElementById('cfg-meta-retention').value = s.retention;
+  document.getElementById('cfg-meta-cycle').value = s.cycle;
+  document.getElementById('cfg-class').value = s.cls;
+  updatePreview();
+}}
+
+function applyStandard(name) {{
+  var s = STANDARDS[name];
+  if (!s) return;
+  var btn = document.getElementById('std-' + name);
+  var wasActive = btn.classList.contains('active');
+
+  // Clear all buttons
+  var btns = document.querySelectorAll('.settings-compliance-btn');
+  btns.forEach(function(b) {{ b.classList.remove('active'); }});
+
+  if (wasActive) {{
+    // Deselect — restore project defaults
+    if (PROJECT_DEFAULTS) applyFields(PROJECT_DEFAULTS);
+  }} else {{
+    // Select — apply standard
+    btn.classList.add('active');
+    applyFields(s);
+  }}
+}}
+
+function updatePreview() {{
+  var sep = document.getElementById('cfg-sep').value;
+  var dateF = document.getElementById('cfg-date').value;
+  var verF = document.getElementById('cfg-ver').value;
+  var domain = document.getElementById('cfg-domain').classList.contains('on');
+  var caseFmt = document.getElementById('cfg-case').value;
+
+  // Filename preview
+  var parts = [];
+  if (domain) parts.push('domain');
+  if (caseFmt === 'uppercase') parts.push('DESCRIPTIVE-NAME');
+  else if (caseFmt === 'mixed') parts.push('Descriptive-Name');
+  else parts.push('descriptive-name');
+  if (dateF !== 'off') parts.push(dateF);
+  parts.push(verF);
+  var pattern = parts.join(sep) + '.ext';
+  document.getElementById('preview-filename').textContent = pattern;
+
+  // Header preview — always visible, dimmed when disabled
+  var hdrOn = document.getElementById('cfg-hdr-enabled').classList.contains('on');
+  var hdrCard = document.getElementById('preview-header-card');
+  hdrCard.style.opacity = hdrOn ? '1' : '0.4';
+  var hdrLabel = hdrCard.querySelector('.settings-preview-card-label');
+  hdrLabel.textContent = hdrOn ? 'Document Header' : 'Document Header (disabled)';
+  {{
+    var banner = document.getElementById('cfg-hdr-banner').value;
+    var org = document.getElementById('cfg-hdr-org').value || 'Organization';
+    var prefix = document.getElementById('cfg-hdr-prefix').value || '';
+    var topBanner = document.getElementById('preview-banner-top');
+    topBanner.textContent = banner || '(no banner)';
+    topBanner.style.display = '';
+    if (banner) {{
+      topBanner.className = 'preview-banner' + (banner.indexOf('SECRET') >= 0 ? ' banner-red' : banner.indexOf('CONFIDENTIAL') >= 0 ? ' banner-amber' : banner.indexOf('CUI') >= 0 ? ' banner-purple' : ' banner-green');
+    }} else {{
+      topBanner.className = 'preview-banner';
+      topBanner.style.color = '#aaa';
+    }}
+    document.getElementById('preview-org').textContent = org;
+    var logoUrl = document.getElementById('cfg-hdr-logo').value;
+    var logoEl = document.getElementById('preview-logo');
+    if (logoUrl) {{
+      logoEl.textContent = '\\ud83d\\uddbc ' + logoUrl.split('/').pop();
+      logoEl.style.display = '';
+    }} else {{
+      logoEl.style.display = 'none';
+    }}
+    var metaParts = [];
+    if (prefix) metaParts.push(prefix + '0001');
+    if (document.getElementById('cfg-hdr-ver').classList.contains('on')) metaParts.push(verF.replace('X','1').replace('Y','0'));
+    if (document.getElementById('cfg-hdr-date').classList.contains('on')) metaParts.push(new Date().toISOString().slice(0,10));
+    if (document.getElementById('cfg-hdr-status').classList.contains('on')) metaParts.push('Active');
+    document.getElementById('preview-hdr-meta').textContent = metaParts.join(' \\u2022 ');
+    var titleParts = [];
+    if (domain) titleParts.push('domain');
+    titleParts.push('descriptive-name');
+    document.getElementById('preview-title').textContent = titleParts.join(sep);
+  }}
+
+  // Footer preview — always visible, dimmed when disabled
+  var ftrOn = document.getElementById('cfg-ftr-enabled').classList.contains('on');
+  var ftrCard = document.getElementById('preview-footer-card');
+  ftrCard.style.opacity = ftrOn ? '1' : '0.4';
+  var ftrLabel = ftrCard.querySelector('.settings-preview-card-label');
+  ftrLabel.textContent = ftrOn ? 'Document Footer' : 'Document Footer (disabled)';
+  {{
+    var ftrParts = [];
+    var dist = document.getElementById('cfg-ftr-dist').value;
+    var ret = document.getElementById('cfg-ftr-ret').value;
+    var cpy = document.getElementById('cfg-ftr-copy').value;
+    var cust = document.getElementById('cfg-ftr-custom').value;
+    if (dist) ftrParts.push(dist);
+    if (ret) ftrParts.push(ret);
+    if (cpy) ftrParts.push(cpy);
+    if (cust) ftrParts.push(cust);
+    var pages = document.getElementById('cfg-hdr-pages').classList.contains('on');
+    if (pages) ftrParts.push('Page 1 of 3');
+    if (ftrParts.length === 0) ftrParts.push('(no footer content configured)');
+    renderLines(document.getElementById('preview-ftr-text'), ftrParts);
+    var banner2 = document.getElementById('cfg-hdr-banner').value;
+    var botBanner = document.getElementById('preview-banner-bottom');
+    botBanner.textContent = banner2 || '(no banner)';
+    botBanner.style.display = '';
+    if (banner2) {{
+      botBanner.className = 'preview-banner' + (banner2.indexOf('SECRET') >= 0 ? ' banner-red' : banner2.indexOf('CONFIDENTIAL') >= 0 ? ' banner-amber' : banner2.indexOf('CUI') >= 0 ? ' banner-purple' : ' banner-green');
+    }} else {{
+      botBanner.className = 'preview-banner';
+      botBanner.style.color = '#aaa';
+    }}
+  }}
+
+  // Metadata summary
+  var metaLines = [];
+  if (document.getElementById('cfg-meta-owner').classList.contains('on')) metaLines.push('\\u2713 Owner required');
+  if (document.getElementById('cfg-meta-approver').classList.contains('on')) metaLines.push('\\u2713 Approver required');
+  if (document.getElementById('cfg-meta-review').classList.contains('on')) metaLines.push('\\u2713 Review date required');
+  if (document.getElementById('cfg-meta-distlist').classList.contains('on')) metaLines.push('\\u2713 Distribution list required');
+  if (document.getElementById('cfg-meta-revhist').classList.contains('on')) metaLines.push('\\u2713 Revision history required');
+  var retDays = parseInt(document.getElementById('cfg-meta-retention').value) || 0;
+  if (retDays > 0) metaLines.push('Retention: ' + (retDays >= 365 ? (retDays / 365).toFixed(1) + ' years' : retDays + ' days'));
+  var cycDays = parseInt(document.getElementById('cfg-meta-cycle').value) || 0;
+  if (cycDays > 0) metaLines.push('Review cycle: ' + (cycDays >= 365 ? (cycDays / 365).toFixed(1) + ' years' : cycDays + ' days'));
+  if (metaLines.length === 0) metaLines.push('No metadata requirements');
+  renderLines(document.getElementById('preview-meta'), metaLines);
+}}
+
+function generateYaml() {{
+  var sep = document.getElementById('cfg-sep').value;
+  var caseFmt = document.getElementById('cfg-case').value;
+  var dateF = document.getElementById('cfg-date').value;
+  var verF = document.getElementById('cfg-ver').value;
+  var domain = document.getElementById('cfg-domain').classList.contains('on');
+  var strict = document.getElementById('cfg-strict').classList.contains('on');
+  var author = document.getElementById('cfg-author').value;
+  var cls = document.getElementById('cfg-class').value;
+  var stale = document.getElementById('cfg-stale').value;
+  var hdrOn = document.getElementById('cfg-hdr-enabled').classList.contains('on');
+  var hdrOrg = document.getElementById('cfg-hdr-org').value;
+  var hdrLogo = document.getElementById('cfg-hdr-logo').value;
+  var hdrBanner = document.getElementById('cfg-hdr-banner').value;
+  var hdrPrefix = document.getElementById('cfg-hdr-prefix').value;
+  var hdrVer = document.getElementById('cfg-hdr-ver').classList.contains('on');
+  var hdrDate = document.getElementById('cfg-hdr-date').classList.contains('on');
+  var hdrStatus = document.getElementById('cfg-hdr-status').classList.contains('on');
+  var hdrPages = document.getElementById('cfg-hdr-pages').classList.contains('on');
+  var ftrOn = document.getElementById('cfg-ftr-enabled').classList.contains('on');
+  var ftrDist = document.getElementById('cfg-ftr-dist').value;
+  var ftrRet = document.getElementById('cfg-ftr-ret').value;
+  var ftrCopy = document.getElementById('cfg-ftr-copy').value;
+  var ftrCustom = document.getElementById('cfg-ftr-custom').value;
+  var metaOwner = document.getElementById('cfg-meta-owner').classList.contains('on');
+  var metaApprover = document.getElementById('cfg-meta-approver').classList.contains('on');
+  var metaReview = document.getElementById('cfg-meta-review').classList.contains('on');
+  var metaDistList = document.getElementById('cfg-meta-distlist').classList.contains('on');
+  var metaRevHist = document.getElementById('cfg-meta-revhist').classList.contains('on');
+  var metaRetention = document.getElementById('cfg-meta-retention').value;
+  var metaCycle = document.getElementById('cfg-meta-cycle').value;
+
+  // YAML-safe quoting: wrap in single quotes if value contains : # [ ] {{ }} , & * ? | - < > = ! % @ or leading/trailing spaces
+  function yq(v) {{
+    var s = String(v);
+    if (/[:\\#\\[\\]\\{{\\}},&*?|\\-<>=!%@'"]/.test(s) || s !== s.trim() || s === '') {{
+      return "'" + s.replace(/'/g, "''") + "'";
+    }}
+    return s;
+  }}
+
+  var yaml = 'project_config:\\n';
+  yaml += '  naming_rules:\\n';
+  yaml += '    separator: ' + yq(sep) + '\\n';
+  yaml += '    case: ' + caseFmt + '\\n';
+  yaml += '    date_format: ' + dateF + '\\n';
+  yaml += '    version_format: ' + verF + '\\n';
+  yaml += '    domain_prefix: ' + domain + '\\n';
+  yaml += '  categories:\\n';
+  yaml += '    strict_mode: ' + strict + '\\n';
+  if (author) yaml += '  default_author: ' + yq(author) + '\\n';
+  if (cls) yaml += '  default_classification: ' + yq(cls) + '\\n';
+  if (stale) yaml += '  staleness_threshold_days: ' + stale + '\\n';
+  yaml += '  document_header:\\n';
+  yaml += '    enabled: ' + hdrOn + '\\n';
+  if (hdrOrg) yaml += '    organization: ' + yq(hdrOrg) + '\\n';
+  if (hdrLogo) yaml += '    logo_url: ' + yq(hdrLogo) + '\\n';
+  if (hdrBanner) yaml += '    classification_banner: ' + yq(hdrBanner) + '\\n';
+  if (hdrPrefix) yaml += '    document_id_prefix: ' + yq(hdrPrefix) + '\\n';
+  yaml += '    show_version: ' + hdrVer + '\\n';
+  yaml += '    show_date: ' + hdrDate + '\\n';
+  yaml += '    show_status: ' + hdrStatus + '\\n';
+  yaml += '    show_page_numbers: ' + hdrPages + '\\n';
+  yaml += '  document_footer:\\n';
+  yaml += '    enabled: ' + ftrOn + '\\n';
+  if (hdrBanner) yaml += '    classification_banner: ' + yq(hdrBanner) + '\\n';
+  if (ftrDist) yaml += '    distribution_statement: ' + yq(ftrDist) + '\\n';
+  if (ftrRet) yaml += '    retention_notice: ' + yq(ftrRet) + '\\n';
+  if (ftrCopy) yaml += '    copyright_notice: ' + yq(ftrCopy) + '\\n';
+  if (ftrCustom) yaml += '    custom_text: ' + yq(ftrCustom) + '\\n';
+  yaml += '  document_metadata:\\n';
+  yaml += '    require_owner: ' + metaOwner + '\\n';
+  yaml += '    require_approver: ' + metaApprover + '\\n';
+  yaml += '    require_review_date: ' + metaReview + '\\n';
+  yaml += '    require_distribution_list: ' + metaDistList + '\\n';
+  yaml += '    require_revision_history: ' + metaRevHist + '\\n';
+  if (metaRetention !== '0') yaml += '    retention_period_days: ' + metaRetention + '\\n';
+  if (metaCycle !== '0') yaml += '    review_cycle_days: ' + metaCycle + '\\n';
+
+  // Forbidden words
+  var forbidden = getTagValues('cfg-forbidden');
+  if (forbidden.length) {{
+    yaml += '  forbidden_words:\\n';
+    forbidden.forEach(function(w) {{ yaml += '    - ' + yq(w) + '\\n'; }});
+  }}
+
+  // Exempt files
+  var exempt = getTagValues('cfg-exempt');
+  if (exempt.length) {{
+    yaml += '  exempt_files:\\n';
+    exempt.forEach(function(f) {{ yaml += '    - ' + yq(f) + '\\n'; }});
+  }}
+
+  // Tags taxonomy
+  var taxGroups = document.querySelectorAll('[id^="cfg-tax-"]');
+  var hasTax = false;
+  taxGroups.forEach(function(g) {{
+    var vals = getTagValues(g.id);
+    if (vals.length) {{
+      if (!hasTax) {{ yaml += '  tags_taxonomy:\\n'; hasTax = true; }}
+      var gName = g.id.replace('cfg-tax-', '');
+      yaml += '    ' + yq(gName) + ':\\n';
+      vals.forEach(function(t) {{ yaml += '      - ' + yq(t) + '\\n'; }});
+    }}
+  }});
+
+  var el = document.getElementById('yaml-output');
+  el.textContent = yaml;
+  el.classList.add('visible');
+}}
+
+function copyYaml() {{
+  var el = document.getElementById('yaml-output');
+  if (!el.textContent) {{ generateYaml(); }}
+  navigator.clipboard.writeText(el.textContent).then(function() {{
+    var msg = document.getElementById('copied-msg');
+    msg.classList.add('show');
+    setTimeout(function(){{ msg.classList.remove('show'); }}, 1500);
+  }});
+}}
+
+// Initialize: snapshot defaults then render preview
+document.addEventListener('DOMContentLoaded', function() {{ captureDefaults(); updatePreview(); }});
+</script>"""
+
+    sidebar = _sidebar_html(documents, base_prefix="")
+    return _page(
+        "Settings",
+        body,
+        "settings",
+        project_name=project_name,
+        generated_at=manifest.generated_at,
+        seal=manifest.manifest_sha256,
+        has_dashboard=True,
+        sidebar=sidebar,
+    )
 
 
 def generate_site(
@@ -1655,11 +3243,13 @@ def generate_site(
         page_html = _build_doc_page(doc, manifest, repo_root=effective_root)
         (docs_dir / f"{fn}.html").write_text(page_html, encoding="utf-8")
 
-    # Graph page
     # Tree page
     (out / "tree.html").write_text(_build_tree_page(manifest), encoding="utf-8")
 
     # Graph page
     (out / "graph.html").write_text(_build_graph_page(manifest), encoding="utf-8")
+
+    # Settings page
+    (out / "settings.html").write_text(_build_settings_page(manifest), encoding="utf-8")
 
     return out.resolve()

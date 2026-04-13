@@ -1,8 +1,21 @@
 """Librarian — document governance, version control, and registry management."""
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 from .audit import AuditReport, FolderSuggestion, audit, format_report
+from .config import (
+    LibrarianConfig,
+    NamingConfig,
+    CategoryConfig,
+    HeaderConfig,
+    FooterConfig,
+    MetadataRequirements,
+    PRESETS,
+    NAMING_TEMPLATES,
+    load_config,
+    list_presets,
+    list_naming_templates,
+)
 from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import DiffReport, diff_manifests, format_diff
 from .evidence import EvidencePack, generate_evidence, write_evidence, verify_evidence
@@ -21,6 +34,18 @@ from .versioning import Version, bump_filename, parse_version
 
 __all__ = [
     "__version__",
+    # config
+    "LibrarianConfig",
+    "NamingConfig",
+    "CategoryConfig",
+    "HeaderConfig",
+    "FooterConfig",
+    "MetadataRequirements",
+    "PRESETS",
+    "NAMING_TEMPLATES",
+    "load_config",
+    "list_presets",
+    "list_naming_templates",
     # dashboard
     "render_dashboard",
     "write_dashboard",

@@ -14,6 +14,8 @@ from typing import Any
 
 import yaml
 
+from .config import LibrarianConfig, load_config
+
 
 @dataclass
 class Registry:
@@ -55,6 +57,10 @@ class Registry:
     @property
     def tracked_dirs(self) -> list[str]:
         return self.project_config.get("tracked_dirs", ["docs/"])
+
+    def get_config(self, preset: str = "") -> LibrarianConfig:
+        """Build a fully resolved LibrarianConfig from this registry's project_config."""
+        return load_config(project_config=self.project_config, preset=preset)
 
     # ------------------------------------------------------------ documents
     @property

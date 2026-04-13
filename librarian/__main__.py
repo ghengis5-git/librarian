@@ -8,6 +8,14 @@ from datetime import date
 from pathlib import Path
 
 from .audit import audit, format_report
+from .config import (
+    PRESETS,
+    NAMING_TEMPLATES,
+    LibrarianConfig,
+    load_config,
+    list_presets,
+    list_naming_templates,
+)
 from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import diff_manifests, format_diff
 from .evidence import generate_evidence, write_evidence, verify_evidence
@@ -334,6 +342,149 @@ def cmd_site(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init(args: argparse.Namespace) -> int:
+    """Scaffold a new REGISTRY.yaml with a chosen preset."""
+    import yaml as _yaml
+
+    repo_root = Path(args.repo or ".").resolve()
+    preset = args.preset or "minimal"
+
+    if preset not in PRESETS:
+        print(f"Unknown preset: {preset}", file=sys.stderr)
+        print(f"Available: {', '.join(PRESETS)}", file=sys.stderr)
+        return 1
+
+    config = load_config(preset=preset)
+
+    # Build project_config block
+    naming_template = args.naming_template or "default"
+    if naming_template in NAMING_TEMPLATES:
+        nr = dict(NAMING_TEMPLATES[naming_template])
+    else:
+        nr = {"separator": "-", "case": "lowercase", "date_format": "YYYYMMDD", "version_format": "VX.Y"}
+
+    nr["forbidden_words"] = config.naming.forbidden_words
+    nr["infrastructure_exempt"] = [
+        "REGISTRY.yaml", "README.md", "CLAUDE.md", ".gitignore",
+    ]
+
+    project_config = {
+        "project_name": args.name or "My Project",
+        "naming_convention": config.naming.human_pattern,
+        "naming_rules": nr,
+        "categories": {
+            "strict_mode": config.categories.strict_mode,
+            "folders": config.categories.folders,
+            "labels": config.categories.labels,
+        },
+        "tags_taxonomy": config.tags_taxonomy,
+        "tracked_dirs": config.tracked_dirs,
+        "default_author": args.author or "",
+        "default_classification": "INTERNAL",
+        "classification_levels": ["INTERNAL", "CONFIDENTIAL", "PUBLIC"],
+        "staleness_threshold_days": 90,
+    }
+
+    data = {
+        "project_config": project_config,
+        "documents": [],
+        "registry_meta": {
+            "total_documents": 0,
+            "active": 0,
+            "draft": 0,
+            "superseded": 0,
+            "last_updated": date.today().strftime("%Y-%m-%d"),
+        },
+    }
+
+    out_path = Path(args.output) if args.output else repo_root / "docs" / "REGISTRY.yaml"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if out_path.exists() and not args.force:
+        print(f"Registry already exists: {out_path}", file=sys.stderr)
+        print("Use --force to overwrite.", file=sys.stderr)
+        return 1
+
+    with out_path.open("w") as f:
+        _yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+    print(f"Initialized registry: {out_path}")
+    print(f"  Preset:    {preset}")
+    print(f"  Naming:    {config.naming.human_pattern}")
+    print(f"  Template:  {naming_template}")
+    print(f"  Folders:   {len(config.categories.folders)}")
+    print(f"  Tags:      {sum(len(v) for v in config.tags_taxonomy.values())} across {len(config.tags_taxonomy)} groups")
+
+    # Create preset folders if requested
+    if args.create_folders and config.categories.folders:
+        docs_root = out_path.parent
+        created = 0
+        for folder in config.categories.folders:
+            fp = docs_root / folder
+            if not fp.exists():
+                fp.mkdir(parents=True, exist_ok=True)
+                created += 1
+        print(f"  Created {created} category folders under {docs_root}")
+
+    return 0
+
+
+def cmd_config(args: argparse.Namespace) -> int:
+    """Display resolved configuration or list presets/templates."""
+    if args.list_presets:
+        print("Available presets:")
+        for p in list_presets():
+            print(f"  {p['name']:15s}  {p['description']}")
+        return 0
+
+    if args.list_templates:
+        print("Available naming templates:")
+        for t in list_naming_templates():
+            print(f"  {t['name']:15s}  {t['pattern']}")
+        return 0
+
+    # Show resolved config for current registry
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+
+    try:
+        reg = Registry.load(reg_path)
+        config = reg.get_config(preset=args.preset or "")
+    except FileNotFoundError:
+        print(f"No registry found at {reg_path}. Showing defaults.", file=sys.stderr)
+        config = load_config(preset=args.preset or "")
+
+    print(f"Project:             {config.project_name}")
+    print(f"Preset:              {config.preset or '(none)'}")
+    print()
+    print("─── Naming Convention ───")
+    print(f"  Pattern:           {config.naming.human_pattern}")
+    print(f"  Separator:         '{config.naming.separator}'")
+    print(f"  Case:              {config.naming.case}")
+    print(f"  Date format:       {config.naming.date_format}")
+    print(f"  Version format:    {config.naming.version_format}")
+    print(f"  Domain prefix:     {config.naming.domain_prefix}")
+    print(f"  Forbidden words:   {', '.join(config.naming.forbidden_words)}")
+    print(f"  Exempt files:      {len(config.naming.infrastructure_exempt)}")
+    print()
+    print("─── Categories ───")
+    print(f"  Strict mode:       {config.categories.strict_mode}")
+    print(f"  Folders:           {len(config.categories.folders)}")
+    for f in config.categories.folders:
+        label = config.categories.labels.get(f.rstrip("/"), "")
+        label_str = f" — {label}" if label else ""
+        print(f"    {f}{label_str}")
+    print()
+    print("─── Tags Taxonomy ───")
+    for group, tags in config.tags_taxonomy.items():
+        print(f"  {group}: {', '.join(tags)}")
+    print()
+    print("─── Tracking ───")
+    print(f"  Tracked dirs:      {', '.join(config.tracked_dirs)}")
+    print(f"  Staleness:         {config.staleness_threshold_days} days")
+    return 0
+
+
 # ------------------------------------------------------------------ parser
 
 
@@ -408,6 +559,27 @@ def build_parser() -> argparse.ArgumentParser:
     p_log.add_argument("--since", help="show entries from this ISO timestamp onward")
     p_log.add_argument("--last", type=int, help="show only the last N entries")
     p_log.set_defaults(func=cmd_log)
+
+    # --- init
+    p_init = sub.add_parser("init", help="Scaffold a new REGISTRY.yaml from a preset")
+    p_init.add_argument("--name", help="project name")
+    p_init.add_argument("--preset", default="minimal",
+                        help="preset pack: software, business, accounting, minimal (default)")
+    p_init.add_argument("--naming-template", default="default",
+                        help="naming template: default, legal, engineering, corporate, dateless")
+    p_init.add_argument("--author", help="default author name")
+    p_init.add_argument("-o", "--output", help="output path (default: docs/REGISTRY.yaml)")
+    p_init.add_argument("--force", action="store_true", help="overwrite existing registry")
+    p_init.add_argument("--create-folders", action="store_true",
+                        help="create category folders on disk")
+    p_init.set_defaults(func=cmd_init)
+
+    # --- config
+    p_config = sub.add_parser("config", help="Show resolved configuration or list presets")
+    p_config.add_argument("--list-presets", action="store_true", help="list available presets")
+    p_config.add_argument("--list-templates", action="store_true", help="list naming templates")
+    p_config.add_argument("--preset", help="apply a preset before showing config")
+    p_config.set_defaults(func=cmd_config)
 
     return p
 
