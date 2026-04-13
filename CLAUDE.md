@@ -141,15 +141,30 @@ Commands:
 - **Safe HTML escaping:** `escHtml()` uses DOM `createTextNode` pattern; `renderLines()` replaces raw `.innerHTML`
 - 20 new tests (329 total): editable tag CRUD functions, logo field presence/preview/YAML/standards, disclaimer dropdown/object/options, YAML export coverage for new fields
 
+### Session 35 Deliverables
+- **Phase G plan:** `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` — document templates and recommendations engine
+- **PRISM scrub completed** (Session 34 carryover): All references to former consumer project removed across entire codebase
+- **Registry cleanup** (Session 34 carryover): 17 documents registered (14 active, 1 draft, 2 superseded), 0 naming violations, 0 pending cross-refs
+- **Pre-commit hook hardened**: Removed `py` from DOC_EXTENSIONS, added source dirs to SKIP_DIRS, warnings pass in non-interactive mode
+- **Audit false positive fix**: `audit.py` now checks registered `path` for files outside `tracked_dirs`
+
 ### Next Steps (by priority)
-1. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
-2. **Review scheduling:** `next_review` date field in registry, surfaced as KPI
-3. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
+1. **Phase G — Document templates & recommendations engine** (plan ready, 4 sub-phases):
+   - G.1: Template infrastructure — `templates/` package, `DocumentTemplate` dataclass, `scaffold` CLI command
+   - G.2: Preset template packs — ~70 templates across 8 presets + security/compliance cross-cutting
+   - G.3: Recommendations engine — `audit --recommend` with 4 deterministic rules
+   - G.4: Custom templates, settings integration, polish
+   - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
+2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
+3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI
+4. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
+5. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
 
 ---
 
 ## Buildout Plan
 The authoritative buildout plan is at `docs/librarian-buildout-plan-20260411-V1.2.md`.
+The Phase G plan (templates + recommendations) is at `docs/phase-g-templates-and-recommendations-20260412-V1.0.md`.
 
 ---
 
