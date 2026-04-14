@@ -5396,6 +5396,9 @@ def _build_audit_page(manifest: "Manifest") -> str:
             {"group": s.group_name, "count": s.count, "suggestion": s.suggestion}
             for s in (report.folder_suggestions if report else [])
         ],
+        "overdue_reviews": [
+            r.to_dict() for r in (report.overdue_reviews if report else [])
+        ],
         "clean": report.clean if report else True,
     }
     audit_json = _json_safe(audit_data, indent=None)
@@ -5420,6 +5423,7 @@ def _build_audit_page(manifest: "Manifest") -> str:
     n_unreg = len(audit_data["unregistered"])
     n_violations = len(audit_data["naming_violations"])
     n_pending = len(audit_data["pending_cross_refs"])
+    n_overdue = len(audit_data["overdue_reviews"])
     chain_ok = chain_result.get("valid", True)
     _check = "\u2713"
     _cross = "\u2717"
@@ -5445,6 +5449,10 @@ def _build_audit_page(manifest: "Manifest") -> str:
   <div class="kpi-card">
     <div class="kpi-value {'kpi-ok' if n_violations == 0 else 'kpi-warn'}">{n_violations}</div>
     <div class="kpi-label">Naming Issues</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {'kpi-ok' if n_overdue == 0 else 'kpi-warn'}">{n_overdue}</div>
+    <div class="kpi-label">Overdue Reviews</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-value {'kpi-ok' if chain_ok else 'kpi-err'}">{chain_icon}</div>
@@ -5577,6 +5585,10 @@ def _build_audit_page(manifest: "Manifest") -> str:
           <div class="aud-cli-title">View Operation Log</div>
           <code>python -m librarian --registry docs/REGISTRY.yaml log --last 20</code>
         </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">List Overdue Reviews</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml review list --overdue</code>
+        </div>
       </div>
       <p class="aud-cli-hint">Click any card to copy the command.</p>
     </div>
@@ -5649,6 +5661,18 @@ function copyText(text) {{
       html += '<li><strong>' + s.group + '</strong> (' + s.count + ' files) &mdash; ' + s.suggestion + '</li>';
     }});
     html += '</ul></div>';
+  }}
+
+  if (AUDIT.overdue_reviews && AUDIT.overdue_reviews.length) {{
+    html += '<div class="aud-finding"><h3 class="aud-finding-title aud-finding--warn">Overdue Reviews (' + AUDIT.overdue_reviews.length + ')</h3>';
+    html += '<p class="aud-finding-hint">Documents whose <code>next_review</code> deadline has passed. Update via <code>librarian review set &lt;file&gt; --by YYYY-MM-DD</code>.</p>';
+    html += '<table class="mgr-table"><thead><tr><th>Filename</th><th>Deadline</th><th style="text-align:right">Days Overdue</th></tr></thead><tbody>';
+    AUDIT.overdue_reviews.forEach(function(r) {{
+      html += '<tr><td class="mgr-filename">' + r.filename + '</td>';
+      html += '<td style="font-family:var(--mono);font-size:11px">' + r.next_review + '</td>';
+      html += '<td style="text-align:right;color:#92400e;font-weight:600">' + r.days_overdue + '</td></tr>';
+    }});
+    html += '</tbody></table></div>';
   }}
 
   if (!html) html = '<div class="aud-ok-banner">\\u2713 All checks passed.</div>';

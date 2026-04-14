@@ -29,6 +29,14 @@ from .manifest import (
 from .naming import ParsedName, ValidationResult, parse_filename, validate
 from .oplog import OpLogEntry, append as oplog_append, log_operation, read_log, format_log, verify_chain
 from .registry import Registry
+from .review import (
+    OverdueReview,
+    ReviewDateError,
+    compute_overdue,
+    compute_upcoming,
+    format_review_date,
+    parse_review_date,
+)
 from .recommend import (
     PRESET_EXPECTATIONS,
     COMPLIANCE_TEMPLATES,
@@ -108,6 +116,13 @@ __all__ = [
     "format_recommendations",
     # registry
     "Registry",
+    # review
+    "OverdueReview",
+    "ReviewDateError",
+    "compute_overdue",
+    "compute_upcoming",
+    "format_review_date",
+    "parse_review_date",
     # sitegen
     "generate_site",
     # templates

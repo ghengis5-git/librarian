@@ -58,7 +58,12 @@ Add a new document entry to the registry.
 
 ```bash
 librarian --registry docs/REGISTRY.yaml register <filename>
+librarian --registry docs/REGISTRY.yaml register <filename> --review-by 2026-12-31
 ```
+
+The optional `--review-by YYYY-MM-DD` flag stores a `next_review` deadline.
+Past deadlines are surfaced in `audit` output and on the Audit page's
+"Overdue Reviews" KPI card. See [`review`](#review) for editing later.
 
 ### bump
 
@@ -67,7 +72,31 @@ Version-bump an existing document.
 ```bash
 librarian --registry docs/REGISTRY.yaml bump <filename> --minor
 librarian --registry docs/REGISTRY.yaml bump <filename> --major
+librarian --registry docs/REGISTRY.yaml bump <filename> --review-by 2027-06-30
+librarian --registry docs/REGISTRY.yaml bump <filename> --clear-review
 ```
+
+The new version inherits `next_review` from the predecessor by default.
+Use `--review-by` to override or `--clear-review` to drop the deadline.
+The two flags are mutually exclusive.
+
+### review
+
+Manage per-document review deadlines (the optional `next_review` field).
+
+```bash
+librarian --registry docs/REGISTRY.yaml review set <filename> --by 2026-12-31
+librarian --registry docs/REGISTRY.yaml review clear <filename>
+librarian --registry docs/REGISTRY.yaml review list                   # all docs with deadlines
+librarian --registry docs/REGISTRY.yaml review list --overdue         # past-due only
+librarian --registry docs/REGISTRY.yaml review list --upcoming        # next 30 days
+librarian --registry docs/REGISTRY.yaml review list --upcoming --within-days 90
+```
+
+Dates are absolute ISO 8601 (`YYYY-MM-DD`). Superseded and archived
+documents are excluded from overdue calculations. Overdue findings
+have **warn** severity — they appear in audit output but do not flip
+the audit exit code (matches how folder suggestions behave).
 
 ### manifest
 

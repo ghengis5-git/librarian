@@ -2327,8 +2327,23 @@ class TestAuditPage:
 
     def test_audit_kpi_cards(self, site_out):
         html = (site_out / "audit.html").read_text()
-        for label in ["Registered", "Unregistered", "Missing", "Naming Issues", "Chain Integrity"]:
+        for label in ["Registered", "Unregistered", "Missing", "Naming Issues",
+                      "Overdue Reviews", "Chain Integrity"]:
             assert label in html, f"Missing KPI: {label}"
+
+    def test_audit_overdue_reviews_in_audit_data(self, site_out):
+        # Phase 7.2: the AUDIT JS variable must include an overdue_reviews
+        # array so the OODA-results renderer can show the table.
+        html = (site_out / "audit.html").read_text()
+        assert "overdue_reviews" in html, \
+            "audit_data should expose overdue_reviews to the JS renderer"
+
+    def test_audit_overdue_cli_card(self, site_out):
+        # Phase 7.2: the CLI quick-cards grid should advertise the
+        # `review list --overdue` workflow.
+        html = (site_out / "audit.html").read_text()
+        assert "review list --overdue" in html
+        assert "List Overdue Reviews" in html
 
     def test_audit_nav_link(self, site_out):
         html = (site_out / "audit.html").read_text()

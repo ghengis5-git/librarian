@@ -7,6 +7,7 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from .audit import audit, format_report
 from .recommend import generate_recommendations, format_recommendations
@@ -25,6 +26,13 @@ from .manifest import generate as generate_manifest, write_manifest
 from .naming import parse_filename
 from .oplog import log_operation, read_log, read_log_since, format_log
 from .registry import Registry
+from .review import (
+    ReviewDateError,
+    compute_overdue,
+    compute_upcoming,
+    format_review_date,
+    parse_review_date,
+)
 from .sitegen import generate_site
 from .templates import discover_templates, load_template, list_templates, build_context
 from .templates._base import render_template
@@ -68,6 +76,9 @@ def cmd_audit(args: argparse.Namespace) -> int:
                         for n, e in report.naming_violations
                     ],
                     "pending_cross_refs": report.pending_cross_refs,
+                    "overdue_reviews": [
+                        r.to_dict() for r in report.overdue_reviews
+                    ],
                     "clean": report.clean,
                 },
                 "recommendations": rec_report.to_dict(),
@@ -90,6 +101,9 @@ def cmd_audit(args: argparse.Namespace) -> int:
                         for n, e in report.naming_violations
                     ],
                     "pending_cross_refs": report.pending_cross_refs,
+                    "overdue_reviews": [
+                        r.to_dict() for r in report.overdue_reviews
+                    ],
                     "clean": report.clean,
                 },
             }
@@ -134,6 +148,15 @@ def cmd_register(args: argparse.Namespace) -> int:
     else:
         path_field = str(target)
 
+    # Parse optional --review-by up front so we reject bad input before write.
+    review_by: str | None = None
+    if getattr(args, "review_by", None):
+        try:
+            review_by = format_review_date(parse_review_date(args.review_by))
+        except ReviewDateError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
     entry = {
         "filename": filename,
         "title": args.title or filename,
@@ -149,15 +172,22 @@ def cmd_register(args: argparse.Namespace) -> int:
         "path": path_field,
         "infrastructure_exempt": False,
     }
+    if review_by:
+        entry["next_review"] = review_by
     reg.add_document(entry)
     reg.save()
     print(f"Registered: {filename}")
+    if review_by:
+        print(f"  next_review: {review_by}")
 
     # Log the operation
+    details = {"version": args.version, "status": args.status}
+    if review_by:
+        details["next_review"] = review_by
     log_operation(
         "register",
         files=[filename],
-        details={"version": args.version, "status": args.status},
+        details=details,
         repo_root=repo_root,
     )
     return 0
@@ -177,6 +207,17 @@ def cmd_bump(args: argparse.Namespace) -> int:
     new_parsed = parse_filename(new_filename)
     assert new_parsed is not None  # bump_filename guarantees canonical output
 
+    # --review-by / --clear-review: update the inherited next_review field.
+    # Mutual exclusion is enforced by argparse.
+    review_override: str | None = None
+    clear_review = bool(getattr(args, "clear_review", False))
+    if getattr(args, "review_by", None):
+        try:
+            review_override = format_review_date(parse_review_date(args.review_by))
+        except ReviewDateError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
     new_entry = dict(old)
     new_entry["filename"] = new_filename
     new_entry["version"] = new_parsed.version
@@ -188,20 +229,199 @@ def cmd_bump(args: argparse.Namespace) -> int:
     new_entry.pop("supersedes", None)
     new_entry.pop("superseded_by", None)
 
+    # next_review handling: default is inherit (already in dict(old));
+    # --clear-review strips it; --review-by overwrites it.
+    if clear_review:
+        new_entry.pop("next_review", None)
+    elif review_override:
+        new_entry["next_review"] = review_override
+
     reg.add_document(new_entry)
     reg.supersede(args.filename, new_filename)
     reg.save()
     print(f"Bumped: {args.filename} -> {new_filename}")
+    if "next_review" in new_entry:
+        print(f"  next_review: {new_entry['next_review']}")
+    elif clear_review:
+        print("  next_review: cleared")
     print("Note: librarian does NOT create the new file on disk.")
     print("      Copy the old file to the new name manually, then edit.")
 
     # Log the operation
+    details: dict[str, Any] = {"old": args.filename, "new": new_filename, "major": args.major}
+    if review_override:
+        details["next_review"] = review_override
+    elif clear_review:
+        details["next_review_cleared"] = True
     log_operation(
         "bump",
         files=[args.filename, new_filename],
-        details={"old": args.filename, "new": new_filename, "major": args.major},
+        details=details,
         repo_root=repo_root,
     )
+    return 0
+
+
+# ------------------------------------------------------------------ review
+#
+# `librarian review` groups three actions on the optional ``next_review``
+# field:
+#
+#     review set <filename> --by <YYYY-MM-DD>
+#     review clear <filename>
+#     review list [--overdue | --upcoming [--within-days N]]
+#
+# Rationale: the flag-on-existing-command path (register/bump --review-by)
+# handles the creation flow well, but editing a deadline after the fact
+# or surveying review state across the whole registry benefits from a
+# dedicated verb. See docstring in librarian/review.py for the full design.
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    sub = getattr(args, "review_action", None)
+    if sub == "set":
+        return _review_set(args)
+    if sub == "clear":
+        return _review_clear(args)
+    if sub == "list":
+        return _review_list(args)
+    print("Error: no review subcommand. Use: set | clear | list", file=sys.stderr)
+    return 2
+
+
+def _review_set(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+    doc = reg.get_document(args.filename)
+    if doc is None:
+        print(f"Not registered: {args.filename}", file=sys.stderr)
+        return 1
+    try:
+        new_date = format_review_date(parse_review_date(args.by))
+    except ReviewDateError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    if new_date is None:
+        print("Error: --by is required", file=sys.stderr)
+        return 2
+
+    prior = doc.get("next_review")
+    doc["next_review"] = new_date
+    doc["updated"] = date.today().strftime("%Y-%m-%d")
+    reg.update_meta()
+    reg.save()
+
+    action = "set" if not prior else "updated"
+    print(f"Review deadline {action}: {args.filename} -> {new_date}")
+    if prior and prior != new_date:
+        print(f"  (was: {prior})")
+
+    log_operation(
+        "review",
+        files=[args.filename],
+        details={"action": "set", "next_review": new_date, "previous": prior},
+        repo_root=repo_root,
+    )
+    return 0
+
+
+def _review_clear(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+    doc = reg.get_document(args.filename)
+    if doc is None:
+        print(f"Not registered: {args.filename}", file=sys.stderr)
+        return 1
+    prior = doc.pop("next_review", None)
+    doc["updated"] = date.today().strftime("%Y-%m-%d")
+    reg.update_meta()
+    reg.save()
+
+    if prior is None:
+        print(f"No review deadline was set: {args.filename}")
+    else:
+        print(f"Review deadline cleared: {args.filename} (was {prior})")
+
+    log_operation(
+        "review",
+        files=[args.filename],
+        details={"action": "clear", "previous": prior},
+        repo_root=repo_root,
+    )
+    return 0
+
+
+def _review_list(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo or ".").resolve()
+    reg_path = _find_registry(args.registry, repo_root)
+    reg = Registry.load(reg_path)
+    today = date.today()
+
+    overdue_only = bool(getattr(args, "overdue", False))
+    upcoming_only = bool(getattr(args, "upcoming", False))
+    within = int(getattr(args, "within_days", 30) or 30)
+
+    overdue = compute_overdue(reg.documents, today=today)
+    upcoming = compute_upcoming(reg.documents, today=today, within_days=within)
+
+    # Build full-coverage view when neither filter is on.
+    all_with_deadline: list[tuple[str, str, int]] = []
+    if not overdue_only and not upcoming_only:
+        for doc in reg.documents:
+            status = doc.get("status")
+            raw = doc.get("next_review")
+            if status not in {"active", "draft"} or raw in (None, ""):
+                continue
+            try:
+                d = parse_review_date(raw)
+            except ReviewDateError:
+                continue
+            if d is None:
+                continue
+            delta = (d - today).days
+            all_with_deadline.append((doc.get("filename", "?"),
+                                       format_review_date(d) or "", delta))
+        all_with_deadline.sort(key=lambda r: (r[2], r[0]))
+
+    def _row(fn: str, deadline: str, delta: int) -> str:
+        if delta < 0:
+            tag = f"OVERDUE by {-delta}d"
+        elif delta == 0:
+            tag = "due today"
+        else:
+            tag = f"in {delta}d"
+        return f"  {deadline}  {fn:50s}  {tag}"
+
+    if overdue_only:
+        if not overdue:
+            print("No overdue reviews.")
+            return 0
+        print(f"Overdue reviews ({len(overdue)}):")
+        for r in overdue:
+            print(_row(r.filename, format_review_date(r.next_review) or "?",
+                      -r.days_overdue))
+        return 0
+
+    if upcoming_only:
+        if not upcoming:
+            print(f"No reviews upcoming within {within} days.")
+            return 0
+        print(f"Upcoming reviews (next {within} days, {len(upcoming)}):")
+        for r in upcoming:
+            deadline = format_review_date(r.next_review) or "?"
+            # days_overdue field carries -delta; flip for display
+            print(_row(r.filename, deadline, -r.days_overdue))
+        return 0
+
+    # Default list: everything with a deadline, overdue first.
+    if not all_with_deadline:
+        print("No documents have a next_review deadline set.")
+        return 0
+    print(f"Documents with review deadlines ({len(all_with_deadline)}):")
+    for fn, deadline, delta in all_with_deadline:
+        print(_row(fn, deadline, delta))
     return 0
 
 
@@ -546,6 +766,15 @@ def cmd_scaffold(args: argparse.Namespace) -> int:
 
     # Register in REGISTRY.yaml (unless --no-register)
     if not args.no_register and reg is not None:
+        # Validate --review-by (if provided) before any disk write.
+        review_by: str | None = None
+        if getattr(args, "review_by", None):
+            try:
+                review_by = format_review_date(parse_review_date(args.review_by))
+            except ReviewDateError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                return 1
+
         rel_path = str(out_path.relative_to(repo_root))
         entry = {
             "filename": filename,
@@ -561,6 +790,8 @@ def cmd_scaffold(args: argparse.Namespace) -> int:
             "path": rel_path,
             "infrastructure_exempt": False,
         }
+        if review_by:
+            entry["next_review"] = review_by
 
         # Add cross-references for targets that already exist in registry
         xrefs = []
@@ -820,13 +1051,46 @@ def build_parser() -> argparse.ArgumentParser:
     p_reg.add_argument("--author")
     p_reg.add_argument("--classification")
     p_reg.add_argument("--tags", help="comma-separated")
+    p_reg.add_argument("--review-by", dest="review_by", metavar="YYYY-MM-DD",
+                       help="schedule a next_review deadline for this document")
     p_reg.set_defaults(func=cmd_register)
 
     # --- bump
     p_bump = sub.add_parser("bump", help="Bump a document version")
     p_bump.add_argument("filename", help="current filename to bump")
     p_bump.add_argument("--major", action="store_true", help="bump major, reset minor to 0")
+    bump_review = p_bump.add_mutually_exclusive_group()
+    bump_review.add_argument(
+        "--review-by", dest="review_by", metavar="YYYY-MM-DD",
+        help="override the inherited next_review deadline on the new version",
+    )
+    bump_review.add_argument(
+        "--clear-review", action="store_true",
+        help="drop next_review from the new version (do not inherit)",
+    )
     p_bump.set_defaults(func=cmd_bump)
+
+    # --- review (set / clear / list)
+    p_review = sub.add_parser(
+        "review",
+        help="Manage per-document review deadlines (next_review field)",
+    )
+    review_sub = p_review.add_subparsers(dest="review_action")
+    p_rset = review_sub.add_parser("set", help="set or update a review deadline")
+    p_rset.add_argument("filename", help="registered filename")
+    p_rset.add_argument("--by", required=True, metavar="YYYY-MM-DD",
+                        help="ISO 8601 date when this document is next due for review")
+    p_rclear = review_sub.add_parser("clear", help="remove the review deadline")
+    p_rclear.add_argument("filename", help="registered filename")
+    p_rlist = review_sub.add_parser("list", help="list documents with review deadlines")
+    p_rlist_mode = p_rlist.add_mutually_exclusive_group()
+    p_rlist_mode.add_argument("--overdue", action="store_true",
+                              help="only docs whose deadline has passed")
+    p_rlist_mode.add_argument("--upcoming", action="store_true",
+                              help="only docs due within the next --within-days")
+    p_rlist.add_argument("--within-days", dest="within_days", type=int, default=30,
+                         help="window for --upcoming (default: 30)")
+    p_review.set_defaults(func=cmd_review)
 
     # --- manifest
     p_manifest = sub.add_parser("manifest", help="Generate manifest (JSON + SHA-256 + graph)")
@@ -877,6 +1141,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_scaffold.add_argument("--list-all", action="store_true", help="list all templates across all presets")
     p_scaffold.add_argument("--dry-run", action="store_true", help="preview without writing files")
     p_scaffold.add_argument("--no-register", action="store_true", help="create file but skip registry entry")
+    p_scaffold.add_argument("--review-by", dest="review_by", metavar="YYYY-MM-DD",
+                            help="schedule a next_review deadline for the new document")
     p_scaffold.set_defaults(func=cmd_scaffold)
 
     # --- init

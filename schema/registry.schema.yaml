@@ -170,6 +170,18 @@ registry:
             format: date
             description: Date the file was moved to the archive path.
 
+          next_review:
+            type: [string, "null"]
+            format: date
+            description: >-
+              Optional review deadline (ISO 8601 YYYY-MM-DD).  When today's
+              date is past this value AND the document is in draft or active
+              status, the audit reports it as overdue and the Audit page
+              counts it in the "Overdue reviews" KPI card.  Null or omitted
+              means no deadline tracked for this document.  Set via
+              `librarian review set`, `librarian register --review-by`, or
+              `librarian bump --review-by`.
+
     # ---------------------------------------------------- registry_meta
     registry_meta:
       type: object

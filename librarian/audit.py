@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 
 from .naming import validate as validate_name
 from .registry import Registry
+from .review import OverdueReview, compute_overdue
 
 DEFAULT_SKIP_DIRS = frozenset(
     {".git", ".venv", "venv", "__pycache__", "node_modules", "build", "dist"}
@@ -36,10 +37,17 @@ class AuditReport:
     naming_violations: list[tuple[str, list[str]]] = field(default_factory=list)
     pending_cross_refs: list[str] = field(default_factory=list)
     folder_suggestions: list[FolderSuggestion] = field(default_factory=list)
+    # Phase 7.2 — documents whose next_review deadline has passed.
+    # Severity: warn (like folder_suggestions, this does NOT flip
+    # AuditReport.clean to False today; keep report.clean semantics
+    # stable for existing consumers).
+    overdue_reviews: list[OverdueReview] = field(default_factory=list)
 
     @property
     def clean(self) -> bool:
-        # folder_suggestions are advisory — they don't fail the audit
+        # folder_suggestions and overdue_reviews are advisory — they don't
+        # fail the audit. This preserves the exit-code contract for existing
+        # automation that relies on `audit` returning 0 for compliant repos.
         return not (
             self.unregistered
             or self.missing
@@ -132,6 +140,9 @@ def audit(
     report.folder_suggestions = _analyze_folder_density(
         registry, threshold=folder_threshold
     )
+
+    # Phase 7.2 — overdue review deadlines
+    report.overdue_reviews = compute_overdue(registry.documents)
 
     return report
 
@@ -236,6 +247,15 @@ def format_report(report: AuditReport) -> str:
         lines.append(f"-- Folder suggestions ({len(report.folder_suggestions)}) --")
         for fs in report.folder_suggestions:
             lines.append(f"  ~ {fs.suggestion}")
+        lines.append("")
+
+    if report.overdue_reviews:
+        lines.append(f"-- Overdue reviews ({len(report.overdue_reviews)}) --")
+        for rev in report.overdue_reviews:
+            lines.append(
+                f"  ~ {rev.filename}  (due {rev.next_review.isoformat()}, "
+                f"{rev.days_overdue}d overdue)"
+            )
         lines.append("")
 
     if report.clean:
