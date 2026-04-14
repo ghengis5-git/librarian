@@ -15,7 +15,7 @@ Run from `~/projects/librarian`:
 cd ~/projects/librarian
 source .venv/bin/activate
 git status                          # expect clean tree after Session 47 edits are committed
-python -m pytest tests/ -q          # expect 682/682
+python -m pytest tests/ -q          # expect 681/681
 ```
 
 If anything fails, stop and investigate — do not proceed.
@@ -111,7 +111,7 @@ grep '^version' pyproject.toml
 grep 'version:' skills/librarian/SKILL.md | head -2
 
 # Test count
-grep '682 tests' README.md
+grep '681 tests' README.md
 
 # License + readme present
 test -f LICENSE && test -f README.md && echo "present"

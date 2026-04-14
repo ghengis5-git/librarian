@@ -169,7 +169,7 @@ Commands:
 
 ## Current State
 **Version:** 0.7.1
-**Tests:** 682/682 PASS (673 pre-Session-46 + 9 new template-engine hardening tests — iterator coverage 5, output size guard 3, count sanity 1; run tests in host terminal to confirm)
+**Tests:** 681/681 PASS (673 pre-Session-46 + 8 new template-engine hardening tests — iterator coverage 5, output size guard 2, count sanity 1; confirmed in host terminal Session 48)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -382,7 +382,7 @@ Commands:
   - **Template for-loop iterator coverage** (`librarian/templates/_base.py`): now accepts any iterable (set, dict_keys, generators, custom iterables) via `list(iterable)` unpacking; rejects str/bytes to avoid accidental character-iteration. Empty/falsy iterables still skip cleanly.
   - **Template engine output size guard** (`librarian/templates/_base.py`): new `_MAX_RENDER_BYTES = 4 MB` cap and `TemplateRenderError` exception raised when `render_template()` output exceeds cap. Prevents resource exhaustion from hostile templates. Exported from `librarian.templates` and top-level `librarian` package.
   - **Remaining**: oplog chain is still detect-only; changing it to prevention-mode requires oplog-format approval (CLAUDE.md §When to Stop and Ask).
-- **9 new tests** (682 total; run pytest in host to confirm): for-loop over set/dict_keys/generator (3), for-loop rejects str/bytes (2), output size under limit (1), over limit raises (1), `_MAX_RENDER_BYTES` sanity (1), plus the existing `test_empty_list` still passes under the new logic.
+- **8 new tests** (681 total; confirmed in host Session 48): for-loop over set/dict_keys/generator (3), for-loop rejects str/bytes (2), output size under limit (1), over limit raises (1), `_MAX_RENDER_BYTES` sanity (1), plus the existing `test_empty_list` still passes under the new logic.
 - **Open Phase F blockers** (need user decision before Session 47 publish): (1) PyPI namespace (`librarian-docs` / keep `librarian-2026` / new name); (2) git history strategy (squash vs. full); (3) GitHub org vs. personal; (4) hook ship-enabled vs. opt-in; (5) IP clearance.
 
 ### Session 47 Deliverables (Phase F blocker resolution — scrub, hook, decisions)
@@ -394,7 +394,7 @@ Commands:
   - `skills/librarian/SKILL.md` — new §First-Run Setup section explaining the hook opt-in; metadata version bumped 0.7.0 → 0.7.1. End-to-end sanity check passed: `python -m librarian init --no-hook` writes `enforce_naming_hook: false` and prints the disabled status message.
 - **IP clearance — resolved**: user confirmed no patents being filed on librarian. Removed as a publish blocker.
 - **Remaining Phase F blockers**: (1) PyPI namespace — user kept `librarian-2026` (already in `pyproject.toml`); (2) git history — keep full (recommended above, awaiting confirmation); (3) GitHub org vs. personal — open.
-- **Host-terminal cleanup still required before publish**: (a) `rm -rf dashboard/legacy/` (stubs present but tracked); (b) `rm -rf skills/doc-librarian/` (coexists with `skills/librarian/`); (c) `rm -rf _site*` scratch dirs; (d) run `pytest` to confirm 682/682 (sandbox has no pytest).
+- **Host-terminal cleanup still required before publish**: (a) `rm -rf dashboard/legacy/` (stubs present but tracked); (b) `rm -rf skills/doc-librarian/` (coexists with `skills/librarian/`); (c) `rm -rf _site*` scratch dirs; (d) run `pytest` to confirm 681/681 (sandbox has no pytest). ✅ Confirmed 681/681 in Session 48.
 
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:

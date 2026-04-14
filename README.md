@@ -147,7 +147,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-682 tests across 13 test files.
+681 tests across 13 test files.
 
 ## License
 
