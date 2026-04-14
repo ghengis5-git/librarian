@@ -10,13 +10,12 @@ requires-python = ">=3.10"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [
-    {name = "Chris Kahn", email = "ghengis5@gmail.com"}
+    {name = "Chris Kahn", email = "272935920+ghengis5-git@users.noreply.github.com"}
 ]
 keywords = ["documents", "governance", "versioning", "audit", "registry", "naming-conventions"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
