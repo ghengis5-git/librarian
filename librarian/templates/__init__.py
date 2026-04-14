@@ -17,13 +17,14 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._base import DocumentTemplate, render_template
+from ._base import DocumentTemplate, TemplateRenderError, render_template
 
 # Template IDs must be alphanumeric + hyphens only (no slashes, dots, etc.)
 _SAFE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$")
 
 __all__ = [
     "DocumentTemplate",
+    "TemplateRenderError",
     "render_template",
     "discover_templates",
     "load_template",

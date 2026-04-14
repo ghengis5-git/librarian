@@ -1,6 +1,6 @@
 """Librarian — document governance, version control, and registry management."""
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from .audit import AuditReport, FolderSuggestion, audit, format_report
 from .config import (
@@ -40,6 +40,7 @@ from .recommend import (
 from .sitegen import generate_site
 from .templates import (
     DocumentTemplate,
+    TemplateRenderError,
     render_template,
     discover_templates,
     load_template,
@@ -111,6 +112,7 @@ __all__ = [
     "generate_site",
     # templates
     "DocumentTemplate",
+    "TemplateRenderError",
     "render_template",
     "discover_templates",
     "load_template",

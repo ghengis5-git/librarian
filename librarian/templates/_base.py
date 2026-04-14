@@ -108,11 +108,32 @@ _FOR_RE = re.compile(r"^for\s+(\w+)\s+in\s+(\w+)$")
 _ENDFOR_RE = re.compile(r"^endfor$")
 
 
+# Safety cap on rendered output size (4 MB).
+# Prevents a hostile template (e.g., deeply nested for-loop over a large list)
+# from producing an unbounded string that could exhaust memory.
+# 4 MB is ~40× larger than the largest legitimate template output we've seen
+# (a fully-populated compliance checklist expands to ~80 KB).
+_MAX_RENDER_BYTES = 4 * 1024 * 1024
+
+
+class TemplateRenderError(ValueError):
+    """Raised when template rendering fails safety checks (e.g., output too large)."""
+
+
 def render_template(template: str, context: dict[str, Any]) -> str:
-    """Render a template string with variable substitution and control flow."""
+    """Render a template string with variable substitution and control flow.
+
+    Raises TemplateRenderError if the rendered output exceeds _MAX_RENDER_BYTES.
+    """
     tokens = _tokenize(template)
     ast = _parse_tokens(tokens)
-    return _evaluate(ast, context)
+    result = _evaluate(ast, context)
+    if len(result.encode("utf-8", errors="replace")) > _MAX_RENDER_BYTES:
+        raise TemplateRenderError(
+            f"Rendered template output exceeds {_MAX_RENDER_BYTES} bytes — "
+            "refusing to emit. Check for unbounded loops or oversized context data."
+        )
+    return result
 
 
 def _tokenize(template: str) -> list[tuple[str, str]]:
@@ -271,8 +292,16 @@ def _evaluate(nodes: list[tuple], context: dict[str, Any]) -> str:
         elif kind == "for":
             _, var_name, list_name, body = node
             iterable = context.get(list_name, [])
-            if isinstance(iterable, (list, tuple)):
-                for item in iterable:
+            # Accept any iterable EXCEPT str/bytes (which would iterate characters
+            # — almost always a bug). This covers list, tuple, set, frozenset,
+            # dict_keys, dict_values, generators, and any custom iterables.
+            if iterable and not isinstance(iterable, (str, bytes)):
+                try:
+                    items = list(iterable)
+                except TypeError:
+                    # Not iterable — silently skip, matching previous behavior
+                    items = []
+                for item in items:
                     sub_ctx = {**context, var_name: item}
                     parts.append(_evaluate(body, sub_ctx))
     return "".join(parts)

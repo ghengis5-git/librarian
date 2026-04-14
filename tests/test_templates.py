@@ -19,9 +19,11 @@ import yaml
 
 from librarian.templates._base import (
     DocumentTemplate,
+    TemplateRenderError,
     render_template,
     _split_frontmatter,
     _eval_condition,
+    _MAX_RENDER_BYTES,
 )
 from librarian.templates import (
     discover_templates,
@@ -147,6 +149,65 @@ class TestForLoops:
         tmpl = "{% for x in xs %}{% for y in ys %}{{x}}{{y}}{% endfor %}{% endfor %}"
         result = render_template(tmpl, {"xs": ["1", "2"], "ys": ["a", "b"]})
         assert result == "1a1b2a2b"
+
+    # Iterator-coverage tests — verify the for-loop accepts any non-str iterable.
+    # Previously only list/tuple worked; sets, dict_keys, generators were silently
+    # dropped. The fix widens acceptance and leaves str/bytes as the only rejection
+    # (iterating over characters is almost always a bug, not intent).
+
+    def test_for_over_set(self):
+        tmpl = "{% for item in items %}[{{item}}]{% endfor %}"
+        # Sets are unordered; verify length + membership rather than exact string
+        result = render_template(tmpl, {"items": {"a", "b"}})
+        assert result.count("[") == 2
+        assert "[a]" in result and "[b]" in result
+
+    def test_for_over_dict_keys(self):
+        tmpl = "{% for k in keys %}{{k}},{% endfor %}"
+        result = render_template(tmpl, {"keys": {"x": 1, "y": 2}.keys()})
+        assert "x," in result and "y," in result
+
+    def test_for_over_generator(self):
+        tmpl = "{% for n in nums %}{{n}}{% endfor %}"
+        result = render_template(tmpl, {"nums": (str(i) for i in range(3))})
+        assert result == "012"
+
+    def test_for_rejects_string_iteration(self):
+        """Strings are iterable but iterating characters is almost always a bug."""
+        tmpl = "{% for c in text %}[{{c}}]{% endfor %}"
+        # With the fix, a string context value is treated as non-iterable (skipped).
+        assert render_template(tmpl, {"text": "abc"}) == ""
+
+    def test_for_rejects_bytes_iteration(self):
+        tmpl = "{% for b in data %}x{% endfor %}"
+        assert render_template(tmpl, {"data": b"abc"}) == ""
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Output size guard
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class TestOutputSizeGuard:
+    """Safety guard: reject rendered output exceeding _MAX_RENDER_BYTES."""
+
+    def test_under_limit_renders(self):
+        # 1 KB output — nowhere near the 4 MB limit
+        tmpl = "{% for x in xs %}abc{% endfor %}"
+        result = render_template(tmpl, {"xs": list(range(300))})
+        assert len(result) > 0
+
+    def test_over_limit_raises(self):
+        """A for-loop producing >4 MB of output must raise TemplateRenderError."""
+        # Each iteration emits ~100 KB; 50 iterations = ~5 MB, over the cap.
+        big_chunk = "x" * 100_000
+        tmpl = "{% for x in xs %}" + big_chunk + "{% endfor %}"
+        with pytest.raises(TemplateRenderError, match="exceeds"):
+            render_template(tmpl, {"xs": list(range(50))})
+
+    def test_max_render_bytes_constant(self):
+        """Sanity-check the constant — 4 MB, well above any legitimate template."""
+        assert _MAX_RENDER_BYTES == 4 * 1024 * 1024
 
 
 # ═══════════════════════════════════════════════════════════════════════════
