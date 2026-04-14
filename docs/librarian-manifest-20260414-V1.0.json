@@ -103,8 +103,8 @@
     {
       "exists": true,
       "filename": "README.md",
-      "sha256": "dd435cee725c25c2408b65f599e2bcf525dd66e8f3becc4da84a5e3daf5a7ee6",
-      "size_bytes": 5867
+      "sha256": "aee22d8f056f754ba8349cd692a806bec2396ac074d162a582b075a86d506f6e",
+      "size_bytes": 6033
     },
     {
       "exists": true,
@@ -235,8 +235,8 @@
     {
       "exists": true,
       "filename": "registry.schema.yaml",
-      "sha256": "2e3f09208239958e8232b74328f2d6131757dc1cf5338a45a09b96a968091085",
-      "size_bytes": 7101
+      "sha256": "52a0a0243b21fdeb127a512ba3457213a6b0435cc0fd92dc018deb2491cb7309",
+      "size_bytes": 7702
     },
     {
       "exists": true,
@@ -252,6 +252,12 @@
     },
     {
       "exists": true,
+      "filename": "release-notes-20260414-V3.0.md",
+      "sha256": "760a15a101f38df21c23b1d0baf619715ee80e63085c871085d9643e9bdf56b4",
+      "size_bytes": 5991
+    },
+    {
+      "exists": true,
       "filename": "release-v0-7-2-runbook-20260413-V1.0.md",
       "sha256": "a5779acfe949cd7eba4e40914f0ee65bb6d0992c01b4d0a8e4ccf0d333401ace",
       "size_bytes": 9056
@@ -263,12 +269,12 @@
       "size_bytes": 13807
     }
   ],
-  "manifest_sha256": "e439c1c75cf88cfa959e932fa57acd3694fa8462726caae8ea20f140acaa55b2",
+  "manifest_sha256": "dcaca5c4b13972fefffe56617a88cd970a66233c6271b725a38c5a2ca61b24d6",
   "meta": {
-    "generated_at": "2026-04-14T03:47:18Z",
+    "generated_at": "2026-04-14T21:07:57Z",
     "generator_version": "0.2.0",
     "registry_path": "docs/REGISTRY.yaml",
-    "repo_root": "/Users/chriskahnm5/projects/librarian"
+    "repo_root": "/sessions/festive-zealous-bardeen/mnt/librarian"
   },
   "registry_snapshot": {
     "documents": [
@@ -908,7 +914,7 @@
         "filename": "release-notes-20260413-V2.0.md",
         "infrastructure_exempt": false,
         "path": "docs/release-notes-20260413-V2.0.md",
-        "status": "draft",
+        "status": "active",
         "tags": [
           "release",
           "documentation",
@@ -916,7 +922,7 @@
           "patch"
         ],
         "title": "v0.7.2 patch release (plugin install-path fixes)",
-        "updated": "2026-04-13",
+        "updated": "2026-04-14",
         "version": "V2.0"
       },
       {
@@ -927,15 +933,33 @@
         "filename": "release-v0-7-2-runbook-20260413-V1.0.md",
         "infrastructure_exempt": false,
         "path": "docs/release-v0-7-2-runbook-20260413-V1.0.md",
-        "status": "draft",
+        "status": "active",
         "tags": [
           "release",
           "runbook",
           "ops"
         ],
         "title": "v0.7.2 release runbook (host-terminal execution steps)",
-        "updated": "2026-04-13",
+        "updated": "2026-04-14",
         "version": "V1.0"
+      },
+      {
+        "author": "Chris Kahn",
+        "classification": "PERSONAL / INTERNAL USE ONLY",
+        "created": "2026-04-14",
+        "description": "Release notes for v0.7.3 — adds optional per-document review deadlines with new `review` CLI subcommand and Audit-page KPI card, hardens pre-commit hook registry-sync grep. Backwards compatible; test suite 681 → 743.",
+        "filename": "release-notes-20260414-V3.0.md",
+        "infrastructure_exempt": false,
+        "path": "docs/release-notes-20260414-V3.0.md",
+        "status": "draft",
+        "tags": [
+          "release",
+          "documentation",
+          "changelog"
+        ],
+        "title": "v0.7.3 feature release (next_review field, review CLI, hook hardening)",
+        "updated": "2026-04-14",
+        "version": "V3.0"
       }
     ],
     "project_config": {
@@ -1029,13 +1053,13 @@
       ]
     },
     "registry_meta": {
-      "active": 18,
+      "active": 20,
       "archived": 0,
-      "draft": 4,
+      "draft": 3,
       "in_docs_archive": 0,
       "last_audit": "2026-04-12",
       "last_audit_note": "2026-04-12: Registered all unregistered files (superseded buildout plans, dashboard, phase-d plan, example manifest). Created README.md. Renamed phase-d-implementation-plan.md to follow naming convention. Removed all references to former consumer project.",
-      "last_updated": "2026-04-13",
+      "last_updated": "2026-04-14",
       "locations_chat_only": 0,
       "locations_disk_only": 0,
       "locations_in_chat": 0,
@@ -1045,15 +1069,15 @@
       "not_in_repo": 0,
       "pending_cross_reference_updates": 0,
       "superseded": 5,
-      "total_documents": 27,
+      "total_documents": 28,
       "total_on_disk": 10,
       "version_convention_note": "This project was created 2026-04-11 with the canonical dot form (VX.Y) from day one. No legacy transition rules apply."
     }
   },
   "summary": {
     "total_edges": 15,
-    "total_hashed": 27,
-    "total_on_disk": 27,
-    "total_registered": 27
+    "total_hashed": 28,
+    "total_on_disk": 28,
+    "total_registered": 28
   }
 }

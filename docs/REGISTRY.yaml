@@ -591,12 +591,13 @@ documents:
   infrastructure_exempt: false
 - filename: librarian-manifest-20260413-V1.0.json
   title: Librarian manifest 20260413
-  description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-publish
-    seal
-  status: active
+  description: Portable JSON manifest with SHA-256 hashes + dependency graph, captured
+    at v0.7.2 release
+  status: superseded
+  superseded_by: librarian-manifest-20260414-V1.0.json
   version: '1.0'
   created: '2026-04-13'
-  updated: '2026-04-13'
+  updated: '2026-04-14'
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   tags:
@@ -607,12 +608,13 @@ documents:
   infrastructure_exempt: false
 - filename: librarian-evidence-20260413-V1.0.json
   title: Librarian evidence pack 20260413
-  description: Tamper-evident IP evidence pack wrapping the manifest with signed git
-    commit
-  status: active
+  description: Tamper-evident IP evidence pack captured at v0.7.2 release, signed
+    with SSH key
+  status: superseded
+  superseded_by: librarian-evidence-20260414-V1.0.json
   version: '1.0'
   created: '2026-04-13'
-  updated: '2026-04-13'
+  updated: '2026-04-14'
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   tags:
@@ -620,6 +622,40 @@ documents:
   - seal
   - audit
   path: docs/librarian-evidence-20260413-V1.0.json
+  infrastructure_exempt: false
+- filename: librarian-manifest-20260414-V1.0.json
+  title: Librarian manifest 20260414
+  description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.3
+    publish seal
+  status: active
+  supersedes: librarian-manifest-20260413-V1.0.json
+  version: '1.0'
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - manifest
+  - seal
+  - audit
+  path: docs/librarian-manifest-20260414-V1.0.json
+  infrastructure_exempt: false
+- filename: librarian-evidence-20260414-V1.0.json
+  title: Librarian evidence pack 20260414
+  description: Tamper-evident IP evidence pack for v0.7.3, wrapping the manifest with
+    SSH-signed git commit
+  status: active
+  supersedes: librarian-evidence-20260413-V1.0.json
+  version: '1.0'
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - evidence
+  - seal
+  - audit
+  path: docs/librarian-evidence-20260414-V1.0.json
   infrastructure_exempt: false
 - filename: release-notes-20260413-V1.0.md
   title: v0.7.1 first public release
@@ -641,10 +677,10 @@ documents:
   title: v0.7.2 patch release (plugin install-path fixes)
   description: Release notes for v0.7.2 patch release shipping Session 49 install-path
     fixes (marketplace.json location, hooks schema, owner email scrub)
-  status: draft
+  status: active
   version: V2.0
   created: '2026-04-13'
-  updated: '2026-04-13'
+  updated: '2026-04-14'
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   tags:
@@ -659,10 +695,10 @@ documents:
   description: Step-by-step runbook for executing the v0.7.2 release in the host terminal
     — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release,
     marketplace refresh, rollback procedures
-  status: draft
+  status: active
   version: V1.0
   created: '2026-04-13'
-  updated: '2026-04-13'
+  updated: '2026-04-14'
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   tags:
@@ -671,13 +707,47 @@ documents:
   - ops
   path: docs/release-v0-7-2-runbook-20260413-V1.0.md
   infrastructure_exempt: false
+- filename: release-notes-20260414-V3.0.md
+  title: v0.7.3 feature release (next_review field, review CLI, hook hardening)
+  description: Release notes for v0.7.3 — adds optional per-document review deadlines
+    with new `review` CLI subcommand and Audit-page KPI card, hardens pre-commit hook
+    registry-sync grep. Backwards compatible; test suite 681 → 743.
+  status: draft
+  version: V3.0
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - documentation
+  - changelog
+  path: docs/release-notes-20260414-V3.0.md
+  infrastructure_exempt: false
+- filename: release-v0-7-3-runbook-20260414-V1.0.md
+  title: v0.7.3 release runbook (host-terminal execution steps)
+  description: Step-by-step runbook for executing the v0.7.3 release in the host terminal
+    — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release,
+    marketplace refresh, rollback procedures
+  status: draft
+  version: V1.0
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - runbook
+  - ops
+  path: docs/release-v0-7-3-runbook-20260414-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 27
-  active: 18
+  total_documents: 31
+  active: 20
   draft: 4
-  superseded: 5
+  superseded: 7
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0
@@ -694,4 +764,4 @@ registry_meta:
   locations_in_cowork: 10
   locations_disk_only: 0
   locations_chat_only: 0
-  last_updated: '2026-04-13'
+  last_updated: '2026-04-14'

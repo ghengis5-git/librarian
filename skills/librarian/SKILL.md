@@ -13,7 +13,7 @@ description: >
   naming, updates the registry, and checks cross-references before the document
   is finalized.
 metadata:
-  version: "0.7.2"
+  version: "0.7.3"
 ---
 
 # Document Librarian
