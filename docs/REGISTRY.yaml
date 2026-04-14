@@ -1,7 +1,7 @@
 project_config:
   project_name: Librarian
   evidence_signing: ssh
-  enforce_naming_hook: true  # opted into naming-enforcement hook (middle-option, Session 47)
+  enforce_naming_hook: true
   naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
   naming_rules:
     separator: '-'
@@ -507,10 +507,9 @@ documents:
   - infrastructure
 - filename: phase-f-plugin-and-release-20260413-V1.1.md
   title: Phase F — Plugin Packaging + Open-Source Release
-  description: Corrected Phase F plan. Replaces V1.0 doc-librarian naming with
-    librarian throughout; treats PyPI namespace as unresolved open question;
-    updates session plan and effort table to reflect actual progress through
-    Session 45.
+  description: Corrected Phase F plan. Replaces V1.0 doc-librarian naming with librarian
+    throughout; treats PyPI namespace as unresolved open question; updates session
+    plan and effort table to reflect actual progress through Session 45.
   format: md
   version: '1.1'
   date: '2026-04-13'
@@ -533,10 +532,10 @@ documents:
   - infrastructure
 - filename: phase-f-publish-checklist-20260413-V1.0.md
   title: Phase F — Publish Checklist
-  description: Executable runbook for the host-terminal Phase F publish session.
-    Steps F.a–F.h cover filesystem cleanup, manifest/evidence refresh, GitHub repo
-    creation, PyPI publish, marketplace submission, and rollback. Captures the
-    Session 47 blocker-resolution summary.
+  description: Executable runbook for the host-terminal Phase F publish session. Steps
+    F.a–F.h cover filesystem cleanup, manifest/evidence refresh, GitHub repo creation,
+    PyPI publish, marketplace submission, and rollback. Captures the Session 47 blocker-resolution
+    summary.
   format: md
   version: '1.0'
   date: '2026-04-13'
@@ -576,13 +575,59 @@ documents:
   - vulnerability
   path: docs/bug-bounty-report-20260413-V1.0.md
   infrastructure_exempt: false
+- filename: example-manifest-20260411-V1.0.json
+  title: Example manifest output
+  description: Demonstrates the JSON schema librarian generates for a portable manifest
+  status: active
+  version: '1.0'
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - example
+  - documentation
+  path: examples/manifests/example-manifest-20260411-V1.0.json
+  infrastructure_exempt: false
+- filename: librarian-manifest-20260413-V1.0.json
+  title: Librarian manifest 20260413
+  description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-publish
+    seal
+  status: active
+  version: '1.0'
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - manifest
+  - seal
+  - audit
+  path: docs/librarian-manifest-20260413-V1.0.json
+  infrastructure_exempt: false
+- filename: librarian-evidence-20260413-V1.0.json
+  title: Librarian evidence pack 20260413
+  description: Tamper-evident IP evidence pack wrapping the manifest with signed git
+    commit
+  status: active
+  version: '1.0'
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - evidence
+  - seal
+  - audit
+  path: docs/librarian-evidence-20260413-V1.0.json
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 19
-  active: 14
-  draft: 3
-  superseded: 2
+  total_documents: 24
+  active: 17
+  draft: 4
+  superseded: 3
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0

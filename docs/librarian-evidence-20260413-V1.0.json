@@ -1,0 +1,967 @@
+{
+  "evidence_pack": {
+    "generated_at": "2026-04-14T01:41:34Z",
+    "generator_version": "0.7.0",
+    "pack_id": "2026-04-14T01:41:34Z",
+    "project_name": "Librarian",
+    "registry_path": "docs/REGISTRY.yaml",
+    "repo_root": "/Users/chriskahnm5/projects/librarian"
+  },
+  "git_anchor": {
+    "branch": "main",
+    "commit_hash": "8ae7dede4dee74b1518dd9348c096da6cdb5eab3",
+    "dirty": true
+  },
+  "manifest": {
+    "dependency_edges": [
+      {
+        "sections": [
+          "Getting Started — Adopting the Librarian in a New Project"
+        ],
+        "source": "README.md",
+        "status": "pending",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [],
+        "source": "librarian-buildout-plan-20260411-V1.1.md",
+        "status": "supersedes",
+        "target": "librarian-buildout-plan-20260411-V1.0.md"
+      },
+      {
+        "sections": [],
+        "source": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "supersedes",
+        "target": "librarian-buildout-plan-20260411-V1.1.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.0.md",
+        "status": "supplement",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.1.md",
+        "status": "supplement",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.1.md",
+        "status": "supersedes",
+        "target": "phase-f-plugin-and-release-20260413-V1.0.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-publish-checklist-20260413-V1.0.md",
+        "status": "supplement",
+        "target": "phase-f-plugin-and-release-20260413-V1.1.md"
+      },
+      {
+        "sections": [
+          "Package structure — needs update for templates module"
+        ],
+        "source": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "status": "pending",
+        "target": "librarian-architecture-20260411-V1.0.md"
+      },
+      {
+        "sections": [
+          "Execution plan — Phase G extends the A-F roadmap"
+        ],
+        "source": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "status": "pending",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "project_config.example.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.full.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.minimal.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.schema.yaml",
+        "status": "supplement",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [],
+        "source": "registry.schema.yaml",
+        "status": "supplement",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [
+          "Security model and threat boundaries"
+        ],
+        "source": "security-review-20260413-V1.0.md",
+        "status": "pending",
+        "target": "librarian-architecture-20260411-V1.0.md"
+      }
+    ],
+    "file_hashes": [
+      {
+        "exists": true,
+        "filename": "README.md",
+        "sha256": "dd76e8dca683795dded05c0026c3846fb6e7d8cc3fec4a6860e60049ce5cfdda",
+        "size_bytes": 5872
+      },
+      {
+        "exists": true,
+        "filename": "SKILL.md",
+        "sha256": "8ffdce4a53f11b9c32ce014b753e4d65523e4f87ae9264efdb7b332b909b449f",
+        "size_bytes": 32690
+      },
+      {
+        "exists": true,
+        "filename": "bug-bounty-report-20260413-V1.0.md",
+        "sha256": "a7654d9f6cf5d5d3bf937142dc309dc741646384d751679613d14e4eb2f4c91a",
+        "size_bytes": 10499
+      },
+      {
+        "exists": true,
+        "filename": "example-manifest-20260411-V1.0.json",
+        "sha256": "8f6a2248c173f6295270436f238b16c68f1a5cbea3561859f9782e1896d88165",
+        "size_bytes": 1743
+      },
+      {
+        "exists": true,
+        "filename": "librarian-architecture-20260411-V1.0.md",
+        "sha256": "4468ccd114c18c9d69557ba35f80ddc0d63886beeb4db0e948c8762521693047",
+        "size_bytes": 9229
+      },
+      {
+        "exists": true,
+        "filename": "librarian-buildout-plan-20260411-V1.0.md",
+        "sha256": "7512decc4824f7a7514c8bc5d9d0861dc0aac1747b2bbc5cdbeb54769638efc3",
+        "size_bytes": 19955
+      },
+      {
+        "exists": true,
+        "filename": "librarian-buildout-plan-20260411-V1.1.md",
+        "sha256": "fd51be57d9eaa7700e68d692dc3e77e3ea585c3bde1ccc901ead830d2aeeb3ad",
+        "size_bytes": 21338
+      },
+      {
+        "exists": true,
+        "filename": "librarian-buildout-plan-20260411-V1.2.md",
+        "sha256": "e43e0682bf84c862dcfca4559cb26e8c27358d16a07c8ffe1758886cdffeabdb",
+        "size_bytes": 23580
+      },
+      {
+        "exists": true,
+        "filename": "librarian-dashboard-20260412-V3.0.html",
+        "sha256": "8cde6bc0a3719e18590bc02fc20fa9e269716e94a15b99ef21b12bc028a24913",
+        "size_bytes": 510979
+      },
+      {
+        "exists": true,
+        "filename": "librarian-manifest-20260412-V1.0.json",
+        "sha256": "ecd81d5e3ea6b257a0deb9c5124bd6f968db0c09286da92d7cadf790328cca87",
+        "size_bytes": 16761
+      },
+      {
+        "exists": true,
+        "filename": "manifest.schema.json",
+        "sha256": "50e3a3d1e37a9ba83e89a5c71cfebe4cabee67f469926b7f504c94458860a76d",
+        "size_bytes": 6038
+      },
+      {
+        "exists": true,
+        "filename": "phase-d-implementation-plan-20260412-V1.0.md",
+        "sha256": "67d42a12fd383b401b452abeec702715ef675ad8f7d6de5a866768640c1ccd67",
+        "size_bytes": 6381
+      },
+      {
+        "exists": true,
+        "filename": "phase-f-plugin-and-release-20260413-V1.0.md",
+        "sha256": "23b5ac5279a59946156e2be3600606f74adfd85335a9283fc3ef32f7d824db87",
+        "size_bytes": 9482
+      },
+      {
+        "exists": true,
+        "filename": "phase-f-plugin-and-release-20260413-V1.1.md",
+        "sha256": "21f25f28bb14edf7b8414cb12875d4c92d80b0146f339fa97154de5b8a1dd756",
+        "size_bytes": 12777
+      },
+      {
+        "exists": true,
+        "filename": "phase-f-publish-checklist-20260413-V1.0.md",
+        "sha256": "c884bd08df8da41ba4ce4cf763f61bc6fdc4d3e2762750e3c039e7e0de48ea5a",
+        "size_bytes": 8371
+      },
+      {
+        "exists": true,
+        "filename": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "sha256": "1c449715553bbd21b9126d4f6731cf4a210fec639ed0f7bf1a9adc09c3f726e0",
+        "size_bytes": 31667
+      },
+      {
+        "exists": true,
+        "filename": "project_config.example.yaml",
+        "sha256": "27ba6f3d55d440327d67d8aff13d65ffd4de982392b992e882ef223109faca05",
+        "size_bytes": 2025
+      },
+      {
+        "exists": true,
+        "filename": "project_config.full.yaml",
+        "sha256": "d3491f06a77ba7625df7d01689c935831fbce2bca869a8cba85182d234d6bb2f",
+        "size_bytes": 2113
+      },
+      {
+        "exists": true,
+        "filename": "project_config.minimal.yaml",
+        "sha256": "d2376bae1ac5a73da70a5372e11d5ca10c147f67a5cddb3acee9ce0e2a2fd2b2",
+        "size_bytes": 204
+      },
+      {
+        "exists": true,
+        "filename": "project_config.schema.yaml",
+        "sha256": "3f5553fe056f4072bbdce42e30d3fd91741e3a78cf4150c241d4d7e7ee223ab8",
+        "size_bytes": 5329
+      },
+      {
+        "exists": true,
+        "filename": "registry.schema.yaml",
+        "sha256": "2e3f09208239958e8232b74328f2d6131757dc1cf5338a45a09b96a968091085",
+        "size_bytes": 7101
+      },
+      {
+        "exists": true,
+        "filename": "security-review-20260413-V1.0.md",
+        "sha256": "99138e935b04fc3a7b171175ba5fba94a0ae6508ab15d8e5d32d59b742472c03",
+        "size_bytes": 13807
+      }
+    ],
+    "manifest_sha256": "1e693fcad17ceb1e22dbeddeced966c8e7fe6a7c7b37ea3aa90f630d246842d6",
+    "meta": {
+      "generated_at": "2026-04-14T01:41:34Z",
+      "generator_version": "0.2.0",
+      "registry_path": "docs/REGISTRY.yaml",
+      "repo_root": "/Users/chriskahnm5/projects/librarian"
+    },
+    "registry_snapshot": {
+      "documents": [
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Canonical skill definition for the project-agnostic document librarian. Includes Getting Started section and generic project_config schema.",
+          "exemption_reason": "Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version suffix not applied.",
+          "filename": "SKILL.md",
+          "format": "md",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "skill/SKILL.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "governance",
+            "skill-definition",
+            "meta",
+            "phase-a"
+          ],
+          "title": "Document Librarian Skill Definition",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "SKILL.md",
+              "note": "README should link to the Getting Started section once written",
+              "sections": [
+                "Getting Started — Adopting the Librarian in a New Project"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-11",
+          "description": "Top-level project README. Overview, installation instructions, and usage examples for the standalone librarian.",
+          "exemption_reason": "Filename is hardcoded by git/GitHub conventions (README.md). Date-version suffix not applied.",
+          "filename": "README.md",
+          "format": "md",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "README.md",
+          "status": "draft",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "infrastructure",
+            "meta",
+            "phase-a"
+          ],
+          "title": "Project README",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "JSON Schema (draft 2020-12) defining the output format of `python -m librarian manifest`. Covers all three sub-manifests: registry snapshot, SHA-256 file hashes, and dependency graph edges.",
+          "exemption_reason": "Schema filenames follow JSON Schema conventions. Date-version suffix not applied.",
+          "filename": "manifest.schema.json",
+          "format": "json",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/manifest.schema.json",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Manifest JSON Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "YAML schema documenting every field in the project_config block of REGISTRY.yaml. Authoritative reference for projects adopting the librarian.",
+          "exemption_reason": "Schema filenames follow descriptive conventions. Date-version suffix not applied.",
+          "filename": "project_config.schema.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/project_config.schema.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "SKILL.md"
+          ],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Project Config Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "YAML schema documenting the full structure of REGISTRY.yaml including project_config, documents array, and registry_meta.",
+          "exemption_reason": "Schema filenames follow descriptive conventions. Date-version suffix not applied.",
+          "filename": "registry.schema.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/registry.schema.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "SKILL.md"
+          ],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Registry Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Bare-minimum project_config with only the required field (project_name). All other values fall back to built-in defaults.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.minimal.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.minimal.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Minimal Config Example",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Complete project_config with every available field and explanatory comments. Copy-paste starting point for new projects.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.full.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.full.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Full Config Example",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Real-world project_config example showing a production configuration with custom classification levels, extended tags taxonomy, and multi-prefix git commit conventions.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.example.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.example.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Example Config Reference",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "System architecture document covering package structure, module responsibilities, data flow, SHA-256 design decisions, CLI design, consumer integration, and test architecture as of v0.2.0.",
+          "filename": "librarian-architecture-20260411-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "docs/librarian-architecture-20260411-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "architecture",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Librarian Architecture",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-12",
+          "description": "Six-phase roadmap (A-F) to evolve librarian into a standalone open-source tool",
+          "filename": "librarian-buildout-plan-20260411-V1.2.md",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-buildout-plan-20260411-V1.2.md",
+          "status": "active",
+          "supersedes": "librarian-buildout-plan-20260411-V1.1.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan",
+          "updated": "2026-04-12",
+          "version": "V1.2"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-11",
+          "description": "Interim buildout plan. Superseded by V1.2.",
+          "filename": "librarian-buildout-plan-20260411-V1.1.md",
+          "format": "md",
+          "path": "docs/librarian-buildout-plan-20260411-V1.1.md",
+          "status": "superseded",
+          "superseded_by": "librarian-buildout-plan-20260411-V1.2.md",
+          "supersedes": "librarian-buildout-plan-20260411-V1.0.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan (V1.1)",
+          "version": "1.1"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-11",
+          "description": "Original buildout plan. Superseded by V1.1.",
+          "filename": "librarian-buildout-plan-20260411-V1.0.md",
+          "format": "md",
+          "path": "docs/librarian-buildout-plan-20260411-V1.0.md",
+          "status": "superseded",
+          "superseded_by": "librarian-buildout-plan-20260411-V1.1.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan (V1.0)",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Interactive HTML dashboard with search, dependency graph, filter chips, and timeline. Generated from manifest.",
+          "exemption_reason": "Generated dashboard artifact. Versioned by output, not by naming convention.",
+          "filename": "librarian-dashboard-20260412-V3.0.html",
+          "format": "html",
+          "infrastructure_exempt": true,
+          "path": "docs/diagrams/librarian-dashboard-20260412-V3.0.html",
+          "status": "active",
+          "tags": [
+            "dashboard",
+            "phase-d"
+          ],
+          "title": "Librarian Interactive Dashboard",
+          "version": "3.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Implementation plan for the interactive dashboard (Phase D).",
+          "filename": "phase-d-implementation-plan-20260412-V1.0.md",
+          "format": "md",
+          "path": "docs/phase-d-implementation-plan-20260412-V1.0.md",
+          "status": "active",
+          "tags": [
+            "planning",
+            "phase-d"
+          ],
+          "title": "Phase D Implementation Plan",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Example manifest generated from the librarian's own registry. Demonstrates the manifest format with SHA-256 hashes and dependency graph.",
+          "exemption_reason": "Example manifest filenames are descriptive identifiers.",
+          "filename": "librarian-manifest-20260412-V1.0.json",
+          "format": "json",
+          "infrastructure_exempt": true,
+          "path": "examples/manifests/librarian-manifest-20260412-V1.0.json",
+          "status": "active",
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Librarian Example Manifest",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "librarian-architecture-20260411-V1.0.md",
+              "note": "Architecture doc needs a templates section after G.1 implementation",
+              "sections": [
+                "Package structure — needs update for templates module"
+              ],
+              "status": "pending"
+            },
+            {
+              "doc": "librarian-buildout-plan-20260411-V1.2.md",
+              "note": "Buildout plan should reference Phase G once implementation begins",
+              "sections": [
+                "Execution plan — Phase G extends the A-F roadmap"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-12",
+          "description": "Phase plan for adding document scaffolding templates (per preset) and a deterministic recommendations engine that detects document gaps in a project registry.",
+          "filename": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": "librarian-buildout-plan-20260411-V1.2.md",
+          "path": "docs/phase-g-templates-and-recommendations-20260412-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "planning",
+            "governance",
+            "phase-g"
+          ],
+          "title": "Phase G — Document Templates & Recommendations Engine",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "librarian-architecture-20260411-V1.0.md",
+              "note": "Architecture doc should reference security review findings",
+              "sections": [
+                "Security model and threat boundaries"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-13",
+          "description": "Comprehensive security audit of the full Librarian codebase. Covers XSS in generated HTML, evidence integrity limitations, path traversal, template engine safety, YAML deserialization, and operation log integrity. Includes prioritized remediation plan.",
+          "filename": "security-review-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "docs/security-review-20260413-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "governance",
+            "report"
+          ],
+          "title": "Security Review — Librarian v0.7.0",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Scope plan for Claude Code plugin, PyPI package, and GitHub public release",
+          "filename": "phase-f-plugin-and-release-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "superseded",
+          "superseded_by": "phase-f-plugin-and-release-20260413-V1.1.md",
+          "supersedes": null,
+          "supplements": [
+            "librarian-buildout-plan-20260411-V1.2.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Plugin Packaging + Open-Source Release",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Corrected Phase F plan. Replaces V1.0 doc-librarian naming with librarian throughout; treats PyPI namespace as unresolved open question; updates session plan and effort table to reflect actual progress through Session 45.",
+          "filename": "phase-f-plugin-and-release-20260413-V1.1.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "draft",
+          "superseded_by": null,
+          "supersedes": "phase-f-plugin-and-release-20260413-V1.0.md",
+          "supplements": [
+            "librarian-buildout-plan-20260411-V1.2.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Plugin Packaging + Open-Source Release",
+          "version": "1.1"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Executable runbook for the host-terminal Phase F publish session. Steps F.a–F.h cover filesystem cleanup, manifest/evidence refresh, GitHub repo creation, PyPI publish, marketplace submission, and rollback. Captures the Session 47 blocker-resolution summary.",
+          "filename": "phase-f-publish-checklist-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "draft",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "phase-f-plugin-and-release-20260413-V1.1.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Publish Checklist",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Structured vulnerability disclosure report for bug bounty submissions. Follows HackerOne/Bugcrowd best practices with CVSS 3.1 scoring, CWE classification, clear reproduction steps, proof of concept, and impact assessment. Designed for researcher submissions to maximize triage speed and bounty outcomes.",
+          "filename": "bug-bounty-report-20260413-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/bug-bounty-report-20260413-V1.0.md",
+          "status": "draft",
+          "tags": [
+            "security",
+            "bug-bounty",
+            "disclosure",
+            "vulnerability"
+          ],
+          "title": "SSRF-in-image-proxy",
+          "updated": "2026-04-13",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Demonstrates the JSON schema librarian generates for a portable manifest",
+          "filename": "example-manifest-20260411-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "examples/manifests/example-manifest-20260411-V1.0.json",
+          "status": "active",
+          "tags": [
+            "example",
+            "documentation"
+          ],
+          "title": "Example manifest output",
+          "updated": "2026-04-13",
+          "version": "1.0"
+        }
+      ],
+      "project_config": {
+        "archive_path": "docs/archive/",
+        "classification_levels": [
+          "PERSONAL / INTERNAL USE ONLY",
+          "CONFIDENTIAL",
+          "PUBLIC"
+        ],
+        "default_author": "Chris Kahn",
+        "default_classification": "PERSONAL / INTERNAL USE ONLY",
+        "diagrams_path": "docs/diagrams/",
+        "docs_path": "docs/",
+        "enforce_naming_hook": true,
+        "evidence_signing": "ssh",
+        "git_author_email": "you@example.com",
+        "git_author_name": "Your Name",
+        "git_commit_prefixes": {
+          "docs": "docs:",
+          "infra": "infra:",
+          "refactor": "refactor:",
+          "registry": "registry:",
+          "skill": "skill:"
+        },
+        "naming_convention": "descriptive-name-YYYYMMDD-VX.Y.ext",
+        "naming_rules": {
+          "case": "lowercase",
+          "forbidden_words": [
+            "file",
+            "download",
+            "output",
+            "document"
+          ],
+          "infrastructure_exempt": [
+            "SKILL.md",
+            "REGISTRY.yaml",
+            "CLAUDE.md",
+            "README.md",
+            ".gitignore",
+            ".python-version",
+            "manifest.schema.json",
+            "project_config.schema.yaml",
+            "registry.schema.yaml",
+            "project_config.minimal.yaml",
+            "project_config.full.yaml",
+            "project_config.example.yaml"
+          ],
+          "separator": "-"
+        },
+        "operator_path": "docs/phase-specs/",
+        "os_target": "darwin",
+        "project_name": "Librarian",
+        "staleness_threshold_days": 90,
+        "tags_taxonomy": {
+          "domain": [
+            "governance",
+            "infrastructure",
+            "architecture",
+            "operational",
+            "meta"
+          ],
+          "phase": [
+            "phase-a",
+            "phase-b",
+            "phase-c",
+            "phase-d",
+            "phase-e",
+            "phase-f",
+            "phase-g"
+          ],
+          "status_indicators": [
+            "needs-update",
+            "pending-review",
+            "blocked"
+          ],
+          "type": [
+            "skill-definition",
+            "technical-spec",
+            "schema",
+            "tool",
+            "example",
+            "project-plan",
+            "report"
+          ]
+        },
+        "tracked_dirs": [
+          "docs/",
+          "skill/",
+          "schema/",
+          "examples/"
+        ]
+      },
+      "registry_meta": {
+        "active": 15,
+        "archived": 0,
+        "draft": 4,
+        "in_docs_archive": 0,
+        "last_audit": "2026-04-12",
+        "last_audit_note": "2026-04-12: Registered all unregistered files (superseded buildout plans, dashboard, phase-d plan, example manifest). Created README.md. Renamed phase-d-implementation-plan.md to follow naming convention. Removed all references to former consumer project.",
+        "last_updated": "2026-04-13",
+        "locations_chat_only": 0,
+        "locations_disk_only": 0,
+        "locations_in_chat": 0,
+        "locations_in_cowork": 10,
+        "naming_violation_details": [],
+        "naming_violations": 0,
+        "not_in_repo": 0,
+        "pending_cross_reference_updates": 0,
+        "superseded": 3,
+        "total_documents": 22,
+        "total_on_disk": 10,
+        "version_convention_note": "This project was created 2026-04-11 with the canonical dot form (VX.Y) from day one. No legacy transition rules apply."
+      }
+    },
+    "summary": {
+      "total_edges": 15,
+      "total_hashed": 22,
+      "total_on_disk": 22,
+      "total_registered": 22
+    }
+  },
+  "seal": {
+    "algorithm": "SHA-256",
+    "manifest_json_sha256": "47070e0020b3383d3c449861e859e83e6e8a5bfadb6d3933f090832326a8e201",
+    "note": "Computed over the deterministic JSON serialization of the manifest (sorted keys). Re-generate the manifest and re-hash to verify."
+  },
+  "signature": {
+    "commit": "8ae7dede4dee74b1518dd9348c096da6cdb5eab3",
+    "key_id": "SHA256:QcSpZixPoF0dAY9eNOsOilRqwpmKpxxAGShN5XG0JV4",
+    "signed": true,
+    "signer": "ghengis5@gmail.com",
+    "status": "G",
+    "status_description": "good signature",
+    "trust_model": "fully"
+  }
+}
