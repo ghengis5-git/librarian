@@ -1,0 +1,27 @@
+{
+  "name": "librarian-marketplace",
+  "owner": {
+    "name": "Chris Kahn",
+    "email": "ghengis5@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "librarian",
+      "source": {
+        "source": "github",
+        "repo": "ghengis5-git/librarian"
+      },
+      "description": "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests.",
+      "version": "0.7.1",
+      "category": "productivity",
+      "tags": [
+        "documents",
+        "governance",
+        "versioning",
+        "audit",
+        "registry",
+        "naming-conventions"
+      ]
+    }
+  ]
+}

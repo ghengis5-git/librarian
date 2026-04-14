@@ -221,6 +221,17 @@ All items resolved in Session 43. Items 7–8 were scoped and implemented as:
 - **Oplog hash chaining**: `chain=True` flag on `append()`/`log_operation()`, `verify_chain()` function, `_GENESIS_SENTINEL` for first entry, backward-compatible with v1 logs (no `prev_hash` field when chaining is off).
 - **Evidence signing**: `evidence_signing` field in `project_config` (off/gpg/ssh). When enabled, captures git commit signature via `git log --show-signature`. Fails with `SigningError` if git signing is not configured or HEAD is unsigned. No network calls — anchors trust to the user's GPG/SSH key.
 
+### Session 46 addenda (residual LOW items closed)
+
+Two of three LOW-severity residuals noted in CLAUDE.md §Next Steps were closed in Session 46:
+
+| Item | File | Fix |
+|------|------|-----|
+| Template for-loop iterator coverage | `librarian/templates/_base.py` | `for`-loop now accepts any iterable via `list(iterable)` unpacking; rejects str/bytes to prevent accidental character iteration. Dict keys, sets, generators now work as documented. |
+| Template engine output size limit | `librarian/templates/_base.py` | New `_MAX_RENDER_BYTES = 4 MB` cap; `render_template()` raises `TemplateRenderError` when output exceeds cap. Prevents DoS via hostile template producing unbounded output. |
+
+Remaining LOW residual: **oplog chain is detect-only** (the hash chain surfaces tampering but does not prevent write-then-rewrite by an attacker with file system access). Converting to prevention-mode requires either an append-only filesystem contract, an external anchor (e.g., periodic commit to a public Merkle log), or an oplog-format schema change — all of which require explicit design approval per CLAUDE.md §When to Stop and Ask.
+
 ---
 
 ## Threat Model Summary

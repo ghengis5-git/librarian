@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "librarian-2026"
-version = "0.7.0"
+version = "0.7.1"
 description = "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests."
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -36,9 +36,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ghengis5/librarian"
-Repository = "https://github.com/ghengis5/librarian"
-Issues = "https://github.com/ghengis5/librarian/issues"
+Homepage = "https://github.com/ghengis5-git/librarian"
+Repository = "https://github.com/ghengis5-git/librarian"
+Issues = "https://github.com/ghengis5-git/librarian/issues"
 
 [project.scripts]
 librarian = "librarian.__main__:main"

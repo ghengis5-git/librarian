@@ -169,7 +169,7 @@ Commands:
 
 ## Current State
 **Version:** 0.7.1
-**Tests:** 673/673 PASS
+**Tests:** 682/682 PASS (673 pre-Session-46 + 9 new template-engine hardening tests — iterator coverage 5, output size guard 3, count sanity 1; run tests in host terminal to confirm)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -234,7 +234,7 @@ Commands:
 
 ### Session 35 Deliverables
 - **Phase G plan:** `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` — document templates and recommendations engine
-- **PRISM scrub completed** (Session 34 carryover): All references to former consumer project removed across entire codebase
+- **Former-project scrub completed** (Session 34 carryover): All references to the former consumer project removed across entire codebase (re-verified Session 47)
 - **Registry cleanup** (Session 34 carryover): 17 documents registered (14 active, 1 draft, 2 superseded), 0 naming violations, 0 pending cross-refs
 - **Pre-commit hook hardened**: Removed `py` from DOC_EXTENSIONS, added source dirs to SKIP_DIRS, warnings pass in non-interactive mode
 - **Audit false positive fix**: `audit.py` now checks registered `path` for files outside `tracked_dirs`
@@ -371,6 +371,31 @@ Commands:
   - Oplog chain integrity verified (detect-only by design, not prevention)
 - **40 new tests** (673 total): Manage page (16), Audit page (17), Folders Only fix (1), script breakout (3), path traversal (3)
 
+### Session 46 Deliverables (Phase F kickoff + security residuals)
+- **Phase F plan corrected to V1.1** (`docs/phase-f-plugin-and-release-20260413-V1.1.md`): `doc-librarian` → `librarian` project name corrected throughout; PyPI namespace treated as unresolved open question (current pyproject uses `librarian-2026` fallback); session plan renumbered to 46/47; V1.0 marked superseded with banner and registry entry updated (`status: superseded`, `superseded_by: V1.1`).
+- **Version bumps**: `librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json` → 0.7.1.
+- **Marketplace scaffolding**: `marketplace.json` created at repo root — self-contained marketplace manifest for `librarian@librarian-marketplace` install path; ready for separate-repo or same-repo submission.
+- **Registry updated**: `phase-f-plugin-and-release-20260413-V1.1.md` registered as draft; V1.0 moved to superseded with forward pointer.
+- **Scrub partial**: `skills/librarian/` created as rename target. Cowork sandbox blocks `rm` on tracked files so `skills/doc-librarian/` coexists temporarily — must be removed in host terminal during Session 47 publish prep. Other `doc-librarian` residuals catalogued in V1.1 §Scrub pass (legacy dashboard filenames under `dashboard/legacy/`, one example manifest).
+- **README updated**: test count 578 → 673.
+- **Security residuals addressed** (2 of 3 remaining LOW items from Session 45):
+  - **Template for-loop iterator coverage** (`librarian/templates/_base.py`): now accepts any iterable (set, dict_keys, generators, custom iterables) via `list(iterable)` unpacking; rejects str/bytes to avoid accidental character-iteration. Empty/falsy iterables still skip cleanly.
+  - **Template engine output size guard** (`librarian/templates/_base.py`): new `_MAX_RENDER_BYTES = 4 MB` cap and `TemplateRenderError` exception raised when `render_template()` output exceeds cap. Prevents resource exhaustion from hostile templates. Exported from `librarian.templates` and top-level `librarian` package.
+  - **Remaining**: oplog chain is still detect-only; changing it to prevention-mode requires oplog-format approval (CLAUDE.md §When to Stop and Ask).
+- **9 new tests** (682 total; run pytest in host to confirm): for-loop over set/dict_keys/generator (3), for-loop rejects str/bytes (2), output size under limit (1), over limit raises (1), `_MAX_RENDER_BYTES` sanity (1), plus the existing `test_empty_list` still passes under the new logic.
+- **Open Phase F blockers** (need user decision before Session 47 publish): (1) PyPI namespace (`librarian-docs` / keep `librarian-2026` / new name); (2) git history strategy (squash vs. full); (3) GitHub org vs. personal; (4) hook ship-enabled vs. opt-in; (5) IP clearance.
+
+### Session 47 Deliverables (Phase F blocker resolution — scrub, hook, decisions)
+- **Former-project (PRISM) scrub — verified clean**: grep for `prism` case-insensitive across entire repo → **0 matches**. Residuals cleaned: (1) polluted `examples/manifests/example-manifest-20260411-V1.0.json` (216 PRISM hits) replaced with generic minimal example manifest; (2) `dashboard/legacy/*.{html,jsx}` (88 combined hits) replaced with tombstone stubs pointing at the active `librarian-dashboard-template-20260412-V3.0.html`; (3) Phase F V1.0 + V1.1 plans cleaned — 10 PRISM mentions rewritten as "former-project references"; (4) CLAUDE.md Session 35 deliverable line rephrased. Sandbox blocks `rm` on tracked files, so `dashboard/legacy/*` stubs remain in tree and must be removed in host terminal before publish.
+- **Git log reviewed** (21 commits on main): all messages use conventional prefixes (`feat:`/`fix:`/`docs:`/`infra:`/`registry:`), no WIP, no leaked secrets, no profanity. **Recommendation: keep full history** (no squash). One commit message `1dda1ec docs: remove all PRISM references` is itself a self-referential mention but is historically accurate and fine to leave.
+- **Hook middle-option implemented** (ship disabled + project-gated opt-in):
+  - `hooks/hooks.json` — hook key remains `_PreToolUse` (shipped disabled). Prompt rewritten to: (a) walk up from the target file to find nearest `REGISTRY.yaml`, (b) read `project_config.enforce_naming_hook`, (c) approve unconditionally if the flag is absent or false, (d) only then validate the filename against the naming convention. Users who globally enable the hook (`_PreToolUse` → `PreToolUse`) still won't get enforcement on projects that haven't opted in.
+  - `cmd_init` — added interactive prompt ("Enable naming-enforcement hook for this project? [y/N]"), plus non-interactive `--enable-hook` and `--no-hook` flags. Writes `project_config.enforce_naming_hook: <bool>` into the generated REGISTRY.yaml. Post-init status line reports hook state and the `_PreToolUse` → `PreToolUse` rename needed to activate globally.
+  - `skills/librarian/SKILL.md` — new §First-Run Setup section explaining the hook opt-in; metadata version bumped 0.7.0 → 0.7.1. End-to-end sanity check passed: `python -m librarian init --no-hook` writes `enforce_naming_hook: false` and prints the disabled status message.
+- **IP clearance — resolved**: user confirmed no patents being filed on librarian. Removed as a publish blocker.
+- **Remaining Phase F blockers**: (1) PyPI namespace — user kept `librarian-2026` (already in `pyproject.toml`); (2) git history — keep full (recommended above, awaiting confirmation); (3) GitHub org vs. personal — open.
+- **Host-terminal cleanup still required before publish**: (a) `rm -rf dashboard/legacy/` (stubs present but tracked); (b) `rm -rf skills/doc-librarian/` (coexists with `skills/librarian/`); (c) `rm -rf _site*` scratch dirs; (d) run `pytest` to confirm 682/682 (sandbox has no pytest).
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -381,11 +406,11 @@ Commands:
    - ~~G.3: Recommendations engine~~ ✅ (Session 41)
    - ~~G.4: Templates catalog page, site/dashboard integration, custom templates, settings browser, docs~~ ✅ (Session 42/42b)
    - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
-2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution
+2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution. Plan: `docs/phase-f-plugin-and-release-20260413-V1.1.md` (V1.0 superseded — corrected `doc-librarian` → `librarian` naming throughout). Open blocker: PyPI namespace decision.
 3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI on Audit page
 4. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
 5. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
-6. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention); template for-loop only iterates list/tuple (silently drops dict_keys/set); no output size limit on template engine
+6. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention) — requires oplog-format approval to change. Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`).
 
 ---
 
@@ -398,7 +423,12 @@ The Phase G plan (templates + recommendations) is at `docs/phase-g-templates-and
 ## Document Governance — Self-Governed
 The librarian governs its own docs. `docs/REGISTRY.yaml` is the registry.
 The `project_config` block in that file contains the librarian-specific rules.
-The `doc-librarian` skill applies to this repo too.
+The `librarian` skill applies to this repo too.
+
+**Project name:** `librarian` (renamed from working name `doc-librarian` in buildout plan V1.1,
+2026-04-11). Any doc or code still referencing `doc-librarian` as the *project* name is stale
+and should be updated during the Phase F scrub pass. The skill directory `skills/doc-librarian/`
+is a known residual and will be renamed to `skills/librarian/` before publish.
 
 ### Naming Convention
 `descriptive-name-YYYYMMDD-VX.Y.ext`
@@ -410,9 +440,13 @@ The `doc-librarian` skill applies to this repo too.
 
 ## Git Identity
 ```bash
-git -c user.name="Chris Kahn" -c user.email="ghengis5@gmail.com" commit ...
+git -c user.name="Chris Kahn" \
+    -c user.email="272935920+ghengis5-git@users.noreply.github.com" \
+    commit ...
 ```
-**Never write to git config.** Always pass identity via `-c` flags.
+**GitHub account:** `ghengis5-git` (URL slug). Verified emails on the account: `ghengis5@gmail.com`, `research+ai@brokenwire.org`. Both are marked Private; **public commits must use the noreply address** `272935920+ghengis5-git@users.noreply.github.com` so the gmail/brokenwire addresses never enter the public git log.
+
+Once Phase F publish prep runs the history rewrite (see `docs/phase-f-publish-checklist-20260413-V1.0.md` §F.a1), the repo's local config is set to the noreply email and the `-c` override is no longer strictly required, but passing it remains a safe belt-and-suspenders default.
 **SSH commit signing** is configured locally (`gpg.format=ssh`, `user.signingkey=~/.ssh/id_ed25519`).
 Commits should be signed automatically. If not, pass `-S` flag explicitly.
 

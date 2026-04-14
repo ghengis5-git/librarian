@@ -1,6 +1,7 @@
 project_config:
   project_name: Librarian
   evidence_signing: ssh
+  enforce_naming_hook: true  # opted into naming-enforcement hook (middle-option, Session 47)
   naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
   naming_rules:
     separator: '-'
@@ -487,6 +488,32 @@ documents:
   format: md
   version: '1.0'
   date: '2026-04-13'
+  status: superseded
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - librarian-buildout-plan-20260411-V1.2.md
+  cross_references: []
+  supersedes: null
+  superseded_by: phase-f-plugin-and-release-20260413-V1.1.md
+  infrastructure_exempt: false
+  tags:
+  - planning
+  - infrastructure
+- filename: phase-f-plugin-and-release-20260413-V1.1.md
+  title: Phase F — Plugin Packaging + Open-Source Release
+  description: Corrected Phase F plan. Replaces V1.0 doc-librarian naming with
+    librarian throughout; treats PyPI namespace as unresolved open question;
+    updates session plan and effort table to reflect actual progress through
+    Session 45.
+  format: md
+  version: '1.1'
+  date: '2026-04-13'
   status: draft
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
@@ -497,6 +524,32 @@ documents:
   parent: null
   supplements:
   - librarian-buildout-plan-20260411-V1.2.md
+  cross_references: []
+  supersedes: phase-f-plugin-and-release-20260413-V1.0.md
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - planning
+  - infrastructure
+- filename: phase-f-publish-checklist-20260413-V1.0.md
+  title: Phase F — Publish Checklist
+  description: Executable runbook for the host-terminal Phase F publish session.
+    Steps F.a–F.h cover filesystem cleanup, manifest/evidence refresh, GitHub repo
+    creation, PyPI publish, marketplace submission, and rollback. Captures the
+    Session 47 blocker-resolution summary.
+  format: md
+  version: '1.0'
+  date: '2026-04-13'
+  status: draft
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: null
+  supplements:
+  - phase-f-plugin-and-release-20260413-V1.1.md
   cross_references: []
   supersedes: null
   superseded_by: null

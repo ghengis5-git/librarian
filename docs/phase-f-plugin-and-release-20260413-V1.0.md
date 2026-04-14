@@ -1,8 +1,12 @@
 # Phase F — Plugin Packaging + Open-Source Release
 
+> **⚠️ SUPERSEDED** — This document is superseded by `phase-f-plugin-and-release-20260413-V1.1.md`.
+> V1.0 erroneously used `doc-librarian` as the project name throughout; the project was renamed
+> to `librarian` in buildout plan V1.1 (2026-04-11). Read V1.1 for the current plan.
+
 **Date:** 2026-04-13  
 **Version:** 1.0  
-**Status:** Draft  
+**Status:** Superseded  
 **Author:** Christopher A. Kahn  
 
 ---
@@ -38,7 +42,7 @@ Using `doc-librarian` consistently across all three channels. The Python package
 
 | Item | Description |
 |------|-------------|
-| PRISM references | Session 35 scrub was completed — verify no regressions |
+| Former-project references | Session 35 scrub was completed — verify no regressions |
 | Personal data | Remove/genericize `default_author`, `git_author_email`, `classification_levels` from SKILL.md defaults |
 | Hardcoded paths | Grep for `~/projects/`, absolute paths, machine-specific references |
 | Test fixtures | Ensure no proprietary content in test data |
@@ -56,7 +60,7 @@ doc-librarian/
 │   └── plugin.json                 # manifest: name, version, description, author
 ├── skills/
 │   └── doc-librarian/
-│       ├── SKILL.md                # Adapted from prism-doc-librarian skill
+│       ├── SKILL.md                # Project-agnostic librarian skill
 │       └── references/
 │           ├── cli-reference.md    # CLI commands + examples
 │           ├── config-presets.md   # Preset/template reference
@@ -80,9 +84,9 @@ doc-librarian/
 
 **Key adaptation work for SKILL.md:**
 
-The current `prism-doc-librarian` SKILL.md has ~420 lines of PRISM-specific defaults baked in (classification levels, PRISM naming examples, PRISM-specific config schema). For the plugin:
+The current `doc-librarian` SKILL.md has ~420 lines of former-project-specific defaults baked in (classification levels, naming examples, config schema). For the plugin:
 
-1. Strip all PRISM-specific defaults — make it truly project-agnostic
+1. Strip all former-project-specific defaults — make it truly project-agnostic
 2. Reference the `librarian` CLI as the execution engine (not inline logic)
 3. Trim body to <3,000 words; move detailed reference to `references/`
 4. Update trigger phrases for general audience

@@ -641,6 +641,26 @@ def cmd_init(args: argparse.Namespace) -> int:
         "REGISTRY.yaml", "README.md", "CLAUDE.md", ".gitignore",
     ]
 
+    # Naming-enforcement hook opt-in (middle-option: ship disabled, project-gated)
+    enforce_hook: bool
+    if args.enable_hook:
+        enforce_hook = True
+    elif args.no_hook:
+        enforce_hook = False
+    elif sys.stdin.isatty() and sys.stdout.isatty():
+        prompt = (
+            "\nLibrarian can block writes to files whose names don't match\n"
+            "  descriptive-name-YYYYMMDD-VX.Y.ext\n"
+            "Enable naming-enforcement hook for this project? [y/N]: "
+        )
+        try:
+            ans = input(prompt).strip().lower()
+        except EOFError:
+            ans = ""
+        enforce_hook = ans in ("y", "yes")
+    else:
+        enforce_hook = False
+
     project_config = {
         "project_name": args.name or "My Project",
         "naming_convention": config.naming.human_pattern,
@@ -656,6 +676,9 @@ def cmd_init(args: argparse.Namespace) -> int:
         "default_classification": "INTERNAL",
         "classification_levels": ["INTERNAL", "CONFIDENTIAL", "PUBLIC"],
         "staleness_threshold_days": 90,
+        # Middle-option hook gate: plugin ships hook disabled globally; this flag
+        # lets a project opt in once the hook is enabled in hooks/hooks.json.
+        "enforce_naming_hook": enforce_hook,
     }
 
     data = {
@@ -687,6 +710,14 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  Template:  {naming_template}")
     print(f"  Folders:   {len(config.categories.folders)}")
     print(f"  Tags:      {sum(len(v) for v in config.tags_taxonomy.values())} across {len(config.tags_taxonomy)} groups")
+
+    # Naming-enforcement hook status message
+    if enforce_hook:
+        print("  Hook:      ENABLED in project config. To activate globally,")
+        print("             edit <plugin>/hooks/hooks.json and rename")
+        print("             '_PreToolUse' → 'PreToolUse'.")
+    else:
+        print("  Hook:      disabled (run `librarian init --force --enable-hook` to opt in)")
 
     # Create preset folders if requested
     if args.create_folders and config.categories.folders:
@@ -860,6 +891,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--force", action="store_true", help="overwrite existing registry")
     p_init.add_argument("--create-folders", action="store_true",
                         help="create category folders on disk")
+    p_init.add_argument("--enable-hook", action="store_true",
+                        help="opt into naming-enforcement PreToolUse hook (sets enforce_naming_hook: true)")
+    p_init.add_argument("--no-hook", action="store_true",
+                        help="skip the hook opt-in prompt (sets enforce_naming_hook: false)")
     p_init.set_defaults(func=cmd_init)
 
     # --- config

@@ -13,7 +13,7 @@ Projects with 15+ cross-referencing documents drift out of sync without enforcem
 ### As a Claude Code / Cowork Plugin
 
 ```bash
-claude plugins add ghengis5/librarian
+claude plugins add ghengis5-git/librarian
 ```
 
 The plugin gives Claude the governance skill — it will automatically validate document names, manage your registry, and scaffold new documents from templates.
@@ -113,13 +113,24 @@ librarian config --list-presets
 
 The plugin ships with a naming enforcement hook that is **disabled by default**. When enabled, it checks every file write against the naming convention and blocks non-compliant document names.
 
-To enable:
+Enforcement is **two-gated** — the hook has to be on globally *and* the target project has to opt in — so installing the plugin is always safe.
+
+**Gate 1 — global opt-in** (one-time, per installation):
 
 1. Open `hooks/hooks.json` in the plugin directory.
 2. Rename the `_PreToolUse` key to `PreToolUse` (remove the leading underscore).
 3. Save the file.
 
-To disable again, add the underscore back.
+**Gate 2 — per-project opt-in**:
+
+`librarian init` asks whether to enable naming enforcement for the current project. Answer `y` to set `project_config.enforce_naming_hook: true` in the generated `REGISTRY.yaml`. Use non-interactive flags to skip the prompt:
+
+```bash
+librarian init --preset software --enable-hook   # opt in
+librarian init --preset software --no-hook       # opt out
+```
+
+When the global hook is on, the hook prompt walks up from each written file to find the nearest `REGISTRY.yaml`. If the project's `enforce_naming_hook` flag is absent or false, the hook approves the write unconditionally — so other projects on the same machine aren't affected.
 
 The hook only affects governed documents (files in tracked directories with document extensions). Source code, config files, and infrastructure-exempt files are not affected.
 
@@ -136,7 +147,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-578 tests across 13 test files.
+682 tests across 13 test files.
 
 ## License
 
