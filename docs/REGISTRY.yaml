@@ -625,7 +625,7 @@ documents:
   title: v0.7.1 first public release
   description: Release notes documenting new features, improvements, bug fixes, known
     issues, and upgrade guidance
-  status: draft
+  status: active
   version: V1.0
   created: '2026-04-13'
   updated: '2026-04-13'
@@ -637,12 +637,46 @@ documents:
   - changelog
   path: docs/release-notes-20260413-V1.0.md
   infrastructure_exempt: false
+- filename: release-notes-20260413-V2.0.md
+  title: v0.7.2 patch release (plugin install-path fixes)
+  description: Release notes for v0.7.2 patch release shipping Session 49 install-path
+    fixes (marketplace.json location, hooks schema, owner email scrub)
+  status: draft
+  version: V2.0
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - documentation
+  - changelog
+  - patch
+  path: docs/release-notes-20260413-V2.0.md
+  infrastructure_exempt: false
+- filename: release-v0.7.2-runbook-20260413-V1.0.md
+  title: v0.7.2 release runbook (host-terminal execution steps)
+  description: Step-by-step runbook for executing the v0.7.2 release in the host terminal
+    — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release,
+    marketplace refresh, rollback procedures
+  status: draft
+  version: V1.0
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - runbook
+  - ops
+  path: docs/release-v0.7.2-runbook-20260413-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 25
-  active: 17
-  draft: 3
+  total_documents: 27
+  active: 18
+  draft: 4
   superseded: 5
   not_in_repo: 0
   archived: 0

@@ -168,8 +168,8 @@ Commands:
 ---
 
 ## Current State
-**Version:** 0.7.1
-**Tests:** 681/681 PASS (673 pre-Session-46 + 8 new template-engine hardening tests — iterator coverage 5, output size guard 2, count sanity 1; confirmed in host terminal Session 48)
+**Version:** 0.7.2 (prep complete in Cowork Session 50 — version strings bumped in all manifests + release notes drafted + registry updated; tag + build + upload still pending in host terminal, see `docs/release-v0.7.2-runbook-20260413-V1.0.md`)
+**Tests:** 681/681 PASS (no test changes in v0.7.2 — pure re-release of main with Session 49 install-path fixes)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -431,6 +431,22 @@ Commands:
   - `7d27353` fix(plugin): hooks.json schema — ship empty hooks record, move real hook to .enabled.example
 - **Phase F truly complete** — all four distribution channels (GitHub, PyPI, plugin marketplace install path, release notes) verified working in the wild.
 
+### Session 50 Deliverables (Phase 7.3 prep — v0.7.2 patch release)
+- **Scope decision**: Phase 7.3 only (patch release). Phase 7.1 (pre-commit hook registry-sync bug) and 7.2 (next_review field + Audit KPI) deferred to v0.7.3. v0.7.2 is a pure re-release of `main` — it ships the Session 49 install-path fixes to anyone who installed during the broken window. No code changes, no test changes, no API changes.
+- **Version strings bumped 0.7.1 → 0.7.2** in 5 manifests:
+  - `librarian/__init__.py` (`__version__`)
+  - `pyproject.toml` (`[project] version`)
+  - `.claude-plugin/plugin.json` (`version`)
+  - `.claude-plugin/marketplace.json` (`plugins[0].version`)
+  - `skills/librarian/SKILL.md` (frontmatter `metadata.version`)
+- **Release notes drafted**: `docs/release-notes-20260413-V2.0.md` — documents what changed in Session 49 (marketplace.json path, hooks.json schema, owner email scrub), explicitly calls out no-op areas (CLI, manifest, oplog, evidence, templates, tests), includes "remove the broken marketplace entry first" guidance for users stuck on v0.7.1 plugin install. Treated as a new document rather than a revision of V1.0 (each release notes file = one release).
+- **Registry updated**:
+  - v0.7.1 release notes promoted `draft` → `active` (they describe a live release).
+  - v0.7.2 release notes added as new `draft` entry (V2.0, patch-tagged).
+  - `registry_meta`: total 25 → 26, active 17 → 18.
+- **Runbook produced** for host terminal: `docs/release-v0.7.2-runbook-20260413-V1.0.md` — step-by-step commands to execute the release (pytest sanity → commit version bumps → tag → build → TestPyPI dry-run → PyPI upload → gh release create → marketplace refresh → plugin smoke test). Nothing destructive or irreversible happens in Cowork; all git/build/upload steps live in the runbook.
+- **Cowork sandbox limits hit as expected**: can't run `pytest`, `git tag`, `python -m build`, `twine upload`, or `gh release create`. These are the entire "execute the release" surface. All execution steps moved to the host runbook per user direction.
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -451,7 +467,7 @@ Commands:
 3. **Phase 7 — Post-publish polish + v0.7.2 release** (planned):
    - **Phase 7.1** — Pre-commit hook registry-sync bug. Hook greps for full filepath but registry stores filename only; throws false "not found" warnings on every governed-doc commit. ~1–2 hr.
    - **Phase 7.2** — `next_review` date field + Audit page KPI. Registry schema addition so docs can carry a review deadline; surface as a KPI card ("N docs overdue") on Audit page. Useful for compliance-heavy presets. ~3–4 hr.
-   - **Phase 7.3** — v0.7.2 release. Bump `plugin.json` + `pyproject.toml` + `librarian/__init__.py` + `marketplace.json` + `SKILL.md`; tag `v0.7.2`; re-build + re-upload to PyPI; refresh marketplace. Ships the Session 49 install-path fixes to any user who installed during the broken window. ~30 min.
+   - **Phase 7.3** — v0.7.2 release. 🟡 PREP DONE (Session 50) — version strings bumped in all 5 manifests, release notes drafted (`docs/release-notes-20260413-V2.0.md`), registry updated, runbook produced (`docs/release-v0.7.2-runbook-20260413-V1.0.md`). Remaining: pytest sanity → commit bumps → `git tag v0.7.2` → build + PyPI upload → `gh release create` → refresh marketplace → plugin smoke test. Host terminal only (sandbox can't git/build/upload). ~30 min execute.
    - **Phase 7.4** — Email-in-history scrub. `ghengis5@gmail.com` still lives in public git log on Session 48 `marketplace.json` commit. `git filter-repo --replace-text` + force-push. Defer unless repo gets traction.
    - **Phase 7.5** — Oplog prevention mode. Currently detect-only (integrity verified at audit, not at append). Requires oplog-format change — needs explicit approval per §When to Stop and Ask.
    - **Phase 7.6** — Community signals. Launch announcement (HN / r/programming / Claude Code community), first external-user outreach, short blog on naming convention + evidence-pack design.
