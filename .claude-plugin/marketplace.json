@@ -12,7 +12,7 @@
         "repo": "ghengis5-git/librarian"
       },
       "description": "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests.",
-      "version": "0.7.3",
+      "version": "0.7.4",
       "category": "productivity",
       "tags": [
         "documents",
