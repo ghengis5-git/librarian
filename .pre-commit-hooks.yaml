@@ -1,0 +1,26 @@
+- id: librarian-naming
+  name: librarian naming convention
+  description: >
+    Validates governed document filenames against the librarian naming
+    convention (default: descriptive-name-YYYYMMDD-VX.Y.ext). Walks up
+    from each staged file to find the nearest docs/REGISTRY.yaml, reads
+    project_config.naming_rules and tracked_dirs, skips infrastructure-
+    exempt files, and reports violations. Runs on Windows, macOS, and
+    Linux.
+  entry: librarian-precommit
+  language: python
+  files: '\.(md|docx|html|pdf|pptx|jsx|yaml|yml|json|sh|txt|css|js)$'
+  exclude: '(^|/)REGISTRY\.yaml$'
+  stages: [pre-commit]
+
+- id: librarian-naming-strict
+  name: librarian naming convention (strict)
+  description: >
+    Same as librarian-naming, but treats warnings as errors. Use when
+    a project wants every finding to block the commit rather than just
+    hard errors.
+  entry: librarian-precommit --strict
+  language: python
+  files: '\.(md|docx|html|pdf|pptx|jsx|yaml|yml|json|sh|txt|css|js)$'
+  exclude: '(^|/)REGISTRY\.yaml$'
+  stages: [pre-commit]

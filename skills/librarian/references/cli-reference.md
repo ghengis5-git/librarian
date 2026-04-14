@@ -80,6 +80,38 @@ The new version inherits `next_review` from the predecessor by default.
 Use `--review-by` to override or `--clear-review` to drop the deadline.
 The two flags are mutually exclusive.
 
+### librarian-precommit
+
+Companion CLI for the [pre-commit framework](https://pre-commit.com). Not a
+subcommand of `librarian` — it's a separate console script so the pre-commit
+framework can invoke it directly.
+
+```bash
+librarian-precommit <file> [<file>...]          # validate specific files
+librarian-precommit --strict <file> [<file>...] # treat warnings as errors
+```
+
+Exit codes:
+
+- `0` — all files passed (or nothing to check)
+- `1` — one or more naming-convention violations
+- `2` — usage error
+
+Walks up from each file to find the nearest `docs/REGISTRY.yaml`, reads
+`project_config.naming_rules` and `tracked_dirs`, skips infrastructure-exempt
+files, and validates filenames via `librarian.naming.validate`. Runs on
+Windows, macOS, and Linux — no bash dependency.
+
+Typical use is via `.pre-commit-config.yaml` in a downstream project:
+
+```yaml
+repos:
+  - repo: https://github.com/ghengis5-git/librarian
+    rev: v0.7.4
+    hooks:
+      - id: librarian-naming
+```
+
 ### oplog
 
 Inspect the OS-level append-only lock state on the operation log (Phase 7.5).

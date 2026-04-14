@@ -41,6 +41,7 @@ Issues = "https://github.com/ghengis5-git/librarian/issues"
 
 [project.scripts]
 librarian = "librarian.__main__:main"
+librarian-precommit = "librarian.precommit:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

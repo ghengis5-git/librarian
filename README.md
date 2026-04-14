@@ -135,6 +135,28 @@ When the global hook is on, the hook prompt walks up from each written file to f
 
 The hook only affects governed documents (files in tracked directories with document extensions). Source code, config files, and infrastructure-exempt files are not affected.
 
+### Optional: Integrate with the `pre-commit` framework
+
+If your project already uses the [pre-commit framework](https://pre-commit.com/), add librarian's naming-convention hook to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/ghengis5-git/librarian
+    rev: v0.7.4
+    hooks:
+      - id: librarian-naming
+      # or, to treat warnings as errors:
+      # - id: librarian-naming-strict
+```
+
+Then install:
+
+```bash
+pre-commit install
+```
+
+The hook walks up from each staged file to find the nearest `docs/REGISTRY.yaml`, reads `project_config.naming_rules` and `tracked_dirs`, skips infrastructure-exempt files, and reports violations. Runs on Windows, macOS, and Linux — no bash dependency. Works with or without a REGISTRY.yaml present (falls back to the default naming convention).
+
 ## Stack
 
 - Python ≥ 3.10
@@ -148,7 +170,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-774 tests across 16 test files.
+796 tests across 17 test files.
 
 ## License
 
