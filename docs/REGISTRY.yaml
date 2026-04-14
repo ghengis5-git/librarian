@@ -654,7 +654,7 @@ documents:
   - patch
   path: docs/release-notes-20260413-V2.0.md
   infrastructure_exempt: false
-- filename: release-v0.7.2-runbook-20260413-V1.0.md
+- filename: release-v0-7-2-runbook-20260413-V1.0.md
   title: v0.7.2 release runbook (host-terminal execution steps)
   description: Step-by-step runbook for executing the v0.7.2 release in the host terminal
     — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release,
@@ -669,7 +669,7 @@ documents:
   - release
   - runbook
   - ops
-  path: docs/release-v0.7.2-runbook-20260413-V1.0.md
+  path: docs/release-v0-7-2-runbook-20260413-V1.0.md
   infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
