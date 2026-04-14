@@ -513,7 +513,7 @@ documents:
   format: md
   version: '1.1'
   date: '2026-04-13'
-  status: draft
+  status: superseded
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   locations:
@@ -539,7 +539,7 @@ documents:
   format: md
   version: '1.0'
   date: '2026-04-13'
-  status: draft
+  status: superseded
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   locations:
