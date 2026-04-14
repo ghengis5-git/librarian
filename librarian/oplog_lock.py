@@ -36,9 +36,11 @@ from __future__ import annotations
 
 import os
 import platform
+import shlex
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -68,11 +70,14 @@ def is_append_only(path: str | Path) -> bool | None:
 
     Returns ``True`` / ``False`` / ``None`` per module docstring semantics.
     Never raises.
+
+    Security note (Phase 8.0): removed the up-front ``p.exists()`` check
+    to close a TOCTOU window. Missing-file detection now comes from the
+    platform probe itself (stat/lsattr returning error), which we treat
+    as ``None`` (undetectable) — indistinguishable from a permission
+    error, which is the correct fail-closed behavior.
     """
     p = Path(path)
-    if not p.exists():
-        return None
-
     plat = platform_support()
     if plat == "macos":
         return _is_append_only_macos(p)
@@ -107,6 +112,11 @@ def _is_append_only_linux(p: Path) -> bool | None:
         ``----i---a------- /path/to/file``
     We look for ``a`` anywhere in the attribute column (everything before the
     first run of whitespace).
+
+    Debug aid (Phase 8.0): when ``LIBRARIAN_DEBUG=1`` is set in the
+    environment, the captured stderr from a failed ``lsattr`` invocation
+    is surfaced on our own stderr. Default behavior (stderr silently
+    discarded) is preserved to keep the audit path quiet.
     """
     lsattr = shutil.which("lsattr")
     if not lsattr:
@@ -118,9 +128,16 @@ def _is_append_only_linux(p: Path) -> bool | None:
             text=True,
             timeout=5,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        if os.environ.get("LIBRARIAN_DEBUG"):
+            print(f"librarian: lsattr invocation failed: {exc}", file=sys.stderr)
         return None
     if result.returncode != 0:
+        if os.environ.get("LIBRARIAN_DEBUG") and result.stderr:
+            print(
+                f"librarian: lsattr rc={result.returncode}: {result.stderr.strip()}",
+                file=sys.stderr,
+            )
         return None
 
     for line in result.stdout.splitlines():
@@ -138,13 +155,22 @@ def lock_instructions(path: str | Path) -> str:
     """Return a human-readable command the user should run to apply the flag.
 
     Intended for CLI output and audit-page hints. Does NOT execute.
+
+    Security note (Phase 8.0): the path is shell-quoted via
+    :func:`shlex.quote`. Prior versions used an f-string interpolation,
+    which produced copy-pasteable shell-injection strings when the path
+    contained ``;``, ``$(...)``, backticks, or spaces. Every caller
+    (CLI, audit-page hints, evidence-pack annotations) renders this
+    string verbatim, so quoting the path at construction time is the
+    correct layer.
     """
     p = Path(path).resolve()
+    quoted = shlex.quote(str(p))
     plat = platform_support()
     if plat == "macos":
-        return f"chflags uappend {p}"
+        return f"chflags uappend {quoted}"
     if plat == "linux":
-        return f"sudo chattr +a {p}"
+        return f"sudo chattr +a {quoted}"
     return "(append-only lock not supported on this OS)"
 
 
@@ -152,11 +178,15 @@ def unlock_instructions(path: str | Path) -> str:
     """Return a human-readable command the user should run to remove the flag.
 
     Needed for log rotation, archival, or clean uninstall.
+
+    Security note (Phase 8.0): see :func:`lock_instructions` — the path
+    is shell-quoted via :func:`shlex.quote` for the same reason.
     """
     p = Path(path).resolve()
+    quoted = shlex.quote(str(p))
     plat = platform_support()
     if plat == "macos":
-        return f"chflags nouappend {p}"
+        return f"chflags nouappend {quoted}"
     if plat == "linux":
-        return f"sudo chattr -a {p}"
+        return f"sudo chattr -a {quoted}"
     return "(append-only lock not supported on this OS)"

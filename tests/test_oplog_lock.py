@@ -268,3 +268,148 @@ class TestAuditIntegration:
         out = format_report(r)
         assert "Oplog lock: disabled" in out
         assert "librarian-oplog-lock" in out  # actionable hint present
+
+
+# --------------------------------------------------------------------------- #
+# Phase 8.0 hardening — shell-quoting, TOCTOU, debug surfacing                 #
+# --------------------------------------------------------------------------- #
+
+
+class TestShellInjectionQuoting:
+    """Phase 8.0 CRITICAL fix — paths are shell-quoted in lock/unlock
+    instruction strings. Prior versions interpolated unquoted paths,
+    producing copy-pasteable shell-injection vectors.
+    """
+
+    def test_lock_macos_quotes_space_path(self, tmp_path):
+        evil = tmp_path / "my docs"
+        evil.mkdir()
+        log = evil / "librarian-audit.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="macos"):
+            out = lock_instructions(log)
+        # The path must be single-quoted; unquoted spaces would make the
+        # command parse as multiple tokens.
+        assert "'" in out
+        assert str(log.resolve()) in out
+
+    def test_lock_macos_quotes_semicolon_path(self, tmp_path):
+        """A path with a semicolon must NOT produce a multi-command string."""
+        evil = tmp_path / "foo; rm -rf ~"
+        evil.mkdir()
+        log = evil / "librarian-audit.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="macos"):
+            out = lock_instructions(log)
+        # shlex.quote wraps in single quotes and escapes internal single quotes
+        assert "'" in out
+        # The semicolon should be INSIDE single quotes, making it inert
+        # to shell parsing. A quick sanity check: the literal ``; rm -rf``
+        # substring must appear inside a quoted region (between a pair of
+        # single quotes).
+        import shlex
+        # Re-tokenize the instruction and confirm it parses as exactly
+        # three args: ``chflags``, ``uappend``, and the path.
+        tokens = shlex.split(out)
+        assert tokens[0] == "chflags"
+        assert tokens[1] == "uappend"
+        assert tokens[2] == str(log.resolve())
+
+    def test_lock_linux_quotes_command_substitution(self, tmp_path):
+        """Path containing $(...) must be inert after quoting."""
+        evil = tmp_path / "pwnd-$(id)"
+        evil.mkdir()
+        log = evil / "librarian-audit.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="linux"):
+            out = lock_instructions(log)
+        import shlex
+        tokens = shlex.split(out)
+        # sudo chattr +a <path>
+        assert tokens[:3] == ["sudo", "chattr", "+a"]
+        assert tokens[3] == str(log.resolve())
+
+    def test_unlock_macos_quotes_backtick_path(self, tmp_path):
+        evil = tmp_path / "weird`hostname`"
+        evil.mkdir()
+        log = evil / "librarian-audit.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="macos"):
+            out = unlock_instructions(log)
+        import shlex
+        tokens = shlex.split(out)
+        assert tokens[:2] == ["chflags", "nouappend"]
+        assert tokens[2] == str(log.resolve())
+
+
+class TestTOCTOURemoval:
+    """Phase 8.0 MED fix — removed pre-stat ``p.exists()`` check.
+    Missing-file detection now comes from the probe itself. This
+    preserves the None contract without opening a TOCTOU window.
+    """
+
+    def test_missing_file_still_returns_none_macos(self, tmp_path):
+        """On macOS, os.stat on a nonexistent file raises FileNotFoundError
+        (an OSError subclass). The macOS path must catch it and return None
+        WITHOUT relying on a prior exists() check."""
+        missing = tmp_path / "does-not-exist.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="macos"):
+            # No patching of os.stat — we actually stat a missing file.
+            assert is_append_only(missing) is None
+
+    def test_missing_file_still_returns_none_linux(self, tmp_path):
+        """On Linux, lsattr returns non-zero exit for a missing file.
+        The Linux path must treat that as None without relying on a
+        prior exists() check."""
+        missing = tmp_path / "does-not-exist.jsonl"
+        with patch("librarian.oplog_lock.platform_support", return_value="linux"):
+            # Only patches platform dispatch — lsattr probe runs for real
+            # (or returns None if lsattr is absent, which is fine).
+            result = is_append_only(missing)
+            assert result is None
+
+
+class TestLibrarianDebugStderr:
+    """Phase 8.0 MED fix — lsattr failures surface under LIBRARIAN_DEBUG=1."""
+
+    def test_lsattr_nonzero_silent_by_default(self, tmp_path, capsys, monkeypatch):
+        """Default behavior: lsattr errors don't pollute stderr."""
+        monkeypatch.delenv("LIBRARIAN_DEBUG", raising=False)
+        import subprocess as sp
+        fake = sp.CompletedProcess(
+            args=["lsattr"], returncode=1, stdout="", stderr="permission denied\n"
+        )
+        with patch("librarian.oplog_lock.shutil.which", return_value="/usr/bin/lsattr"):
+            with patch("librarian.oplog_lock.subprocess.run", return_value=fake):
+                result = _is_append_only_linux(tmp_path / "f")
+        assert result is None
+        captured = capsys.readouterr()
+        assert "permission denied" not in captured.err
+
+    def test_lsattr_nonzero_surfaces_stderr_with_debug(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """With LIBRARIAN_DEBUG=1, lsattr stderr reaches our stderr."""
+        monkeypatch.setenv("LIBRARIAN_DEBUG", "1")
+        import subprocess as sp
+        fake = sp.CompletedProcess(
+            args=["lsattr"], returncode=1, stdout="", stderr="permission denied\n"
+        )
+        with patch("librarian.oplog_lock.shutil.which", return_value="/usr/bin/lsattr"):
+            with patch("librarian.oplog_lock.subprocess.run", return_value=fake):
+                result = _is_append_only_linux(tmp_path / "f")
+        assert result is None
+        captured = capsys.readouterr()
+        assert "permission denied" in captured.err
+        assert "rc=1" in captured.err
+
+    def test_lsattr_oserror_surfaces_with_debug(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """OSError from subprocess.run also surfaces under debug."""
+        monkeypatch.setenv("LIBRARIAN_DEBUG", "1")
+        with patch("librarian.oplog_lock.shutil.which", return_value="/usr/bin/lsattr"):
+            with patch(
+                "librarian.oplog_lock.subprocess.run",
+                side_effect=OSError("exec format error"),
+            ):
+                result = _is_append_only_linux(tmp_path / "f")
+        assert result is None
+        captured = capsys.readouterr()
+        assert "exec format error" in captured.err

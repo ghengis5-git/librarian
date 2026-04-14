@@ -77,6 +77,13 @@ def _find_registry(start: Path) -> Path | None:
     Returns ``None`` if no registry is found before hitting the filesystem
     root. We explicitly look for ``docs/REGISTRY.yaml`` rather than any
     ``REGISTRY.yaml`` to match the librarian's convention.
+
+    Security note (Phase 8.0): the filesystem-root fallback was removed.
+    On systems where ``/docs/REGISTRY.yaml`` exists (some container
+    images, non-standard unix setups), the prior implementation would
+    treat the entire filesystem as ``repo_root``, pulling every file
+    into the naming check's scope. Now we stop at the last directory
+    above the root and return ``None`` if no registry was found.
     """
     current = start if start.is_dir() else start.parent
     current = current.resolve()
@@ -86,11 +93,19 @@ def _find_registry(start: Path) -> Path | None:
         if candidate.is_file():
             return candidate
         current = current.parent
-    # Check the filesystem root as a last resort
-    candidate = filesystem_root / "docs" / "REGISTRY.yaml"
-    if candidate.is_file():
-        return candidate
+    # Deliberately no filesystem-root fallback — see security note above.
     return None
+
+
+def _get_exempt(project_config: dict) -> frozenset[str]:
+    """Return the project's infrastructure-exempt filename set.
+
+    Phase 8.0: extracted from two near-identical inline blocks in
+    :func:`_should_check` and :func:`_check_file` to keep behavior
+    consistent across call sites.
+    """
+    naming_rules = project_config.get("naming_rules", {}) or {}
+    return frozenset(naming_rules.get("infrastructure_exempt", []) or [])
 
 
 def _load_project_config(registry_path: Path) -> dict:
@@ -129,9 +144,7 @@ def _should_check(
         return False
 
     # Infrastructure-exempt files bypass the convention entirely
-    naming_rules = project_config.get("naming_rules", {}) or {}
-    exempt = frozenset(naming_rules.get("infrastructure_exempt", []) or [])
-    if filepath.name in exempt:
+    if filepath.name in _get_exempt(project_config):
         return False
 
     # If there's no registry, we can't know the tracked_dirs — treat any
@@ -141,8 +154,27 @@ def _should_check(
 
     tracked_dirs = project_config.get("tracked_dirs", ["docs/"]) or ["docs/"]
     repo_root = registry_path.parent.parent
+
+    # Phase 8.0 security fix: previously did ``filepath.resolve().relative_to(repo_root)``
+    # which follows symlinks on the filepath itself. A symlink
+    # ``docs/valid-V1.0.md -> /etc/passwd`` would resolve outside
+    # ``repo_root`` → ``ValueError`` → the file would be silently skipped
+    # from the naming check. The filename itself must still be validated.
+    #
+    # Approach: resolve the *parent* directory only (which is trusted
+    # project structure and handles OS-level tmpdir symlinks such as
+    # macOS's ``/var -> /private/var``), then rebind the original leaf
+    # name onto the resolved parent. This gives us a containment check
+    # that does NOT follow a user-placed symlink at the filepath itself.
     try:
-        rel = filepath.resolve().relative_to(repo_root)
+        raw_parent = filepath.parent if filepath.is_absolute() \
+            else (Path.cwd() / filepath).parent
+        try:
+            resolved_parent = raw_parent.resolve(strict=False)
+        except OSError:
+            resolved_parent = raw_parent
+        lexical = resolved_parent / filepath.name
+        rel = lexical.relative_to(repo_root)
     except ValueError:
         # File lives outside the registry's repo — skip (another project)
         return False
@@ -180,8 +212,7 @@ def _check_file(
         except Exception:
             naming_cfg = None
 
-    naming_rules = project_config.get("naming_rules", {}) or {}
-    exempt = frozenset(naming_rules.get("infrastructure_exempt", []) or [])
+    exempt = _get_exempt(project_config)
     result = validate_name(filepath.name, config=naming_cfg, exempt=exempt)
     if result.valid:
         return True, []
@@ -212,7 +243,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    # Empty argv is a legitimate pre-commit-framework signal (regex
+    # matched zero staged files). We exit 0 but print a trace so direct
+    # CLI users who typo the command aren't left wondering whether it
+    # silently ran. Goes to stdout (not stderr) to avoid noise on the
+    # framework's pass path.
     if not args.files:
+        print("Librarian naming check — no files to check")
         return 0
 
     failures: list[tuple[str, list[str]]] = []

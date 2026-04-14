@@ -62,7 +62,17 @@ def cmd_audit(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo or ".").resolve()
     reg_path = _find_registry(args.registry, repo_root)
     reg = Registry.load(reg_path)
-    report = audit(reg, repo_root)
+
+    # Phase 8.1: allow project_config.audit_config.folder_threshold to
+    # override the default (15). Projects with intentionally heavy self-
+    # documentation (the librarian itself is one) can raise this bound
+    # instead of being forced to reorganize into subdirs.
+    audit_cfg = (reg.project_config or {}).get("audit_config", {}) or {}
+    folder_threshold = audit_cfg.get("folder_threshold")
+    if isinstance(folder_threshold, int) and folder_threshold > 0:
+        report = audit(reg, repo_root, folder_threshold=folder_threshold)
+    else:
+        report = audit(reg, repo_root)
 
     if args.recommend:
         rec_report = generate_recommendations(

@@ -2151,7 +2151,13 @@ def _page(
                        'stroke-width="2" class="global-search-icon">'
                        '<circle cx="11" cy="11" r="8"/>'
                        '<line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>')
-    return f"""<!DOCTYPE html>
+    # Phase 8.1: raw f-string (``rf"""``) — the embedded JavaScript below
+    # contains regex literals like ``\d``, ``\s``, ``\.`` that Python would
+    # otherwise flag as invalid escape sequences (DeprecationWarning in
+    # 3.11/3.12, SyntaxWarning thereafter). Raw mode passes backslashes
+    # through to the rendered output. All ``{{`` / ``}}`` literal-brace
+    # escaping and ``{expr}`` field substitution still work the same.
+    return rf"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">

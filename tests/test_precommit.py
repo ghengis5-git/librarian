@@ -25,6 +25,7 @@ import pytest
 
 from librarian.precommit import (
     _find_registry,
+    _get_exempt,
     _load_project_config,
     _should_check,
     main,
@@ -240,3 +241,135 @@ class TestMainCLI:
         f = fresh_repo / "docs" / "data.xyz"
         f.write_text("x")
         assert main([str(f)]) == 0
+
+
+# --------------------------------------------------------------------------- #
+# Phase 8.0 hardening — symlinks, root fallback, helper dedup, empty-argv     #
+# --------------------------------------------------------------------------- #
+
+
+class TestSymlinkContainment:
+    """Phase 8.0 HIGH fix — ``_should_check`` no longer follows symlinks
+    out of the repo when deciding in-scope. Prior behaviour: a symlink
+    ``docs/good-20260414-V1.0.md -> /etc/passwd`` would resolve outside
+    repo_root, raise ValueError, and be skipped from naming check
+    entirely. Now we do a lexical containment check.
+    """
+
+    @pytest.fixture
+    def outside_dir(self, tmp_path_factory):
+        """A temp dir unrelated to ``fresh_repo`` so symlinks can
+        legitimately point outside the repo tree."""
+        return tmp_path_factory.mktemp("outside")
+
+    def test_symlink_with_bad_name_rejected(
+        self, fresh_repo, outside_dir, monkeypatch
+    ):
+        """Symlink inside tracked dir with INVALID filename must be
+        checked (and fail). Prior implementation silently skipped it
+        because resolve() escaped ``repo_root`` → ValueError → False.
+        """
+        target = outside_dir / "external-target.txt"
+        target.write_text("outside")
+        bad_link = fresh_repo / "docs" / "BadName.md"
+        try:
+            bad_link.symlink_to(target)
+        except (OSError, NotImplementedError):
+            pytest.skip("Filesystem does not support symlinks")
+        monkeypatch.chdir(fresh_repo)
+        rc = main([str(bad_link)])
+        # Phase 8.0: the file MUST now be in scope. Previously returned 0.
+        assert rc == 1
+
+    def test_symlink_with_good_name_still_passes(
+        self, fresh_repo, outside_dir, monkeypatch
+    ):
+        """Symlink with VALID filename must be in scope and pass. We
+        observe scope inclusion via the ``1 file(s)`` line in OK output.
+        """
+        target = outside_dir / "external-target.txt"
+        target.write_text("outside")
+        link = fresh_repo / "docs" / "good-doc-20260414-V1.0.md"
+        try:
+            link.symlink_to(target)
+        except (OSError, NotImplementedError):
+            pytest.skip("Filesystem does not support symlinks")
+        monkeypatch.chdir(fresh_repo)
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main([str(link)])
+        assert rc == 0
+        # ``1 file(s)`` appears in the OK path; ``0 file(s)`` would mean
+        # the symlink was silently skipped (the old bug).
+        assert "1 file(s)" in buf.getvalue()
+
+
+class TestFilesystemRootRegistryRejected:
+    """Phase 8.0 HIGH fix — ``_find_registry`` no longer accepts
+    ``/docs/REGISTRY.yaml`` at the filesystem root. Prior behaviour
+    would treat the whole filesystem as repo_root on systems where
+    ``/docs/REGISTRY.yaml`` happens to exist.
+    """
+
+    def test_does_not_walk_past_filesystem_root(self, tmp_path, monkeypatch):
+        """When no ``docs/REGISTRY.yaml`` exists anywhere up to root, the
+        function must return None. Previously it would check the root
+        one more time as a fallback."""
+        # tmp_path is guaranteed not to contain a docs/ directory
+        f = tmp_path / "somefile.md"
+        f.write_text("x")
+        assert _find_registry(f) is None
+
+    def test_root_fallback_not_consulted(self, monkeypatch, tmp_path):
+        """Even if /docs/REGISTRY.yaml were to exist, the function must
+        not probe for it. We can't actually plant a file at /docs/ in
+        tests, so we verify the code path by asserting the function
+        returned None without is_file ever being called on a root-level
+        path. Simpler proxy test: no root probe remains in the function
+        source.
+        """
+        import inspect
+        from librarian import precommit
+        src = inspect.getsource(precommit._find_registry)
+        # The post-fix function must not contain a reference to
+        # ``filesystem_root / "docs"`` AFTER the while loop. The loop
+        # itself uses ``current`` not ``filesystem_root``.
+        # Simple regex-free substring test:
+        lines_after_loop = src.split("while current != filesystem_root:")[-1]
+        assert 'filesystem_root / "docs"' not in lines_after_loop
+
+
+class TestGetExemptHelper:
+    """Phase 8.0 MED fix — ``_get_exempt`` dedups two identical blocks."""
+
+    def test_returns_frozenset_of_exempt_names(self):
+        pc = {
+            "naming_rules": {
+                "infrastructure_exempt": ["README.md", "REGISTRY.yaml", ".gitignore"]
+            }
+        }
+        exempt = _get_exempt(pc)
+        assert isinstance(exempt, frozenset)
+        assert exempt == {"README.md", "REGISTRY.yaml", ".gitignore"}
+
+    def test_empty_config_returns_empty_frozenset(self):
+        assert _get_exempt({}) == frozenset()
+
+    def test_missing_naming_rules_returns_empty(self):
+        assert _get_exempt({"project_name": "foo"}) == frozenset()
+
+    def test_null_infrastructure_exempt_returns_empty(self):
+        """YAML ``infrastructure_exempt: null`` must not crash."""
+        pc = {"naming_rules": {"infrastructure_exempt": None}}
+        assert _get_exempt(pc) == frozenset()
+
+
+class TestEmptyArgvNote:
+    """Phase 8.0 MED fix — empty argv now prints a trace to stdout."""
+
+    def test_no_files_prints_note(self, capsys):
+        assert main([]) == 0
+        captured = capsys.readouterr()
+        assert "no files to check" in captured.out.lower()

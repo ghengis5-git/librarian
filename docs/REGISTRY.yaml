@@ -2,6 +2,12 @@ project_config:
   project_name: Librarian
   evidence_signing: ssh
   enforce_naming_hook: true
+  # Phase 8.1: the librarian is heavily self-documented (phase plans,
+  # release notes, runbooks, security reviews, architecture). Raise the
+  # folder-density threshold so ``docs/`` doesn't flag every audit. Other
+  # projects adopting librarian keep the 15-doc default unless they opt in.
+  audit_config:
+    folder_threshold: 30
   naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
   naming_rules:
     separator: '-'
@@ -24,6 +30,8 @@ project_config:
     - project_config.minimal.yaml
     - project_config.full.yaml
     - project_config.example.yaml
+    - .pre-commit-hooks.yaml
+    - cli-reference.md
   default_author: Chris Kahn
   default_classification: PERSONAL / INTERNAL USE ONLY
   classification_levels:

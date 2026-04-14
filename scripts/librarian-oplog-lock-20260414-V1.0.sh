@@ -47,8 +47,11 @@ USAGE
 action="$1"
 log_path="${2:-operator/librarian-audit.jsonl}"
 
-# Detect OS
-uname_out="$(uname -s 2>/dev/null || echo unknown)"
+# Detect OS. Phase 8.0: dropped the ``2>/dev/null || echo unknown``
+# fallback — ``uname -s`` is in POSIX and is guaranteed to exist on
+# every system this script actually runs on. If it ever fails, we want
+# the failure to surface rather than be silently relabeled "unknown".
+uname_out="$(uname -s)"
 case "$uname_out" in
     Darwin)  os="macos" ;;
     Linux)   os="linux" ;;
@@ -72,9 +75,18 @@ is_locked() {
     local f="$1"
     [ -f "$f" ] || { echo "missing"; return; }
     if [ "$os" = "macos" ]; then
-        # stat -f '%f' returns flags as hex on BSD; UF_APPEND is 0x04
-        local flags
-        flags=$(stat -f '%f' "$f" 2>/dev/null || echo 0)
+        # stat -f '%f' returns flags as a decimal integer on BSD;
+        # UF_APPEND is 0x04. Phase 8.0: distinguish "stat failed" from
+        # "stat reported zero". The prior ``|| echo 0`` swallowed
+        # permission-denied / syscall errors and reported "unlocked"
+        # (a false all-clear). Now stat failure surfaces as "unknown".
+        local flags stat_rc
+        flags=$(stat -f '%f' "$f" 2>/dev/null)
+        stat_rc=$?
+        if [ $stat_rc -ne 0 ] || [ -z "$flags" ]; then
+            echo "unknown"
+            return
+        fi
         if (( flags & 4 )); then echo "locked"; else echo "unlocked"; fi
     else
         # Linux — parse lsattr, but treat non-zero exit (e.g., unsupported
