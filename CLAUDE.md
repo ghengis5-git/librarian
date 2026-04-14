@@ -396,6 +396,24 @@ Commands:
 - **Remaining Phase F blockers**: (1) PyPI namespace — user kept `librarian-2026` (already in `pyproject.toml`); (2) git history — keep full (recommended above, awaiting confirmation); (3) GitHub org vs. personal — open.
 - **Host-terminal cleanup still required before publish**: (a) `rm -rf dashboard/legacy/` (stubs present but tracked); (b) `rm -rf skills/doc-librarian/` (coexists with `skills/librarian/`); (c) `rm -rf _site*` scratch dirs; (d) run `pytest` to confirm 681/681 (sandbox has no pytest). ✅ Confirmed 681/681 in Session 48.
 
+### Session 48 Deliverables (Phase F publish — shipped)
+- **Git history rewritten** via `git filter-repo` — all 24 commits now authored/committed as `Chris Kahn <272935920+ghengis5-git@users.noreply.github.com>`; all re-signed with SSH key; filter-branch backup refs gc'd.
+- **GitHub repo published**: https://github.com/ghengis5-git/librarian (public, Apache 2.0, 704 KiB pack, 411 objects). Initial push via `gh repo create --public --source=. --push`.
+- **GitHub release**: `v0.7.1` — "Librarian v0.7.1 — First public release" with full release notes covering 22 CLI commands, 57+ templates, 9 presets, 24 compliance standards, tamper-evident evidence packs, 681 tests. Also anchored with `v0.7.1-published` tag.
+- **PyPI published**: https://pypi.org/project/librarian-2026/0.7.1/ — wheel (316 KB) + sdist (305 KB). Install path `pip install librarian-2026`. Dry-run on TestPyPI succeeded first. Also pushed to TestPyPI: https://test.pypi.org/project/librarian-2026/0.7.1/
+- **Plugin marketplace**: `marketplace.json` at repo root (same-repo distribution path, no separate marketplace repo needed). Install: `claude plugins marketplace add ghengis5-git/librarian` → `claude plugins add librarian@librarian-marketplace`.
+- **pyproject.toml cleanup**: dropped obsolete `License :: OSI Approved :: Apache Software License` classifier (PEP 639 now requires SPDX-only `license = "Apache-2.0"`); author email switched from `ghengis5@gmail.com` to the GitHub noreply address to hide it from PyPI metadata.
+- **Test count corrected**: 682 → 681 across CLAUDE.md, README.md, and publish checklist. Session 46 docs overcounted template-engine hardening tests by one (actual: 8 new, not 9).
+- **example-manifest**, **librarian-manifest-20260413**, **librarian-evidence-20260413** registered in REGISTRY.yaml; audit reports 24/24 clean.
+- **7 publish commits on main** (all SSH-signed, all noreply-authored):
+  - `b772777` feat: template engine hardening — iterator coverage + output size guard
+  - `987d3ed` docs: Phase F prep — hook opt-in, ghengis5-git owner, noreply identity
+  - `fbd47e1` chore: remove legacy dashboard stubs and old skill dir pre-publish
+  - `8ae7ded` docs: correct test count to 681
+  - `acd369f` docs: refresh manifest + evidence before publish
+  - (pyproject fix commit) chore: drop obsolete license classifier (PEP 639) + hide author email
+  - (release-notes + Phase F close commit — in progress)
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -406,11 +424,15 @@ Commands:
    - ~~G.3: Recommendations engine~~ ✅ (Session 41)
    - ~~G.4: Templates catalog page, site/dashboard integration, custom templates, settings browser, docs~~ ✅ (Session 42/42b)
    - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
-2. **Plugin packaging (Phase F):** Wrap as Claude Code plugin for marketplace distribution. Plan: `docs/phase-f-plugin-and-release-20260413-V1.1.md` (V1.0 superseded — corrected `doc-librarian` → `librarian` naming throughout). Open blocker: PyPI namespace decision.
+2. **Phase F — Plugin packaging + open-source release** ✅ COMPLETE (Session 48):
+   - GitHub: https://github.com/ghengis5-git/librarian (public, v0.7.1 + v0.7.1-published tag)
+   - PyPI: https://pypi.org/project/librarian-2026/0.7.1/
+   - Marketplace: `marketplace.json` at repo root; install via `claude plugins marketplace add ghengis5-git/librarian`
+   - Git history rewritten via `git filter-repo` to use GitHub noreply email (`272935920+ghengis5-git@users.noreply.github.com`) — zero real-email leakage in public log
+   - All commits SSH-signed
 3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI on Audit page
-4. **Open-source release:** GitHub public repo + PyPI + LICENSE + scrub pass
-5. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
-6. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention) — requires oplog-format approval to change. Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`).
+4. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
+5. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention) — requires oplog-format approval to change. Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`).
 
 ---
 
