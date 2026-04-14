@@ -138,7 +138,7 @@ Commands:
 ---
 
 ## Test Suite
-- **673 tests** across 13 test files
+- **743 tests** across 15 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Config: 56 (presets 8, templates 6, loading 7, naming-config 10, configurable-naming 9, parse 4, CLI init 5, CLI config 3, merge 4)
 - Phase B: 26 (manifest)
@@ -161,15 +161,17 @@ Commands:
 - Evidence signing: 12 (default off 2, signing config 8, verify returns 1, signed pack mock 1)
 - Folders Only fix: 1 (branch expansion)
 - Manage page: 16 (exists/title/sections/nav/data/forms/JS/search/CSS/index)
-- Audit page: 17 (exists/title/sections/KPI/nav/data/JS/controls/seal/CLI/recs/OODA/oplog/CSS/search-index/global-search)
+- Audit page: 19 (exists/title/sections/KPI/nav/data/JS/controls/seal/CLI/recs/OODA/oplog/CSS/search-index/global-search + Phase 7.2 overdue KPI + overdue CLI card)
+- Phase 7.1 Pre-commit hook: 11 (grep unit 8 + end-to-end 3 — list-item/indented YAML, filename-only entries, substring suffix/prefix rejection, dots-metachar exploit)
+- Phase 7.2 Review deadlines: 49 (parse 9, format 2, compute_overdue 9, compute_upcoming 4, audit integration 3, CLI register 3, CLI bump 4, CLI review subcommand 9, CLI audit JSON 1, + 5 infrastructure)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
 ---
 
 ## Current State
-**Version:** 0.7.2 (prep complete in Cowork Session 50 — version strings bumped in all manifests + release notes drafted + registry updated; tag + build + upload still pending in host terminal, see `docs/release-v0.7.2-runbook-20260413-V1.0.md`)
-**Tests:** 681/681 PASS (no test changes in v0.7.2 — pure re-release of main with Session 49 install-path fixes)
+**Version:** 0.7.2 released (tag `v0.7.2`, PyPI https://pypi.org/project/librarian-2026/0.7.2/, GitHub release). `HEAD` on main is ahead of the tag with Phase 7.1 + 7.2 unreleased work; manifests still read `0.7.2`. Next release target is v0.7.3 (see Phase 7.3-next).
+**Tests:** 743/743 PASS (681 pre-session + 11 Phase 7.1 + 51 Phase 7.2)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -444,8 +446,41 @@ Commands:
   - v0.7.1 release notes promoted `draft` → `active` (they describe a live release).
   - v0.7.2 release notes added as new `draft` entry (V2.0, patch-tagged).
   - `registry_meta`: total 25 → 26, active 17 → 18.
-- **Runbook produced** for host terminal: `docs/release-v0.7.2-runbook-20260413-V1.0.md` — step-by-step commands to execute the release (pytest sanity → commit version bumps → tag → build → TestPyPI dry-run → PyPI upload → gh release create → marketplace refresh → plugin smoke test). Nothing destructive or irreversible happens in Cowork; all git/build/upload steps live in the runbook.
+- **Runbook produced** for host terminal: `docs/release-v0-7-2-runbook-20260413-V1.0.md` — step-by-step commands to execute the release (pytest sanity → commit version bumps → tag → build → TestPyPI dry-run → PyPI upload → gh release create → marketplace refresh → plugin smoke test). Nothing destructive or irreversible happens in Cowork; all git/build/upload steps live in the runbook.
 - **Cowork sandbox limits hit as expected**: can't run `pytest`, `git tag`, `python -m build`, `twine upload`, or `gh release create`. These are the entire "execute the release" surface. All execution steps moved to the host runbook per user direction.
+- **Phase 7.3 — EXECUTED** in host terminal between Sessions 50 and 51. Runbook ran clean: tag `v0.7.2` pushed, sdist + wheel uploaded to PyPI (`librarian-2026==0.7.2`), GitHub release created, marketplace refreshed, plugin smoke test passed. `82103c9 release: v0.7.2` and `ebfe7a7 registry: activate v0.7.2 release notes` landed on main. No Session 50.5 log because the host commits *are* the log.
+
+### Session 51 Deliverables (Phase 7.1 + Phase 7.2 — unreleased, sitting on main past v0.7.2 tag)
+
+#### Phase 7.1 — Pre-commit hook registry-sync hardening (`425180e`)
+- **Diagnosis correction**: CLAUDE.md's Phase 7.1 entry described the bug as "hook greps for full filepath but registry stores filename only". That bug was actually fixed in `853c5ba` (Session 35, while working on Phase G.1 prep). Tested against all 27 real registry entries → zero false negatives.
+- **Real latent bugs found and fixed**:
+  1. **Unescaped regex metacharacters** — `$filename` was interpolated verbatim into an extended regex. Literal dots in version suffixes (`V1.0.md`) were treated as wildcards; a staged `foo-V1.0.md` could spuriously match a registered `foo-V1x0xmd`. Demonstrated with a fixture registry.
+  2. **No end-of-line anchor** — a staged `foo.md` would substring-match a registered `foo.md.backup` or `old-foo.md`.
+- **Fix** (`scripts/librarian-pre-commit-hook-20260411-V1.0.sh`): escape regex metachars via `sed 's/[][().*+?|{}\\^$]/\\&/g'`, then anchor with `^[-[:space:]]+(filename|path):[[:space:]]+([^[:space:]]*/)?${filename_esc}[[:space:]]*$`. Accepts both list-item (`- filename: x`) and indented-path (`  path: dir/x`) YAML forms; filename must be at end of line.
+- **11 regression tests** in `tests/test_precommit_hook.py` — 8 grep-level unit tests + 3 end-to-end tests that stage files into a fixture git repo and run the real hook script.
+- **Hook self-tested on its own commit** — passed cleanly.
+
+#### Phase 7.2 — `next_review` field + `review` CLI + Audit page KPI (`c92875a`)
+- **Scope (user-chosen A3 + B1 + C1 + D1)**:
+  - A3 — both flag-on-existing-command AND dedicated subcommand
+  - B1 — explicit-only (presets do NOT auto-apply default cadences)
+  - C1 — absolute ISO 8601 dates only; no relative parsing (`+6mo`, `+1y`) this pass
+  - D1 — overdue = warn severity; `AuditReport.clean` deliberately unaffected to preserve the existing exit-code contract for downstream automation
+- **New module** `librarian/review.py` (~210 lines): `parse_review_date`, `format_review_date`, `compute_overdue`, `compute_upcoming`, `OverdueReview` dataclass, `ReviewDateError`. Status-aware — superseded/archived docs excluded from overdue calc. Most-overdue-first sort.
+- **Schema**: optional `next_review: YYYY-MM-DD|null` on each document entry (`schema/registry.schema.yaml`). Backwards compatible — every existing entry remains valid without it.
+- **CLI surface**:
+  - `librarian register --review-by YYYY-MM-DD`
+  - `librarian bump --review-by YYYY-MM-DD` and `librarian bump --clear-review` (mutually exclusive; default = inherit from predecessor)
+  - `librarian scaffold --review-by YYYY-MM-DD`
+  - `librarian review set <filename> --by YYYY-MM-DD`
+  - `librarian review clear <filename>`
+  - `librarian review list [--overdue | --upcoming [--within-days N]]`
+- **Audit integration**: `AuditReport.overdue_reviews: list[OverdueReview]` populated automatically; `format_report` emits an "Overdue reviews" section; `audit --json` includes `overdue_reviews` in the payload.
+- **Audit page** (`sitegen.py`): new "Overdue Reviews" KPI card (kpi-warn when > 0); new OODA-section table with filename / deadline / days-overdue; new "List Overdue Reviews" CLI quick-card.
+- **Docs**: `skills/librarian/references/cli-reference.md` updated with all new flags + the `review` subcommand.
+- **51 new tests** (692 → 743) — `tests/test_review.py` (49 tests across 8 classes) and `tests/test_sitegen.py` (+2, +1 updated).
+- **Smoke test on real registry**: set deadline on `librarian-architecture-20260411-V1.0.md` → audit detected (468 days overdue) → `review list --overdue` listed it → cleared back out → `git checkout` reverted stray writes.
 
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
@@ -464,10 +499,11 @@ Commands:
    - Git history rewritten via `git filter-repo` to use GitHub noreply email (`272935920+ghengis5-git@users.noreply.github.com`) — zero real-email leakage in public author/committer fields
    - **Deferred cleanup**: `ghengis5@gmail.com` still appears in the public `marketplace.json` blob history (Session 48 add commit). User opted to leave history untouched; can scrub later with `git filter-repo --replace-text` + force-push if traffic warrants
    - All commits SSH-signed
-3. **Phase 7 — Post-publish polish + v0.7.2 release** (planned):
-   - **Phase 7.1** — Pre-commit hook registry-sync bug. Hook greps for full filepath but registry stores filename only; throws false "not found" warnings on every governed-doc commit. ~1–2 hr.
-   - **Phase 7.2** — `next_review` date field + Audit page KPI. Registry schema addition so docs can carry a review deadline; surface as a KPI card ("N docs overdue") on Audit page. Useful for compliance-heavy presets. ~3–4 hr.
-   - **Phase 7.3** — v0.7.2 release. 🟡 PREP DONE (Session 50) — version strings bumped in all 5 manifests, release notes drafted (`docs/release-notes-20260413-V2.0.md`), registry updated, runbook produced (`docs/release-v0.7.2-runbook-20260413-V1.0.md`). Remaining: pytest sanity → commit bumps → `git tag v0.7.2` → build + PyPI upload → `gh release create` → refresh marketplace → plugin smoke test. Host terminal only (sandbox can't git/build/upload). ~30 min execute.
+3. **Phase 7 — Post-publish polish + releases**:
+   - **Phase 7.1** — Pre-commit hook registry-sync hardening. ✅ DONE (Session 51, commit `425180e`). 11 regression tests. Sitting on main unreleased.
+   - **Phase 7.2** — `next_review` field + `review` CLI + Audit page KPI. ✅ DONE (Session 51, commit `c92875a`). Scope A3+B1+C1+D1. 51 new tests. Sitting on main unreleased.
+   - **Phase 7.3** — v0.7.2 patch release. ✅ DONE (Session 50 prep + host-terminal execution between Sessions 50 and 51). Tag `v0.7.2` live on GitHub; wheel + sdist on PyPI at `librarian-2026==0.7.2`; marketplace refreshed; plugin install path smoke-tested. Shipped Session 49 install-path fixes only — predates 7.1 and 7.2.
+   - **Phase 7.3-next** — v0.7.3 release. 🔴 NOT STARTED. Absorbs Phase 7.1 + 7.2 + any further work on main before the tag. Bumps 5 manifests (`librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `skills/librarian/SKILL.md`) 0.7.2 → 0.7.3, drafts release notes, tags `v0.7.3`, builds + uploads, refreshes marketplace. ~30 min host-terminal execute.
    - **Phase 7.4** — Email-in-history scrub. `ghengis5@gmail.com` still lives in public git log on Session 48 `marketplace.json` commit. `git filter-repo --replace-text` + force-push. Defer unless repo gets traction.
    - **Phase 7.5** — Oplog prevention mode. Currently detect-only (integrity verified at audit, not at append). Requires oplog-format change — needs explicit approval per §When to Stop and Ask.
    - **Phase 7.6** — Community signals. Launch announcement (HN / r/programming / Claude Code community), first external-user outreach, short blog on naming convention + evidence-pack design.

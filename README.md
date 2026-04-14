@@ -75,8 +75,9 @@ Configurable: separator (`-`, `_`, `.`), case, date format, version format, doma
 | `audit` | OODA governance audit — drift, naming, orphans, cross-refs, folder density (`--recommend`, `--json`) |
 | `scaffold` | Create a document from a template (`--list`, `--list-all`, `--dry-run`) |
 | `status` | Quick registry summary (counts by status) |
-| `register` | Add a new document to the registry |
-| `bump` | Version-bump a document (`--minor`, `--major`) |
+| `register` | Add a new document to the registry (`--review-by YYYY-MM-DD` optional) |
+| `bump` | Version-bump a document (`--minor`, `--major`, `--review-by`, `--clear-review`) |
+| `review` | Manage `next_review` deadlines (`set`, `clear`, `list [--overdue \| --upcoming]`) |
 | `manifest` | Generate portable JSON manifest with SHA-256 hashes |
 | `evidence` | Generate tamper-evident IP evidence pack |
 | `diff` | Compare two manifests |
@@ -146,7 +147,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-681 tests across 13 test files.
+743 tests across 15 test files.
 
 ## License
 
