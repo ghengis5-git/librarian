@@ -1,0 +1,17 @@
+{
+  "_comment": "To enable naming enforcement: copy this file over hooks/hooks.json. Also set project_config.enforce_naming_hook: true in the target project's REGISTRY.yaml. Both gates must be true for the hook to fire.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check whether the file being written is a governed document under a project that has opted into naming enforcement. Steps: (1) Find the nearest REGISTRY.yaml walking up from the target file. (2) If no REGISTRY.yaml is found OR the file's project_config.enforce_naming_hook is not true, respond: {\"decision\": \"approve\", \"reason\": \"Project has not opted into naming enforcement.\"} (3) Otherwise, a governed document is any file in the project's tracked_dirs (typically docs/) with extensions .md, .docx, .pdf, .html, .pptx, .xlsx, .yaml, .json, .sh, excluding infrastructure-exempt filenames listed in naming_rules.infrastructure_exempt. (4) If it IS a governed document, validate the filename against the naming convention: descriptive-name-YYYYMMDD-VX.Y.ext. If the filename does NOT match, respond: {\"decision\": \"block\", \"reason\": \"Filename does not follow naming convention. Expected: descriptive-name-YYYYMMDD-VX.Y.ext\"}. Otherwise respond: {\"decision\": \"approve\", \"reason\": \"OK\"}.",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

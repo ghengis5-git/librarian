@@ -117,9 +117,8 @@ Enforcement is **two-gated** — the hook has to be on globally *and* the target
 
 **Gate 1 — global opt-in** (one-time, per installation):
 
-1. Open `hooks/hooks.json` in the plugin directory.
-2. Rename the `_PreToolUse` key to `PreToolUse` (remove the leading underscore).
-3. Save the file.
+1. In the plugin directory, copy `hooks/hooks.enabled.example.json` over `hooks/hooks.json`.
+2. Restart Claude Code so the new hook config loads.
 
 **Gate 2 — per-project opt-in**:
 
