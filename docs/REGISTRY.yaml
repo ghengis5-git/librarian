@@ -2,10 +2,6 @@ project_config:
   project_name: Librarian
   evidence_signing: ssh
   enforce_naming_hook: true
-  # Phase 8.1: the librarian is heavily self-documented (phase plans,
-  # release notes, runbooks, security reviews, architecture). Raise the
-  # folder-density threshold so ``docs/`` doesn't flag every audit. Other
-  # projects adopting librarian keep the 15-doc default unless they opt in.
   audit_config:
     folder_threshold: 30
   naming_convention: descriptive-name-YYYYMMDD-VX.Y.ext
@@ -861,9 +857,9 @@ documents:
   title: v0.7.5 security patch release (Phase 8.0 hardening + Phase 8.1 polish)
   description: Release notes for v0.7.5 — bundles Phase 8.0 adversarial-review hardening
     (1 CRIT shell-injection fix, 3 HIGH, 4 MED, 1 LOW) and Phase 8.1 polish (raw f-string,
-    infrastructure_exempt additions, audit_config.folder_threshold config knob).
-    Backwards compatible; test suite 796 → 814.
-  status: draft
+    infrastructure_exempt additions, audit_config.folder_threshold config knob). Backwards
+    compatible; test suite 796 → 814.
+  status: active
   version: V5.0
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -877,10 +873,10 @@ documents:
   infrastructure_exempt: false
 - filename: release-v0-7-5-runbook-20260414-V1.0.md
   title: v0.7.5 release runbook (host-terminal execution steps)
-  description: Step-by-step runbook for executing the v0.7.5 security patch release in
-    the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload,
-    GitHub release, marketplace refresh, rollback procedures
-  status: draft
+  description: Step-by-step runbook for executing the v0.7.5 security patch release
+    in the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI
+    upload, GitHub release, marketplace refresh, rollback procedures
+  status: active
   version: V1.0
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -896,8 +892,8 @@ registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
   total_documents: 39
-  active: 24
-  draft: 4
+  active: 26
+  draft: 2
   superseded: 11
   not_in_repo: 0
   archived: 0
