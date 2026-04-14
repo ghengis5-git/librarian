@@ -32,6 +32,8 @@ project_config:
     - project_config.example.yaml
     - .pre-commit-hooks.yaml
     - cli-reference.md
+    - librarian-manifest-20260414.json
+    - librarian-evidence-20260414.json
   default_author: Chris Kahn
   default_classification: PERSONAL / INTERNAL USE ONLY
   classification_levels:
@@ -670,8 +672,9 @@ documents:
   title: Librarian manifest 20260414 V2.0
   description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.4
     publish seal (covers Phase 7.5 oplog lock + 7.7 pre-commit integration)
-  status: active
+  status: superseded
   supersedes: librarian-manifest-20260414-V1.0.json
+  superseded_by: librarian-manifest-20260414-V3.0.json
   version: '2.0'
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -687,8 +690,9 @@ documents:
   title: Librarian evidence pack 20260414 V2.0
   description: Tamper-evident IP evidence pack for v0.7.4, wrapping the manifest with
     SSH-signed git commit
-  status: active
+  status: superseded
   supersedes: librarian-evidence-20260414-V1.0.json
+  superseded_by: librarian-evidence-20260414-V3.0.json
   version: '2.0'
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -699,6 +703,40 @@ documents:
   - seal
   - audit
   path: docs/librarian-evidence-20260414-V2.0.json
+  infrastructure_exempt: false
+- filename: librarian-manifest-20260414-V3.0.json
+  title: Librarian manifest 20260414 V3.0
+  description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.5
+    publish seal (covers Phase 8.0 hardening + Phase 8.1 polish)
+  status: active
+  supersedes: librarian-manifest-20260414-V2.0.json
+  version: '3.0'
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - manifest
+  - seal
+  - audit
+  path: docs/librarian-manifest-20260414-V3.0.json
+  infrastructure_exempt: false
+- filename: librarian-evidence-20260414-V3.0.json
+  title: Librarian evidence pack 20260414 V3.0
+  description: Tamper-evident IP evidence pack for v0.7.5 security patch, SSH-signed.
+    Wraps the V3.0 manifest with the commit that shipped Phase 8.0 + 8.1.
+  status: active
+  supersedes: librarian-evidence-20260414-V2.0.json
+  version: '3.0'
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - evidence
+  - seal
+  - audit
+  path: docs/librarian-evidence-20260414-V3.0.json
   infrastructure_exempt: false
 - filename: release-notes-20260413-V1.0.md
   title: v0.7.1 first public release
@@ -819,13 +857,48 @@ documents:
   - ops
   path: docs/release-v0-7-4-runbook-20260414-V1.0.md
   infrastructure_exempt: false
+- filename: release-notes-20260414-V5.0.md
+  title: v0.7.5 security patch release (Phase 8.0 hardening + Phase 8.1 polish)
+  description: Release notes for v0.7.5 — bundles Phase 8.0 adversarial-review hardening
+    (1 CRIT shell-injection fix, 3 HIGH, 4 MED, 1 LOW) and Phase 8.1 polish (raw f-string,
+    infrastructure_exempt additions, audit_config.folder_threshold config knob).
+    Backwards compatible; test suite 796 → 814.
+  status: draft
+  version: V5.0
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - documentation
+  - changelog
+  path: docs/release-notes-20260414-V5.0.md
+  infrastructure_exempt: false
+- filename: release-v0-7-5-runbook-20260414-V1.0.md
+  title: v0.7.5 release runbook (host-terminal execution steps)
+  description: Step-by-step runbook for executing the v0.7.5 security patch release in
+    the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload,
+    GitHub release, marketplace refresh, rollback procedures
+  status: draft
+  version: V1.0
+  created: '2026-04-14'
+  updated: '2026-04-14'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - runbook
+  - ops
+  path: docs/release-v0-7-5-runbook-20260414-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 35
+  total_documents: 39
   active: 24
-  draft: 2
-  superseded: 9
+  draft: 4
+  superseded: 11
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0
