@@ -448,9 +448,17 @@ Commands:
    - Git history rewritten via `git filter-repo` to use GitHub noreply email (`272935920+ghengis5-git@users.noreply.github.com`) — zero real-email leakage in public author/committer fields
    - **Deferred cleanup**: `ghengis5@gmail.com` still appears in the public `marketplace.json` blob history (Session 48 add commit). User opted to leave history untouched; can scrub later with `git filter-repo --replace-text` + force-push if traffic warrants
    - All commits SSH-signed
-3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI on Audit page
-4. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
-5. **Remaining security items (LOW):** Oplog chain is detect-only (no write prevention) — requires oplog-format approval to change. Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`).
+3. **Phase 7 — Post-publish polish + v0.7.2 release** (planned):
+   - **Phase 7.1** — Pre-commit hook registry-sync bug. Hook greps for full filepath but registry stores filename only; throws false "not found" warnings on every governed-doc commit. ~1–2 hr.
+   - **Phase 7.2** — `next_review` date field + Audit page KPI. Registry schema addition so docs can carry a review deadline; surface as a KPI card ("N docs overdue") on Audit page. Useful for compliance-heavy presets. ~3–4 hr.
+   - **Phase 7.3** — v0.7.2 release. Bump `plugin.json` + `pyproject.toml` + `librarian/__init__.py` + `marketplace.json` + `SKILL.md`; tag `v0.7.2`; re-build + re-upload to PyPI; refresh marketplace. Ships the Session 49 install-path fixes to any user who installed during the broken window. ~30 min.
+   - **Phase 7.4** — Email-in-history scrub. `ghengis5@gmail.com` still lives in public git log on Session 48 `marketplace.json` commit. `git filter-repo --replace-text` + force-push. Defer unless repo gets traction.
+   - **Phase 7.5** — Oplog prevention mode. Currently detect-only (integrity verified at audit, not at append). Requires oplog-format change — needs explicit approval per §When to Stop and Ask.
+   - **Phase 7.6** — Community signals. Launch announcement (HN / r/programming / Claude Code community), first external-user outreach, short blog on naming convention + evidence-pack design.
+   - **Phase 7.7** — Pre-commit framework native extension. Convert current shell hook into a `pre-commit-hooks.yaml` entry for the `pre-commit` framework — broader reach beyond Claude Code.
+   - **Phase 7.8** — VSCode extension / LSP. Surface audit findings inline in the editor. Large scope; gated on external adoption.
+
+**Security items (LOW):** Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`). Oplog prevention mode rolls up into Phase 7.5.
 
 ---
 
