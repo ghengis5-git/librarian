@@ -396,11 +396,15 @@ if [ -f "$REGISTRY" ]; then
         done
         $is_exempt && continue
 
-        # Check registry — match against both 'filename:' key and 'path:' key
-        # REGISTRY.yaml stores filenames as unquoted YAML values:
-        #   filename: my-doc-20260412-V1.0.md
-        #   path: docs/my-doc-20260412-V1.0.md
-        if ! grep -qE "(filename|path):.*$filename" "$REGISTRY" 2>/dev/null; then
+        # Check registry — match against both 'filename:' and 'path:' keys.
+        # REGISTRY.yaml stores entries in two forms:
+        #   - filename: my-doc-20260412-V1.0.md     (list-item form, column 0)
+        #     path: docs/my-doc-20260412-V1.0.md    (indented continuation)
+        # We match either form, anchored at end-of-line, and escape regex
+        # metacharacters in $filename so literal dots in versions (V1.0.md)
+        # don't become wildcards that produce false-positive matches.
+        filename_esc=$(printf '%s' "$filename" | sed 's/[][().*+?|{}\\^$]/\\&/g')
+        if ! grep -qE "^[-[:space:]]+(filename|path):[[:space:]]+([^[:space:]]*/)?${filename_esc}[[:space:]]*$" "$REGISTRY" 2>/dev/null; then
             warn "$filepath — not found in REGISTRY.yaml"
             unregistered=$((unregistered + 1))
         fi
