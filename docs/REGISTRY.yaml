@@ -779,10 +779,10 @@ documents:
 - filename: release-notes-20260414-V4.0.md
   title: v0.7.4 feature release (oplog append-only detection, pre-commit framework
     integration)
-  description: Release notes for v0.7.4 — adds Phase 7.5 (oplog append-only flag
-    detection + setup helper + Audit KPI) and Phase 7.7 (pre-commit framework
-    entry point). Backwards compatible; test suite 743 → 796.
-  status: draft
+  description: Release notes for v0.7.4 — adds Phase 7.5 (oplog append-only flag detection
+    + setup helper + Audit KPI) and Phase 7.7 (pre-commit framework entry point).
+    Backwards compatible; test suite 743 → 796.
+  status: active
   version: V4.0
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -799,7 +799,7 @@ documents:
   description: Step-by-step runbook for executing the v0.7.4 release in the host terminal
     — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release,
     marketplace refresh, rollback procedures
-  status: draft
+  status: active
   version: V1.0
   created: '2026-04-14'
   updated: '2026-04-14'
@@ -815,8 +815,8 @@ registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
   total_documents: 35
-  active: 22
-  draft: 4
+  active: 24
+  draft: 2
   superseded: 9
   not_in_repo: 0
   archived: 0
