@@ -414,6 +414,23 @@ Commands:
   - (pyproject fix commit) chore: drop obsolete license classifier (PEP 639) + hide author email
   - (release-notes + Phase F close commit — in progress)
 
+### Session 49 Deliverables (Post-publish plugin-install fixes)
+- **Phase F plan docs marked superseded** in `docs/REGISTRY.yaml` — both `phase-f-plugin-and-release-20260413-V1.1.md` and `phase-f-publish-checklist-20260413-V1.0.md` now `status: superseded` (both plans fully executed in Session 48).
+- **Release notes scaffolded and committed**: `docs/release-notes-20260413-V1.0.md` (V1.0). Scaffold required `--preset software` override because project registry's preset doesn't include the `release-notes` template by default. Body covers 22 CLI commands, 57+ templates, 9 presets, 24 compliance standards, evidence packs, 681 tests, install paths, known issues.
+- **Plugin marketplace install path fixes** (3 issues discovered by live smoke test):
+  1. **`marketplace.json` wrong location** — Claude Code looks at `.claude-plugin/marketplace.json`, not repo root. Moved via `git mv`.
+  2. **Real email leak in marketplace.json** — `owner.email: ghengis5@gmail.com` was still in the file; scrubbed to noreply. **Caveat**: the leak persists in public git history on the original Session 48 `marketplace.json` add commit. User opted to leave the history untouched (low-traffic repo, email derivable from GitHub profile anyway). To scrub later: `git filter-repo --replace-text` + force-push.
+  3. **hooks.json schema mismatch** — Claude Code's validator requires a top-level `hooks: {}` record; our "ship-disabled via `_PreToolUse` underscore prefix" trick failed validation with `Invalid input: expected record, received undefined`. Fixed by shipping `hooks/hooks.json` with `"hooks": {}` (empty, truly disabled) and moving the real hook into `hooks/hooks.enabled.example.json`. Users enable by copying the example over the primary file.
+- **README Gate 1 updated** to reflect the new enable procedure (copy `hooks.enabled.example.json` over `hooks.json`, restart Claude Code).
+- **SSH host key** — `ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts` required on user's machine to allow plugin's secondary clone (first `install` failed with `No ED25519 host key is known`). This is a per-machine setup issue, not a plugin bug.
+- **CLI verb correction**: install command is `claude plugins install`, not `claude plugins add`. README install line was already correct; only affected the Session 48 CLAUDE.md snippet.
+- **Verified install path end-to-end**: plugin now reports `Status: ✔ enabled` in `claude plugins list`. Marketplace path: `claude plugins marketplace add ghengis5-git/librarian` → `claude plugins install librarian@librarian-marketplace`.
+- **3 post-publish commits on main**:
+  - `4347ca4` fix: move marketplace.json to .claude-plugin/ for Claude Code discovery
+  - `bb8ea34` fix: scrub real email from marketplace.json owner field
+  - `7d27353` fix(plugin): hooks.json schema — ship empty hooks record, move real hook to .enabled.example
+- **Phase F truly complete** — all four distribution channels (GitHub, PyPI, plugin marketplace install path, release notes) verified working in the wild.
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -424,11 +441,12 @@ Commands:
    - ~~G.3: Recommendations engine~~ ✅ (Session 41)
    - ~~G.4: Templates catalog page, site/dashboard integration, custom templates, settings browser, docs~~ ✅ (Session 42/42b)
    - See `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` for full plan
-2. **Phase F — Plugin packaging + open-source release** ✅ COMPLETE (Session 48):
+2. **Phase F — Plugin packaging + open-source release** ✅ COMPLETE (Session 48, install path fixes Session 49):
    - GitHub: https://github.com/ghengis5-git/librarian (public, v0.7.1 + v0.7.1-published tag)
    - PyPI: https://pypi.org/project/librarian-2026/0.7.1/
-   - Marketplace: `marketplace.json` at repo root; install via `claude plugins marketplace add ghengis5-git/librarian`
-   - Git history rewritten via `git filter-repo` to use GitHub noreply email (`272935920+ghengis5-git@users.noreply.github.com`) — zero real-email leakage in public log
+   - Marketplace: `.claude-plugin/marketplace.json`; install via `claude plugins marketplace add ghengis5-git/librarian` → `claude plugins install librarian@librarian-marketplace`
+   - Git history rewritten via `git filter-repo` to use GitHub noreply email (`272935920+ghengis5-git@users.noreply.github.com`) — zero real-email leakage in public author/committer fields
+   - **Deferred cleanup**: `ghengis5@gmail.com` still appears in the public `marketplace.json` blob history (Session 48 add commit). User opted to leave history untouched; can scrub later with `git filter-repo --replace-text` + force-push if traffic warrants
    - All commits SSH-signed
 3. **Review scheduling:** `next_review` date field in registry, surfaced as KPI on Audit page
 4. **Pre-commit hook registry sync bug:** Hook greps for full filepath but registry stores filename only — causes false "not found" warnings
