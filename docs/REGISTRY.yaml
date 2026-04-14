@@ -621,13 +621,29 @@ documents:
   - audit
   path: docs/librarian-evidence-20260413-V1.0.json
   infrastructure_exempt: false
+- filename: release-notes-20260413-V1.0.md
+  title: v0.7.1 first public release
+  description: Release notes documenting new features, improvements, bug fixes, known
+    issues, and upgrade guidance
+  status: draft
+  version: V1.0
+  created: '2026-04-13'
+  updated: '2026-04-13'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - documentation
+  - changelog
+  path: docs/release-notes-20260413-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 24
+  total_documents: 25
   active: 17
-  draft: 4
-  superseded: 3
+  draft: 3
+  superseded: 5
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0
