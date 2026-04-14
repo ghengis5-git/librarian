@@ -171,8 +171,8 @@ Commands:
 ---
 
 ## Current State
-**Version:** 0.7.3 released (tag `v0.7.3`, PyPI https://pypi.org/project/librarian-2026/0.7.3/, GitHub release). `HEAD` on main is ahead of the tag with Phase 7.5 (oplog append-only lock) unreleased work; manifests still read `0.7.3`. Next release target is v0.7.4.
-**Tests:** 774/774 PASS (681 pre-session + 11 Phase 7.1 + 51 Phase 7.2 + 31 Phase 7.5)
+**Version:** 0.7.5 released (tag `v0.7.5`, PyPI https://pypi.org/project/librarian-2026/0.7.5/, GitHub release). `main` and `v0.7.5` are aligned at commit `1b836d1` (bump) with `2469c46` (housekeeping) as current HEAD. All four distribution channels (PyPI, GitHub release, git tag, plugin marketplace) serve 0.7.5. Next release target is v0.7.6 (gated on Phase 8.2+).
+**Tests:** 814/814 PASS (796 pre-Phase-8 + 18 Phase 8.0 regression tests)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -502,6 +502,56 @@ Commands:
 - **31 new tests** (743 → 774) — `tests/test_oplog_lock.py` (30 tests: platform dispatch 6, macOS stat-flag 5, Linux lsattr parsing 7 with mocked subprocess, instruction strings 5, audit integration 5) + `tests/test_sitegen.py` (+1 KPI assertion, +1 new CLI quick-cards test). macOS and Linux detection paths are covered via mocking rather than actually setting the flag (requires sudo on Linux, not worth the test flakiness).
 - **End-to-end smoke test** in overlayfs sandbox: Python CLI, shell script, audit text output, and `audit --json` all agree on "undetectable" state — matches the graceful-degradation contract documented in `oplog_lock.py`. Expected path: on a real ext4/macOS filesystem the detection would succeed.
 
+### Session 52 Deliverables (Phase 8.0 + 8.1 — shipped in v0.7.5)
+
+Security patch release. Four distribution channels updated; CRIT shell-injection fix verified live on PyPI.
+
+#### Phase 8.0 — Adversarial-review hardening (9 findings, commit `e37e42e`)
+- **CRIT** (`librarian/oplog_lock.py`): `shlex.quote()` wraps the path in `lock_instructions`/`unlock_instructions`. Prior versions f-string interpolated paths, producing copy-pasteable shell-injection strings when paths contained `;`, `$()`, backticks, or shell metacharacters. Post-release smoke test confirmed: `/tmp/foo; rm -rf HOME` → `chflags uappend '/private/tmp/foo; rm -rf HOME'` → `shlex.split()` re-tokenizes to 3 args. Semicolon is inert.
+- **HIGH** (`librarian/precommit.py`): symlink-safe containment in `_should_check`. Previously `filepath.resolve()` would follow a symlink out of repo_root → `ValueError` → file silently skipped from naming check. Now resolves the *parent* directory only (trusted, handles macOS `/var → /private/var`) and rebinds the leaf name; on-disk filename always validated regardless of symlink target.
+- **HIGH** (`librarian/precommit.py`): filesystem-root fallback removed from `_find_registry`. Prior walk-up probed `/docs/REGISTRY.yaml` as a last resort, which on some container images would set `repo_root = /` and pull the entire filesystem into naming-check scope.
+- **HIGH** (`scripts/librarian-oplog-lock-20260414-V1.0.sh`): macOS `is_locked()` stat-failure now reports "unknown", not false "unlocked". Previously `stat ... || echo 0` swallowed permission-denied errors and yielded a false all-clear.
+- **MED** (`librarian/oplog_lock.py`): TOCTOU pre-check `p.exists()` removed. Missing-file detection delegated to platform probe's error path (`FileNotFoundError` on macOS, non-zero `lsattr` exit on Linux) — both still return `None` per the contract.
+- **MED** (`librarian/precommit.py`): `_get_exempt()` helper extracted from two duplicated blocks in `_should_check` and `_check_file`. Single source of truth for `infrastructure_exempt` parsing.
+- **MED** (`librarian/precommit.py`): empty-argv behavior emits `"Librarian naming check — no files to check"` on stdout (exit 0 preserved). Distinguishes legitimate framework-triggered "nothing to check" from CLI misconfiguration.
+- **MED** (`librarian/oplog_lock.py`): `LIBRARIAN_DEBUG=1` surfaces lsattr rc + stderr to our stderr. Default behavior silent (unchanged).
+- **LOW** (`scripts/librarian-oplog-lock-*.sh`): dropped `uname -s 2>/dev/null || echo unknown` fallback — `uname` is POSIX-guaranteed; failure should surface rather than be relabeled.
+
+#### Phase 8.1 — Polish sweep (bundled in commit `e37e42e`)
+- `librarian/sitegen.py` line 2154 converted to raw f-string (`rf"""..."""`). Embedded JavaScript regex literals (`\d`, `\s`, `\.`) were producing `DeprecationWarning` on Python 3.11+ / `SyntaxWarning` on 3.12+. Verified clean with `python -W error`.
+- Added `.pre-commit-hooks.yaml` and `cli-reference.md` to `project_config.naming_rules.infrastructure_exempt`.
+- New `project_config.audit_config.folder_threshold` config knob wired through `cmd_audit` in `__main__.py`. Default remains 15. Librarian's own registry overrides to 30 (self-documentation density was tripping the warning on every audit run).
+- Added "latest copy" manifest + evidence mirrors (`librarian-manifest-20260414.json`, `librarian-evidence-20260414.json`) to `infrastructure_exempt` to eliminate persistent audit noise.
+
+#### Tests
+- Pre-session baseline: 796 (CLAUDE.md's previously-cited 774 was stale — it didn't count Phase 7.7's `test_precommit.py`).
+- Added: 18 regression tests. `test_oplog_lock.py` +9 (shlex quoting 4, TOCTOU 2, LIBRARIAN_DEBUG stderr 3). `test_precommit.py` +9 (symlink 2, root-fallback 2, `_get_exempt` 4, empty-argv 1).
+- Post-session: **814/814 passing.**
+
+#### Release — v0.7.5 shipped mid-session
+- 5 manifests bumped 0.7.4 → 0.7.5 (`librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `skills/librarian/SKILL.md`).
+- New documents: `docs/release-notes-20260414-V5.0.md` (security-patch release notes), `docs/release-v0-7-5-runbook-20260414-V1.0.md` (host runbook), `docs/librarian-manifest-20260414-V3.0.json` + `docs/librarian-evidence-20260414-V3.0.json` (fresh seal). V2.0 manifest/evidence pair moved active → superseded.
+- Registry: total 35 → 39, active 24, draft 2 → 4 → 2 (V5.0 notes + runbook promoted draft→active at session end), superseded 9 → 11.
+- Four distribution channels live at 0.7.5: PyPI, GitHub release, git tag, plugin marketplace.
+- **Release hiccup** (resolved): runbook step 3 initially skipped due to stale `.git/index.lock` + em-dash/paren shell-quoting tripping zsh parser (`zsh: missing end of string`, `zsh: invalid mode specification`, `zsh: missing delimiter for 'u' glob qualifier`). PyPI upload succeeded anyway because `python -m build` reads the working tree (not HEAD) — so published wheel always had `__version__ = "0.7.5"`. Tag briefly pointed to pre-bump commit. Recovery: cleared lock, retried commit with ASCII-only message, deleted + recreated tag at bump commit `1b836d1`, force-synced remote tag. Total recovery cost: ~20 minutes.
+- **New auto-memory**: `feedback_release_runbook_ascii_only.md` — future release runbooks must use ASCII-only `-m` messages (no em-dashes, no parens inside quoted strings, no `$` or backticks in nested quotes). Pairs with the existing CDN-lag-sleep pattern.
+
+#### Commits landed this session
+- `b526a7e` — docs: Phase 8 roadmap (pre-execution planning)
+- `e37e42e` — fix: Phase 8.0 adversarial-review hardening (9 findings) — bundles both 8.0 and 8.1
+- `7a09b47` — docs: fix self-reference typo in v0.7.2 runbook
+- `1b836d1` — release: v0.7.5 (version bumps + release notes + runbook + V3.0 manifest/evidence + registry updates)
+- `2469c46` — registry: activate v0.7.5 release notes plus runbook (housekeeping)
+
+All SSH-signed. All pushed to origin/main.
+
+#### Phase 8 roadmap status
+- 8.0 ✅ done + shipped in v0.7.5
+- 8.1 ✅ done + shipped in v0.7.5
+- 8.2 🔴 not started — adoption helpers (`archive`, `doctor`, GHA workflow, `register --all`), ~5 hr
+- 8.3 🔴 not started — audit power-ups (cross-ref auto-resolve, tag taxonomy validator, content dedup, schema validation), ~4 hr
+- 8.4 🔴 deferred — larger features
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -533,13 +583,9 @@ Commands:
 
 **Security items (LOW):** Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`). Oplog prevention mode rolls up into Phase 7.5.
 
-4. **Phase 8 — Post-v0.7.4 roadmap** (proposed Session 51; nothing started):
-   - **Phase 8.0** — Adversarial-review hardening pass. 🔴 NOT STARTED. Nine findings from Session 51 adversarial review of Phase 7.5 + 7.7 code:
-     1 CRITICAL (shell-injection surface in `oplog_lock.lock_instructions/unlock_instructions` — fix with `shlex.quote()`),
-     3 HIGH (symlink traversal in `precommit._should_check`; registry walk accepts filesystem-root `/docs/REGISTRY.yaml`; unquoted `lsattr` parsing in `librarian-oplog-lock-20260414-V1.0.sh`),
-     4 MEDIUM (duplicate `infrastructure_exempt` parsing; TOCTOU in `is_append_only`; silent exit on empty argv; `chflags`/`chattr` failures swallow stderr),
-     1 LOW (`uname -s` redirect). All localized, single hardening commit closes all nine. ~1.5 hr.
-   - **Phase 8.1** — Polish sweep. 🔴 NOT STARTED. Bundle of small items: (a) `sitegen.py` SyntaxWarnings from unraw'd triple-quoted f-strings around line 2382-2386, (b) add `.pre-commit-hooks.yaml` + `cli-reference.md` to `naming_rules.infrastructure_exempt` so the hook stops nagging, (c) CLAUDE.md continuation block reflecting Phase 7.7 + v0.7.4 (not added in `758e30e`), (d) resolve the librarian's own audit folder-density warning (`docs/` has 17 docs past the threshold). ~45 min.
+4. **Phase 8 — Post-v0.7.4 roadmap** (proposed Session 51; 8.0 + 8.1 shipped in v0.7.5 Session 52):
+   - **Phase 8.0** — Adversarial-review hardening pass. ✅ DONE + SHIPPED (Session 52, commit `e37e42e`, in v0.7.5). Nine findings from Session 51 adversarial review of Phase 7.5 + 7.7 code closed: 1 CRIT (shlex.quote in instruction strings), 3 HIGH (symlink containment; filesystem-root fallback removed; shell-script stat-failure path), 4 MED (_get_exempt helper dedup; TOCTOU pre-check removed; empty-argv note; LIBRARIAN_DEBUG stderr surfacing), 1 LOW (uname -s simplification). 18 new regression tests.
+   - **Phase 8.1** — Polish sweep. ✅ DONE + SHIPPED (Session 52, bundled in commit `e37e42e`, in v0.7.5). Items closed: (a) sitegen.py line 2154 converted to raw f-string — silences regex-literal DeprecationWarnings; (b) `.pre-commit-hooks.yaml` and `cli-reference.md` added to `infrastructure_exempt`; (c) this CLAUDE.md block updated; (d) audit folder-density warning resolved via new `project_config.audit_config.folder_threshold` config knob — librarian's own registry overrides to 30; default remains 15 for all other projects.
    - **Phase 8.2** — Adoption helpers. 🔴 NOT STARTED. Four features that reduce the "I have to learn 12 commands" overhead for the non-programmer audience:
      (a) `librarian archive <filename>` — moves superseded docs to `docs/archive/`, updates `path` field, leaves crumb. ~1.5 hr.
      (b) `librarian doctor` — single-shot diagnostic command: registry parses, all referenced files exist, hook installed, signing key configured, no orphans, no broken cross-refs. ~2 hr.
