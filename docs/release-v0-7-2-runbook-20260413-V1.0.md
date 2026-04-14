@@ -20,7 +20,7 @@ What's already done in Cowork Session 50 (on `main`, uncommitted):
 - `docs/release-notes-20260413-V2.0.md` — new v0.7.2 release notes (draft in registry)
 - `docs/REGISTRY.yaml` — v0.7.1 notes promoted to active, v0.7.2 notes added as draft, totals 25→26 / active 17→18
 - `CLAUDE.md` — Session 50 deliverables block added, Current State and Phase 7.3 bullet updated
-- `docs/release-v0.7.2-runbook-20260413-V1.0.md` — this file
+- `docs/release-v0-7-2-runbook-20260413-V1.0.md` — this file
 
 No git commits yet. No tags. No builds. No uploads. Nothing destructive.
 
@@ -96,7 +96,7 @@ git add \
   .claude-plugin/marketplace.json \
   skills/librarian/SKILL.md \
   docs/release-notes-20260413-V2.0.md \
-  docs/release-v0.7.2-runbook-20260413-V1.0.md \
+  docs/release-v0-7-2-runbook-20260413-V1.0.md \
   docs/REGISTRY.yaml \
   CLAUDE.md
 
