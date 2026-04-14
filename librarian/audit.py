@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
 from .naming import validate as validate_name
+from .oplog_lock import is_append_only, platform_support
 from .registry import Registry
 from .review import OverdueReview, compute_overdue
 
@@ -42,6 +43,15 @@ class AuditReport:
     # AuditReport.clean to False today; keep report.clean semantics
     # stable for existing consumers).
     overdue_reviews: list[OverdueReview] = field(default_factory=list)
+
+    # Phase 7.5 — OS-level append-only flag state on the oplog file.
+    # True  = kernel-enforced append-only (tamper-resistant)
+    # False = no OS protection (detect-only via hash chain)
+    # None  = undetectable (unsupported OS, missing tools, no log yet)
+    # Advisory only — does NOT flip `clean`. Surfaced in the audit
+    # report and on the Audit page as informational.
+    oplog_locked: bool | None = None
+    oplog_path: str = ""  # resolved path used for the lock probe
 
     @property
     def clean(self) -> bool:
@@ -143,6 +153,11 @@ def audit(
 
     # Phase 7.2 — overdue review deadlines
     report.overdue_reviews = compute_overdue(registry.documents)
+
+    # Phase 7.5 — oplog append-only detection
+    oplog_path = repo_root / "operator" / "librarian-audit.jsonl"
+    report.oplog_path = str(oplog_path)
+    report.oplog_locked = is_append_only(oplog_path)
 
     return report
 
@@ -257,6 +272,16 @@ def format_report(report: AuditReport) -> str:
                 f"{rev.days_overdue}d overdue)"
             )
         lines.append("")
+
+    # Phase 7.5 — oplog lock status line. Informational, one line.
+    if report.oplog_locked is True:
+        lines.append("  Oplog lock: ENABLED (kernel-enforced append-only)")
+    elif report.oplog_locked is False:
+        lines.append(
+            "  Oplog lock: disabled (detect-only hash chain). "
+            "Enable: scripts/librarian-oplog-lock-20260414-V1.0.sh lock"
+        )
+    # None = undetectable — stay silent to avoid noise on Windows/CI
 
     if report.clean:
         lines.append("  OK: all clean.")

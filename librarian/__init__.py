@@ -28,6 +28,12 @@ from .manifest import (
 )
 from .naming import ParsedName, ValidationResult, parse_filename, validate
 from .oplog import OpLogEntry, append as oplog_append, log_operation, read_log, format_log, verify_chain
+from .oplog_lock import (
+    is_append_only,
+    lock_instructions,
+    platform_support,
+    unlock_instructions,
+)
 from .registry import Registry
 from .review import (
     OverdueReview,
@@ -107,6 +113,11 @@ __all__ = [
     "read_log",
     "format_log",
     "verify_chain",
+    # oplog_lock (Phase 7.5)
+    "is_append_only",
+    "lock_instructions",
+    "platform_support",
+    "unlock_instructions",
     # recommend
     "PRESET_EXPECTATIONS",
     "COMPLIANCE_TEMPLATES",

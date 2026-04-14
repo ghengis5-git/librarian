@@ -80,6 +80,38 @@ The new version inherits `next_review` from the predecessor by default.
 Use `--review-by` to override or `--clear-review` to drop the deadline.
 The two flags are mutually exclusive.
 
+### oplog
+
+Inspect the OS-level append-only lock state on the operation log (Phase 7.5).
+
+```bash
+librarian --registry docs/REGISTRY.yaml oplog status
+```
+
+**States returned:**
+
+- **locked** — the oplog file has the kernel-enforced append-only flag set.
+  Attempts to truncate or rewrite past entries return `EPERM`. This promotes
+  the detect-only hash chain to prevention mode.
+- **unlocked** — no OS-level tampering protection. Detect-only hash chain only.
+- **undetectable** — the filesystem or platform doesn't support file attribute
+  probes (e.g., Windows, some container overlays). The audit stays silent
+  rather than alarming.
+- **missing** — the oplog file doesn't exist yet. Run any librarian operation
+  to create it.
+
+**Applying the lock** lives outside the Python CLI because Linux requires sudo:
+
+```bash
+scripts/librarian-oplog-lock-20260414-V1.0.sh lock
+scripts/librarian-oplog-lock-20260414-V1.0.sh status
+scripts/librarian-oplog-lock-20260414-V1.0.sh unlock
+```
+
+On macOS this uses `chflags uappend` (no sudo, owner-only). On Linux it uses
+`sudo chattr +a`. The oplog's normal `open(path, "a")` append semantics are
+preserved — only truncation and random-offset writes are blocked.
+
 ### review
 
 Manage per-document review deadlines (the optional `next_review` field).

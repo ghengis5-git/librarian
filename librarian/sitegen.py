@@ -5399,6 +5399,8 @@ def _build_audit_page(manifest: "Manifest") -> str:
         "overdue_reviews": [
             r.to_dict() for r in (report.overdue_reviews if report else [])
         ],
+        "oplog_locked": (report.oplog_locked if report else None),
+        "oplog_path": (report.oplog_path if report else ""),
         "clean": report.clean if report else True,
     }
     audit_json = _json_safe(audit_data, indent=None)
@@ -5424,10 +5426,21 @@ def _build_audit_page(manifest: "Manifest") -> str:
     n_violations = len(audit_data["naming_violations"])
     n_pending = len(audit_data["pending_cross_refs"])
     n_overdue = len(audit_data["overdue_reviews"])
+    oplog_locked_val = audit_data.get("oplog_locked")
     chain_ok = chain_result.get("valid", True)
     _check = "\u2713"
     _cross = "\u2717"
+    _dash = "\u2013"
     chain_icon = _check if chain_ok else _cross
+    if oplog_locked_val is True:
+        oplog_icon = _check
+        oplog_cls = "kpi-ok"
+    elif oplog_locked_val is False:
+        oplog_icon = _cross
+        oplog_cls = "kpi-warn"
+    else:
+        oplog_icon = _dash
+        oplog_cls = "kpi-ok"  # undetectable -> don't alarm
 
     body = f"""<h1>Audit &amp; Verify</h1>
 <div class="subtitle">Document governance health report &mdash; generated {_esc(generated_at)}</div>
@@ -5453,6 +5466,10 @@ def _build_audit_page(manifest: "Manifest") -> str:
   <div class="kpi-card">
     <div class="kpi-value {'kpi-ok' if n_overdue == 0 else 'kpi-warn'}">{n_overdue}</div>
     <div class="kpi-label">Overdue Reviews</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value {oplog_cls}">{oplog_icon}</div>
+    <div class="kpi-label">Oplog Lock</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-value {'kpi-ok' if chain_ok else 'kpi-err'}">{chain_icon}</div>
@@ -5588,6 +5605,14 @@ def _build_audit_page(manifest: "Manifest") -> str:
         <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
           <div class="aud-cli-title">List Overdue Reviews</div>
           <code>python -m librarian --registry docs/REGISTRY.yaml review list --overdue</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Oplog Lock Status</div>
+          <code>python -m librarian --registry docs/REGISTRY.yaml oplog status</code>
+        </div>
+        <div class="aud-cli-card" onclick="copyText(this.querySelector('code').textContent)">
+          <div class="aud-cli-title">Enable Oplog Lock</div>
+          <code>scripts/librarian-oplog-lock-20260414-V1.0.sh lock</code>
         </div>
       </div>
       <p class="aud-cli-hint">Click any card to copy the command.</p>

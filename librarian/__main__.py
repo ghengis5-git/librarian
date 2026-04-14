@@ -25,6 +25,12 @@ from .evidence import generate_evidence, write_evidence, verify_evidence, Signin
 from .manifest import generate as generate_manifest, write_manifest
 from .naming import parse_filename
 from .oplog import log_operation, read_log, read_log_since, format_log
+from .oplog_lock import (
+    is_append_only,
+    lock_instructions,
+    platform_support,
+    unlock_instructions,
+)
 from .registry import Registry
 from .review import (
     ReviewDateError,
@@ -79,6 +85,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
                     "overdue_reviews": [
                         r.to_dict() for r in report.overdue_reviews
                     ],
+                    "oplog_locked": report.oplog_locked,
+                    "oplog_path": report.oplog_path,
                     "clean": report.clean,
                 },
                 "recommendations": rec_report.to_dict(),
@@ -104,6 +112,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
                     "overdue_reviews": [
                         r.to_dict() for r in report.overdue_reviews
                     ],
+                    "oplog_locked": report.oplog_locked,
+                    "oplog_path": report.oplog_path,
                     "clean": report.clean,
                 },
             }
@@ -422,6 +432,44 @@ def _review_list(args: argparse.Namespace) -> int:
     print(f"Documents with review deadlines ({len(all_with_deadline)}):")
     for fn, deadline, delta in all_with_deadline:
         print(_row(fn, deadline, delta))
+    return 0
+
+
+def cmd_oplog(args: argparse.Namespace) -> int:
+    """Phase 7.5 — inspect the OS-level append-only flag on the oplog file."""
+    repo_root = Path(args.repo or ".").resolve()
+    log_path = repo_root / "operator" / "librarian-audit.jsonl"
+
+    sub = getattr(args, "oplog_action", None)
+    if sub != "status":
+        print("Error: no oplog subcommand. Use: status", file=sys.stderr)
+        print("  (To apply/remove the lock, run "
+              "scripts/librarian-oplog-lock-20260414-V1.0.sh.)",
+              file=sys.stderr)
+        return 2
+
+    plat = platform_support()
+    locked = is_append_only(log_path)
+
+    print(f"Oplog file:   {log_path}")
+    print(f"Platform:     {plat}")
+    if not log_path.exists():
+        print("State:        missing (log has not been created yet)")
+        print("Hint:         run any librarian operation (e.g., audit) to create it.")
+        return 0
+    if locked is True:
+        print("State:        locked — kernel-enforced append-only")
+        print("Removal:      " + unlock_instructions(log_path))
+        return 0
+    if locked is False:
+        print("State:        unlocked — detect-only hash chain only")
+        print("Apply:        " + lock_instructions(log_path))
+        print("              (or: scripts/librarian-oplog-lock-20260414-V1.0.sh lock)")
+        return 0
+    # None
+    print("State:        undetectable")
+    print("Reason:       append-only flags are not supported or not probeable on "
+          "this platform/filesystem.")
     return 0
 
 
@@ -1122,6 +1170,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_site = sub.add_parser("site", help="Generate static HTML site from manifest")
     p_site.add_argument("-o", "--output-dir", help="output directory (default: _site/)")
     p_site.set_defaults(func=cmd_site)
+
+    # --- oplog (Phase 7.5)
+    p_oplog = sub.add_parser(
+        "oplog",
+        help="Inspect the operation-log append-only lock state",
+    )
+    oplog_sub = p_oplog.add_subparsers(dest="oplog_action")
+    oplog_sub.add_parser(
+        "status",
+        help="show whether the oplog file is kernel-enforced append-only",
+    )
+    p_oplog.set_defaults(func=cmd_oplog)
 
     # --- log (Phase C)
     p_log = sub.add_parser("log", help="View the operation log")

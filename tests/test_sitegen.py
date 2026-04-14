@@ -2328,8 +2328,16 @@ class TestAuditPage:
     def test_audit_kpi_cards(self, site_out):
         html = (site_out / "audit.html").read_text()
         for label in ["Registered", "Unregistered", "Missing", "Naming Issues",
-                      "Overdue Reviews", "Chain Integrity"]:
+                      "Overdue Reviews", "Oplog Lock", "Chain Integrity"]:
             assert label in html, f"Missing KPI: {label}"
+
+    def test_audit_oplog_cli_cards(self, site_out):
+        """Phase 7.5: CLI quick-cards for oplog status + enable lock."""
+        html = (site_out / "audit.html").read_text()
+        assert "Oplog Lock Status" in html
+        assert "oplog status" in html
+        assert "Enable Oplog Lock" in html
+        assert "librarian-oplog-lock" in html
 
     def test_audit_overdue_reviews_in_audit_data(self, site_out):
         # Phase 7.2: the AUDIT JS variable must include an overdue_reviews
