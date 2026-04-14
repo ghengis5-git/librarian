@@ -533,6 +533,29 @@ Commands:
 
 **Security items (LOW):** Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`). Oplog prevention mode rolls up into Phase 7.5.
 
+4. **Phase 8 — Post-v0.7.4 roadmap** (proposed Session 51; nothing started):
+   - **Phase 8.0** — Adversarial-review hardening pass. 🔴 NOT STARTED. Nine findings from Session 51 adversarial review of Phase 7.5 + 7.7 code:
+     1 CRITICAL (shell-injection surface in `oplog_lock.lock_instructions/unlock_instructions` — fix with `shlex.quote()`),
+     3 HIGH (symlink traversal in `precommit._should_check`; registry walk accepts filesystem-root `/docs/REGISTRY.yaml`; unquoted `lsattr` parsing in `librarian-oplog-lock-20260414-V1.0.sh`),
+     4 MEDIUM (duplicate `infrastructure_exempt` parsing; TOCTOU in `is_append_only`; silent exit on empty argv; `chflags`/`chattr` failures swallow stderr),
+     1 LOW (`uname -s` redirect). All localized, single hardening commit closes all nine. ~1.5 hr.
+   - **Phase 8.1** — Polish sweep. 🔴 NOT STARTED. Bundle of small items: (a) `sitegen.py` SyntaxWarnings from unraw'd triple-quoted f-strings around line 2382-2386, (b) add `.pre-commit-hooks.yaml` + `cli-reference.md` to `naming_rules.infrastructure_exempt` so the hook stops nagging, (c) CLAUDE.md continuation block reflecting Phase 7.7 + v0.7.4 (not added in `758e30e`), (d) resolve the librarian's own audit folder-density warning (`docs/` has 17 docs past the threshold). ~45 min.
+   - **Phase 8.2** — Adoption helpers. 🔴 NOT STARTED. Four features that reduce the "I have to learn 12 commands" overhead for the non-programmer audience:
+     (a) `librarian archive <filename>` — moves superseded docs to `docs/archive/`, updates `path` field, leaves crumb. ~1.5 hr.
+     (b) `librarian doctor` — single-shot diagnostic command: registry parses, all referenced files exist, hook installed, signing key configured, no orphans, no broken cross-refs. ~2 hr.
+     (c) GitHub Actions workflow — ship a reusable `.github/workflows/librarian-audit.yml` running `librarian audit` + `librarian-precommit` on every PR. ~1 hr.
+     (d) `librarian register --all` — scan tracked_dirs, batch-register anything unregistered. Adoption helper for existing projects. ~30 min.
+     Total: ~5 hr.
+   - **Phase 8.3** — Audit power-ups. 🔴 NOT STARTED. Four features that extend the audit's surface:
+     (a) Cross-reference auto-resolution — flip `pending` → `resolved` when a matching doc lands in the registry. ~1 hr.
+     (b) Tag taxonomy validator — warn if a doc uses `tags:` values not in `project_config.tags_taxonomy`. ~30 min.
+     (c) Content-based duplicate detection — SHA-256 of body content (separate from file-hash manifest); flag suspected duplicates across the registry. ~1.5 hr.
+     (d) Schema validation on registry load — hard-validate against `registry.schema.yaml`, fail cleanly instead of raising downstream `KeyError`s. ~1 hr.
+     Total: ~4 hr.
+   - **Phase 8.4** — Larger features (deferred). 🔴 NOT STARTED. Listed for completeness, not recommended until there's a concrete driver: approval workflow (`status=pending_approval` + approver field), multi-author support, concurrent-write protection via filelock, custom statuses per project, encryption-at-rest for evidence packs. No effort estimate — each is multi-hour, some multi-day.
+
+   Recommended execution order: 8.0 → 8.1 → 8.2 → 8.3 → defer 8.4. Phases 8.0 + 8.1 are housekeeping and remove existing noise. 8.2 builds on the adoption surface opened by Phase 7.7 (pre-commit framework). 8.3 makes the audit do more of what it already promises. 8.4 waits for a real use case.
+
 ---
 
 ## Buildout Plan
