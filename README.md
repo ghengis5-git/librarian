@@ -82,6 +82,7 @@ Configurable: separator (`-`, `_`, `.`), case, date format, version format, doma
 | `evidence` | Generate tamper-evident IP evidence pack |
 | `diff` | Compare two manifests |
 | `log` | Read/filter the append-only operation log |
+| `oplog` | Inspect the OS-level append-only lock state on the oplog file (`status`) |
 | `dashboard` | Render interactive HTML dashboard |
 | `site` | Generate full static site with sidebar navigation |
 | `init` | Scaffold a new REGISTRY.yaml from a preset |
@@ -147,7 +148,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-743 tests across 15 test files.
+774 tests across 16 test files.
 
 ## License
 

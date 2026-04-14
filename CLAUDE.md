@@ -138,7 +138,7 @@ Commands:
 ---
 
 ## Test Suite
-- **743 tests** across 15 test files
+- **774 tests** across 16 test files
 - Phase A: 36 (naming 10, versioning 10, registry 10, audit 6)
 - Config: 56 (presets 8, templates 6, loading 7, naming-config 10, configurable-naming 9, parse 4, CLI init 5, CLI config 3, merge 4)
 - Phase B: 26 (manifest)
@@ -161,17 +161,18 @@ Commands:
 - Evidence signing: 12 (default off 2, signing config 8, verify returns 1, signed pack mock 1)
 - Folders Only fix: 1 (branch expansion)
 - Manage page: 16 (exists/title/sections/nav/data/forms/JS/search/CSS/index)
-- Audit page: 19 (exists/title/sections/KPI/nav/data/JS/controls/seal/CLI/recs/OODA/oplog/CSS/search-index/global-search + Phase 7.2 overdue KPI + overdue CLI card)
+- Audit page: 21 (exists/title/sections/KPI/nav/data/JS/controls/seal/CLI/recs/OODA/oplog/CSS/search-index/global-search + Phase 7.2 overdue KPI + overdue CLI card + Phase 7.5 oplog KPI + oplog CLI cards)
 - Phase 7.1 Pre-commit hook: 11 (grep unit 8 + end-to-end 3 — list-item/indented YAML, filename-only entries, substring suffix/prefix rejection, dots-metachar exploit)
 - Phase 7.2 Review deadlines: 49 (parse 9, format 2, compute_overdue 9, compute_upcoming 4, audit integration 3, CLI register 3, CLI bump 4, CLI review subcommand 9, CLI audit JSON 1, + 5 infrastructure)
+- Phase 7.5 Oplog append-only: 30 (platform support 6, dispatch 2, macOS stat-flag 5, Linux lsattr parsing 7, instruction strings 5, audit integration 5)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 
 ---
 
 ## Current State
-**Version:** 0.7.2 released (tag `v0.7.2`, PyPI https://pypi.org/project/librarian-2026/0.7.2/, GitHub release). `HEAD` on main is ahead of the tag with Phase 7.1 + 7.2 unreleased work; manifests still read `0.7.2`. Next release target is v0.7.3 (see Phase 7.3-next).
-**Tests:** 743/743 PASS (681 pre-session + 11 Phase 7.1 + 51 Phase 7.2)
+**Version:** 0.7.3 released (tag `v0.7.3`, PyPI https://pypi.org/project/librarian-2026/0.7.3/, GitHub release). `HEAD` on main is ahead of the tag with Phase 7.5 (oplog append-only lock) unreleased work; manifests still read `0.7.3`. Next release target is v0.7.4.
+**Tests:** 774/774 PASS (681 pre-session + 11 Phase 7.1 + 51 Phase 7.2 + 31 Phase 7.5)
 
 ### Completed Phases
 - **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
@@ -450,7 +451,7 @@ Commands:
 - **Cowork sandbox limits hit as expected**: can't run `pytest`, `git tag`, `python -m build`, `twine upload`, or `gh release create`. These are the entire "execute the release" surface. All execution steps moved to the host runbook per user direction.
 - **Phase 7.3 — EXECUTED** in host terminal between Sessions 50 and 51. Runbook ran clean: tag `v0.7.2` pushed, sdist + wheel uploaded to PyPI (`librarian-2026==0.7.2`), GitHub release created, marketplace refreshed, plugin smoke test passed. `82103c9 release: v0.7.2` and `ebfe7a7 registry: activate v0.7.2 release notes` landed on main. No Session 50.5 log because the host commits *are* the log.
 
-### Session 51 Deliverables (Phase 7.1 + Phase 7.2 — unreleased, sitting on main past v0.7.2 tag)
+### Session 51 Deliverables (Phase 7.1 + 7.2 + 7.3-next release + 7.5 — most unreleased, v0.7.3 shipped mid-session)
 
 #### Phase 7.1 — Pre-commit hook registry-sync hardening (`425180e`)
 - **Diagnosis correction**: CLAUDE.md's Phase 7.1 entry described the bug as "hook greps for full filepath but registry stores filename only". That bug was actually fixed in `853c5ba` (Session 35, while working on Phase G.1 prep). Tested against all 27 real registry entries → zero false negatives.
@@ -482,6 +483,25 @@ Commands:
 - **51 new tests** (692 → 743) — `tests/test_review.py` (49 tests across 8 classes) and `tests/test_sitegen.py` (+2, +1 updated).
 - **Smoke test on real registry**: set deadline on `librarian-architecture-20260411-V1.0.md` → audit detected (468 days overdue) → `review list --overdue` listed it → cleared back out → `git checkout` reverted stray writes.
 
+#### Phase 7.3-next — v0.7.3 release (shipped mid-session)
+- Commits on main leading up to tag: `425180e` (7.1), `c92875a` (7.2), `4283c43` (Session 51 docs), `62d3086` (release: version bumps + notes + runbook + manifest/evidence), `e8d866d` (post-release: activate release-notes V3.0 + runbook in registry).
+- All 12 runbook steps executed clean: pytest 743 passed → `git tag -s v0.7.3` → `python -m build` (wheel 311 KB, sdist 306 KB) → TestPyPI dry-run → real PyPI upload → `git push origin main && git push origin v0.7.3` → `gh release create v0.7.3` with wheel + sdist attached → marketplace refreshed (plugin went 0.7.2 → 0.7.3).
+- **Post-release smoke test** in a fresh `/tmp/lib-smoke` venv: `pip install librarian-2026==0.7.3` + `librarian register --review-by 2027-01-01` + `librarian review list` + `librarian audit` all worked end-to-end. PyPI CDN had a brief propagation lag (first install pulled 0.7.2); resolved on retry with `--no-cache-dir`.
+- v0.7.3 release notes promoted draft → active in post-release housekeeping commit `e8d866d` (mirrors how v0.7.1 and v0.7.2 were handled).
+- **Phase 7.4 explicitly skipped** mid-session — email-in-history scrub deferred indefinitely; user opted not to rewrite the Session 48 blob even though traffic could warrant it later.
+
+#### Phase 7.5 — Oplog append-only detection + setup helper (`f296045`)
+- **Scope pivot**: the original Phase 7.5 description in CLAUDE.md said "oplog prevention mode — requires oplog-format change — needs explicit approval." Session 51 chose **Option A** of the three scoped alternatives: OS-level append-only flag. **Zero oplog format change** — the JSONL schema stays identical, so the §When to Stop and Ask rule on oplog format changes was not triggered.
+- **Mechanism**: kernel-enforced append-only via `chflags uappend` (macOS, UF_APPEND bit 0x04) or `chattr +a` (Linux, requires CAP_LINUX_IMMUTABLE / sudo). The existing `oplog.append()` already opens with `"a"` (`O_APPEND`), so normal operation is unaffected once the flag is set. Attackers with write access can no longer truncate or rewrite past entries — kernel returns EPERM.
+- **New module** `librarian/oplog_lock.py` (~162 lines): `is_append_only(path) -> bool | None` (True/False/None with graceful degradation on unsupported platforms, missing tools, overlay/network filesystems); `platform_support() -> "macos" | "linux" | "unsupported"`; `lock_instructions(path)` / `unlock_instructions(path)` build human-readable shell commands. Never raises.
+- **Setup helper** `scripts/librarian-oplog-lock-20260414-V1.0.sh` (~185 lines): `status | lock | unlock` subcommands, auto-detects OS. Applying the flag lives outside Python because Linux requires sudo — didn't want to gate library calls on that. Treats non-zero `lsattr` exit as "unknown" rather than silently reporting "unlocked" (bug caught + fixed mid-build during smoke test).
+- **CLI**: new `librarian oplog status` subcommand (inspect-only; apply/remove routes through the shell script).
+- **Audit integration**: `AuditReport.oplog_locked: bool | None` + `AuditReport.oplog_path: str` fields; `format_report` adds a one-line status (silent when `None`); `audit --json` includes both fields in payload; `report.clean` deliberately unaffected (preserves the existing CI-contract; advisory like folder suggestions and overdue reviews).
+- **Audit page** (`sitegen.py`): new "Oplog Lock" KPI card (✓ when locked, ✗ when unlocked, – when undetectable); two new CLI quick-cards for status + enable. Audit page test count bumped 19 → 21.
+- **Docs**: `skills/librarian/references/cli-reference.md` updated with full `oplog` section covering states (locked/unlocked/undetectable/missing), apply/remove instructions, and cross-platform semantics.
+- **31 new tests** (743 → 774) — `tests/test_oplog_lock.py` (30 tests: platform dispatch 6, macOS stat-flag 5, Linux lsattr parsing 7 with mocked subprocess, instruction strings 5, audit integration 5) + `tests/test_sitegen.py` (+1 KPI assertion, +1 new CLI quick-cards test). macOS and Linux detection paths are covered via mocking rather than actually setting the flag (requires sudo on Linux, not worth the test flakiness).
+- **End-to-end smoke test** in overlayfs sandbox: Python CLI, shell script, audit text output, and `audit --json` all agree on "undetectable" state — matches the graceful-degradation contract documented in `oplog_lock.py`. Expected path: on a real ext4/macOS filesystem the detection would succeed.
+
 ### Next Steps (by priority)
 1. **Phase G — Document templates & recommendations engine** ✅ COMPLETE:
    - ~~G.1: Template infrastructure~~ ✅ (Session 36)
@@ -500,14 +520,15 @@ Commands:
    - **Deferred cleanup**: `ghengis5@gmail.com` still appears in the public `marketplace.json` blob history (Session 48 add commit). User opted to leave history untouched; can scrub later with `git filter-repo --replace-text` + force-push if traffic warrants
    - All commits SSH-signed
 3. **Phase 7 — Post-publish polish + releases**:
-   - **Phase 7.1** — Pre-commit hook registry-sync hardening. ✅ DONE (Session 51, commit `425180e`). 11 regression tests. Sitting on main unreleased.
-   - **Phase 7.2** — `next_review` field + `review` CLI + Audit page KPI. ✅ DONE (Session 51, commit `c92875a`). Scope A3+B1+C1+D1. 51 new tests. Sitting on main unreleased.
-   - **Phase 7.3** — v0.7.2 patch release. ✅ DONE (Session 50 prep + host-terminal execution between Sessions 50 and 51). Tag `v0.7.2` live on GitHub; wheel + sdist on PyPI at `librarian-2026==0.7.2`; marketplace refreshed; plugin install path smoke-tested. Shipped Session 49 install-path fixes only — predates 7.1 and 7.2.
-   - **Phase 7.3-next** — v0.7.3 release. 🔴 NOT STARTED. Absorbs Phase 7.1 + 7.2 + any further work on main before the tag. Bumps 5 manifests (`librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `skills/librarian/SKILL.md`) 0.7.2 → 0.7.3, drafts release notes, tags `v0.7.3`, builds + uploads, refreshes marketplace. ~30 min host-terminal execute.
-   - **Phase 7.4** — Email-in-history scrub. `ghengis5@gmail.com` still lives in public git log on Session 48 `marketplace.json` commit. `git filter-repo --replace-text` + force-push. Defer unless repo gets traction.
-   - **Phase 7.5** — Oplog prevention mode. Currently detect-only (integrity verified at audit, not at append). Requires oplog-format change — needs explicit approval per §When to Stop and Ask.
-   - **Phase 7.6** — Community signals. Launch announcement (HN / r/programming / Claude Code community), first external-user outreach, short blog on naming convention + evidence-pack design.
-   - **Phase 7.7** — Pre-commit framework native extension. Convert current shell hook into a `pre-commit-hooks.yaml` entry for the `pre-commit` framework — broader reach beyond Claude Code.
+   - **Phase 7.1** — Pre-commit hook registry-sync hardening. ✅ DONE + SHIPPED (Session 51 commit `425180e`, in v0.7.3). 11 regression tests.
+   - **Phase 7.2** — `next_review` field + `review` CLI + Audit page KPI. ✅ DONE + SHIPPED (Session 51 commit `c92875a`, in v0.7.3). Scope A3+B1+C1+D1. 51 new tests.
+   - **Phase 7.3** — v0.7.2 patch release. ✅ DONE (Session 50 prep + host execution between Sessions 50 and 51). Shipped Session 49 install-path fixes only.
+   - **Phase 7.3-next** — v0.7.3 release. ✅ DONE (Session 51, release commit `62d3086` + housekeeping `e8d866d`). Tag `v0.7.3` live; PyPI 0.7.3 live; GitHub release with wheel + sdist; marketplace refreshed; plugin updated to 0.7.3.
+   - **Phase 7.4** — Email-in-history scrub. 🟡 EXPLICITLY SKIPPED Session 51. User opted to leave `ghengis5@gmail.com` in the Session 48 `marketplace.json` blob history rather than rewrite + force-push. Can revisit later if traffic warrants.
+   - **Phase 7.5** — Oplog append-only detection (prevention mode via OS flag). ✅ DONE (Session 51, commit `f296045`). **Unreleased — sitting on main past v0.7.3 tag.** Chose Option A (OS-level append-only flag) from the three scoped alternatives — zero oplog format change, so §When to Stop and Ask rule was not triggered. Detection module + setup helper + CLI subcommand + audit integration + Audit page KPI. 31 new tests.
+   - **Phase 7.7** — Pre-commit framework native extension. 🔴 NOT STARTED. Convert current shell hook into a `pre-commit-hooks.yaml` entry for the `pre-commit` framework — broader reach beyond Claude Code. ~2 hr.
+   - **Phase 7.4-next** — v0.7.4 release. 🔴 NOT STARTED. Aggregator for Phase 7.5 + 7.7 (if shipped together). Bumps 5 manifests 0.7.3 → 0.7.4, drafts release notes, tags `v0.7.4`, builds + uploads, refreshes marketplace. ~30 min host execute.
+   - **Phase 7.6** — Community signals. Launch announcement (HN / r/programming / Claude Code community), first external-user outreach, short blog on naming convention + evidence-pack design. Gated on having 7.7 shipped so the pre-commit-framework install surface is live before announcement.
    - **Phase 7.8** — VSCode extension / LSP. Surface audit findings inline in the editor. Large scope; gated on external adoption.
 
 **Security items (LOW):** Template for-loop iterator coverage ✅ fixed Session 46. Template engine output size limit ✅ fixed Session 46 (`_MAX_RENDER_BYTES = 4 MB`, `TemplateRenderError`). Oplog prevention mode rolls up into Phase 7.5.
