@@ -152,7 +152,9 @@ class TestGitHelpers:
 
 
 class TestGenerateEvidence:
-    def test_generates_pack(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+    def test_generates_pack(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         assert pack.project_name == "Evidence Test Project"
         assert pack.generated_at != ""
@@ -160,39 +162,56 @@ class TestGenerateEvidence:
         assert pack.manifest_json_sha256 != ""
         assert len(pack.manifest_json_sha256) == 64  # SHA-256 hex
 
-    def test_manifest_embedded(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+    def test_manifest_embedded(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         assert "summary" in pack.manifest
         assert pack.manifest["summary"]["total_registered"] == 2
 
-    def test_seal_matches_manifest(self, evidence_registry: Registry, evidence_repo: Path) -> None:
-        """The seal must equal SHA-256 of the manifest JSON."""
+    def test_seal_matches_manifest(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
+        """The seal must equal SHA-256 of the canonical manifest JSON (no generated_at)."""
         pack = generate_evidence(evidence_registry, evidence_repo)
         from librarian.manifest import generate as gen_manifest
+
         m = gen_manifest(evidence_registry, evidence_repo)
-        expected_seal = hashlib.sha256(m.to_json().encode("utf-8")).hexdigest()
+        expected_seal = hashlib.sha256(
+            m.to_canonical_json().encode("utf-8")
+        ).hexdigest()
         assert pack.manifest_json_sha256 == expected_seal
 
-    def test_git_fields_populated_in_non_git(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+    def test_git_fields_populated_in_non_git(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
         """Non-git repos get empty strings, not errors."""
         pack = generate_evidence(evidence_registry, evidence_repo)
         assert pack.git_commit_hash == ""
         assert pack.git_branch == ""
         assert pack.git_dirty is False
 
-    def test_generator_version(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+    def test_generator_version(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
-        assert pack.generator_version == "0.7.0"
+        assert pack.generator_version == "0.8.0"
 
-    def test_default_no_signature(self, evidence_registry: Registry, evidence_repo: Path) -> None:
+    def test_default_no_signature(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
         """Default (off) evidence_signing produces no signature block."""
         pack = generate_evidence(evidence_registry, evidence_repo)
         assert pack.signature == {}
         d = pack.to_dict()
         assert "signature" not in d
 
-    def test_signing_off_explicit(self, evidence_registry: Registry, evidence_repo: Path) -> None:
-        pack = generate_evidence(evidence_registry, evidence_repo, evidence_signing="off")
+    def test_signing_off_explicit(
+        self, evidence_registry: Registry, evidence_repo: Path
+    ) -> None:
+        pack = generate_evidence(
+            evidence_registry, evidence_repo, evidence_signing="off"
+        )
         assert pack.signature == {}
 
 
@@ -200,7 +219,9 @@ class TestGenerateEvidence:
 
 
 class TestWriteEvidence:
-    def test_writes_file(self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path) -> None:
+    def test_writes_file(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         out = tmp_path / "evidence.json"
         result = write_evidence(pack, out)
@@ -209,7 +230,9 @@ class TestWriteEvidence:
         parsed = json.loads(out.read_text())
         assert "evidence_pack" in parsed
 
-    def test_creates_parent_dirs(self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path) -> None:
+    def test_creates_parent_dirs(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         deep = tmp_path / "a" / "b" / "evidence.json"
         write_evidence(pack, deep)
@@ -220,7 +243,9 @@ class TestWriteEvidence:
 
 
 class TestVerifyEvidence:
-    def test_valid_pack_verifies(self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path) -> None:
+    def test_valid_pack_verifies(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         pack_path = tmp_path / "evidence.json"
         write_evidence(pack, pack_path)
@@ -229,27 +254,35 @@ class TestVerifyEvidence:
         assert result["drift_detected"] is False
         assert result["pack_seal"] == result["current_seal"]
 
-    def test_drift_after_modification(self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path) -> None:
+    def test_drift_after_modification(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         pack_path = tmp_path / "evidence.json"
         write_evidence(pack, pack_path)
 
         # Modify a tracked file
-        (evidence_repo / "docs" / "alpha-doc-20260101-V1.0.md").write_text("MODIFIED CONTENT")
+        (evidence_repo / "docs" / "alpha-doc-20260101-V1.0.md").write_text(
+            "MODIFIED CONTENT"
+        )
 
         result = verify_evidence(pack_path, evidence_registry, evidence_repo)
         assert result["valid"] is False
         assert result["drift_detected"] is True
         assert result["pack_seal"] != result["current_seal"]
 
-    def test_drift_after_addition(self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path) -> None:
+    def test_drift_after_addition(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
         pack = generate_evidence(evidence_registry, evidence_repo)
         pack_path = tmp_path / "evidence.json"
         write_evidence(pack, pack_path)
 
         # Add a new file (doesn't change registry, but won't affect hash unless registered)
         # Instead, modify existing file to trigger drift
-        (evidence_repo / "docs" / "beta-doc-20260101-V1.0.md").write_text("NEW CONTENT\n")
+        (evidence_repo / "docs" / "beta-doc-20260101-V1.0.md").write_text(
+            "NEW CONTENT\n"
+        )
 
         result = verify_evidence(pack_path, evidence_registry, evidence_repo)
         assert result["drift_detected"] is True
@@ -262,6 +295,29 @@ class TestVerifyEvidence:
         write_evidence(pack, pack_path)
         result = verify_evidence(pack_path, evidence_registry, evidence_repo)
         assert result["signature_valid"] is None
+
+    def test_seal_stable_after_delay(
+        self, evidence_registry: Registry, evidence_repo: Path, tmp_path: Path
+    ) -> None:
+        """Seal must match after ≥1 second — regression for time-dependency bug.
+
+        Previously, generated_at was included in the manifest JSON used to
+        compute the seal.  Re-hashing a freshly generated manifest always
+        produced a different seal because the timestamp changed.
+        """
+        import time
+
+        pack = generate_evidence(evidence_registry, evidence_repo)
+        pack_path = tmp_path / "evidence.json"
+        write_evidence(pack, pack_path)
+        time.sleep(1.1)  # force timestamp to change on next generate_manifest call
+        result = verify_evidence(pack_path, evidence_registry, evidence_repo)
+        assert result["valid"] is True, (
+            f"Seal mismatch after delay — time-dependency bug regressed.\n"
+            f"  pack_seal:    {result['pack_seal']}\n"
+            f"  current_seal: {result['current_seal']}"
+        )
+        assert result["drift_detected"] is False
 
 
 # ------------------------------------------------------------------ signing
@@ -304,8 +360,12 @@ class TestSigningConfig:
     @patch("librarian.evidence._git_verify_commit")
     @patch("librarian.evidence._git_commit_hash")
     def test_signed_pack_has_signature_block(
-        self, mock_commit, mock_verify, mock_config,
-        evidence_registry, evidence_repo,
+        self,
+        mock_commit,
+        mock_verify,
+        mock_config,
+        evidence_registry,
+        evidence_repo,
     ) -> None:
         """When signing is configured and HEAD is signed, pack includes signature."""
         mock_config.return_value = {
@@ -323,7 +383,9 @@ class TestSigningConfig:
             "trust_model": "gpg",
             "commit": "abc123def456",
         }
-        pack = generate_evidence(evidence_registry, evidence_repo, evidence_signing="gpg")
+        pack = generate_evidence(
+            evidence_registry, evidence_repo, evidence_signing="gpg"
+        )
         assert pack.signature["signed"] is True
         assert pack.signature["signer"] == "Test User <test@example.com>"
         d = pack.to_dict()
@@ -334,8 +396,12 @@ class TestSigningConfig:
     @patch("librarian.evidence._git_verify_commit")
     @patch("librarian.evidence._git_commit_hash")
     def test_ssh_signing_with_gpg_format_raises(
-        self, mock_commit, mock_verify, mock_config,
-        evidence_registry, evidence_repo,
+        self,
+        mock_commit,
+        mock_verify,
+        mock_config,
+        evidence_registry,
+        evidence_repo,
     ) -> None:
         """ssh mode with gpg.format=openpgp raises SigningError."""
         mock_config.return_value = {
@@ -349,8 +415,12 @@ class TestSigningConfig:
     @patch("librarian.evidence._git_verify_commit")
     @patch("librarian.evidence._git_commit_hash")
     def test_unsigned_commit_raises(
-        self, mock_commit, mock_verify, mock_config,
-        evidence_registry, evidence_repo,
+        self,
+        mock_commit,
+        mock_verify,
+        mock_config,
+        evidence_registry,
+        evidence_repo,
     ) -> None:
         """Signing enabled but HEAD not signed raises SigningError."""
         mock_config.return_value = {"commit.gpgsign": "true", "gpg.format": "openpgp"}

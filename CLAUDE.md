@@ -681,3 +681,8 @@ Commits should be signed automatically. If not, pass `-S` flag explicitly.
 - Any change to the manifest seal algorithm requires explicit approval
 - Any change to the oplog format (JSONL schema) requires approval
 - Never self-initiate architectural changes — wait for instruction
+
+## Release Process Guardrails
+- **Every minor-version bump (v0.8.0+) and v1.0.0+ must include an adversarial code review phase before the release runbook runs.** CRIT and HIGH findings block the release; MED findings require explicit written acceptance in release notes to defer; LOW findings fix opportunistically. Review scope: all code changed since the last major release, focusing on shell/subprocess, path handling, TOCTOU, trust boundaries, error-swallowing, and concurrency. Self-review (Claude reviewing prior-session code) is fine — Session 52's review caught 9 real findings this way. See `auto-memory/feedback_major_release_adversarial_review.md` for the full protocol.
+- Release runbook `-m` messages must be ASCII-only: hyphen not em-dash, `plus` not `+`, no parens inside quoted strings. See `auto-memory/feedback_release_runbook_ascii_only.md`.
+- PyPI `/json` version-check curls after upload must `sleep 30 &&` first for CDN propagation. See `auto-memory/feedback_release_runbook_curl_lag.md`.

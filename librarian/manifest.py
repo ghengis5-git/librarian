@@ -29,6 +29,15 @@ from typing import Any
 from .registry import Registry
 
 
+# ------------------------------------------------------------------ exceptions
+
+
+class ManifestError(Exception):
+    """Raised when manifest generation fails due to a data integrity problem."""
+
+    pass
+
+
 # ------------------------------------------------------------------ data model
 
 
@@ -102,20 +111,48 @@ class Manifest:
 
     def to_json(self, indent: int = 2) -> str:
         """Deterministic JSON string (sorted keys)."""
-        return json.dumps(self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False)
+        return json.dumps(
+            self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False
+        )
+
+    def to_canonical_dict(self) -> dict[str, Any]:
+        """Stable dict for seal computation — excludes volatile runtime fields.
+
+        ``generated_at`` is omitted so that seals computed at different times
+        over identical file contents produce the same value.  This is the
+        correct input for ``hashlib.sha256`` when generating or verifying an
+        evidence pack seal.
+        """
+        d = self.to_dict()
+        d.get("meta", {}).pop("generated_at", None)
+        return d
+
+    def to_canonical_json(self, indent: int = 2) -> str:
+        """Deterministic JSON for seal computation (excludes generated_at)."""
+        return json.dumps(
+            self.to_canonical_dict(), indent=indent, sort_keys=True, ensure_ascii=False
+        )
 
 
 # ------------------------------------------------------------------ builders
 
 
-def _hash_file(path: Path) -> FileHash:
-    """Compute SHA-256 of a file. Returns FileHash with exists=False if missing."""
+def _hash_file(path: Path, registered_path: str = "") -> FileHash:
+    """Compute SHA-256 of a file. Returns FileHash with exists=False if missing.
+
+    Args:
+        path: absolute path to the file on disk.
+        registered_path: the stable identifier to store in FileHash.filename
+            (typically the path relative to repo_root).  Falls back to
+            ``path.name`` when not provided, for direct test use.
+    """
+    filename = registered_path or path.name
     try:
         data = path.read_bytes()
     except (FileNotFoundError, PermissionError, IsADirectoryError):
-        return FileHash(filename=path.name, sha256="", size_bytes=0, exists=False)
+        return FileHash(filename=filename, sha256="", size_bytes=0, exists=False)
     h = hashlib.sha256(data).hexdigest()
-    return FileHash(filename=path.name, sha256=h, size_bytes=len(data), exists=True)
+    return FileHash(filename=filename, sha256=h, size_bytes=len(data), exists=True)
 
 
 def _resolve_file_path(
@@ -178,22 +215,28 @@ def _extract_edges(documents: list[dict[str, Any]]) -> list[DependencyEdge]:
                 sections = xref.get("sections", [])
                 status = xref.get("status", "unknown")
                 if target:
-                    edges.append(DependencyEdge(
-                        source=source,
-                        target=target,
-                        sections=sections if isinstance(sections, list) else [sections],
-                        status=status,
-                    ))
+                    edges.append(
+                        DependencyEdge(
+                            source=source,
+                            target=target,
+                            sections=sections
+                            if isinstance(sections, list)
+                            else [sections],
+                            status=status,
+                        )
+                    )
 
         # supplements → dependency edges (source supplements target)
         for supp in doc.get("supplements") or []:
             if isinstance(supp, str) and supp:
-                edges.append(DependencyEdge(
-                    source=source,
-                    target=supp,
-                    sections=[],
-                    status="supplement",
-                ))
+                edges.append(
+                    DependencyEdge(
+                        source=source,
+                        target=supp,
+                        sections=[],
+                        status="supplement",
+                    )
+                )
 
         # supersedes → version chain edge
         supersedes = doc.get("supersedes")
@@ -202,12 +245,14 @@ def _extract_edges(documents: list[dict[str, Any]]) -> list[DependencyEdge]:
                 supersedes = [supersedes]
             for old in supersedes:
                 if isinstance(old, str) and old:
-                    edges.append(DependencyEdge(
-                        source=source,
-                        target=old,
-                        sections=[],
-                        status="supersedes",
-                    ))
+                    edges.append(
+                        DependencyEdge(
+                            source=source,
+                            target=old,
+                            sections=[],
+                            status="supersedes",
+                        )
+                    )
 
     # Sort for determinism
     edges.sort(key=lambda e: (e.source, e.target))
@@ -266,16 +311,30 @@ def generate(
     # Type 2: SHA-256 cryptographic hashes
     if include_hashes:
         on_disk_count = 0
+        seen_basenames: dict[str, str] = {}  # basename -> first rel_path seen
         for doc in documents:
             fname = doc.get("filename", "")
             if not fname:
                 continue
             fpath = _resolve_file_path(fname, doc, repo_root, tracked_dirs)
             if fpath:
-                fh = _hash_file(fpath)
+                rel_path = str(fpath.relative_to(repo_root))
+                basename = fpath.name
+                if basename in seen_basenames and seen_basenames[basename] != rel_path:
+                    raise ManifestError(
+                        f"Duplicate basename '{basename}' detected in tracked locations:\n"
+                        f"  {seen_basenames[basename]}\n"
+                        f"  {rel_path}\n"
+                        f"All tracked files must have unique basenames across tracked "
+                        f"directories. Rename one of the files before generating a manifest."
+                    )
+                seen_basenames[basename] = rel_path
+                fh = _hash_file(fpath, rel_path)
                 on_disk_count += 1
             else:
-                fh = FileHash(filename=fname, sha256="", size_bytes=0, exists=False)
+                # Use explicit path field if available; else registered filename
+                rel_path = doc.get("path") or fname
+                fh = FileHash(filename=rel_path, sha256="", size_bytes=0, exists=False)
             manifest.file_hashes.append(fh)
 
         # Sort hashes by filename for determinism

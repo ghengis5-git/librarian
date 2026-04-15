@@ -10,9 +10,8 @@ import pytest
 import yaml
 
 from librarian.manifest import (
-    DependencyEdge,
     FileHash,
-    Manifest,
+    ManifestError,
     generate,
     write_manifest,
     _hash_file,
@@ -174,7 +173,8 @@ class TestDependencyEdges:
         edges = _extract_edges(docs)
         sources = [e.source for e in edges]
         assert sources == sorted(sources) or all(
-            (edges[i].source, edges[i].target) <= (edges[i + 1].source, edges[i + 1].target)
+            (edges[i].source, edges[i].target)
+            <= (edges[i + 1].source, edges[i + 1].target)
             for i in range(len(edges) - 1)
         )
 
@@ -215,7 +215,9 @@ class TestManifestHash:
 
 
 class TestGenerate:
-    def test_full_manifest(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_full_manifest(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         assert m.total_registered == 4
         assert m.total_hashed == 3  # gamma V1.0 is missing on disk
@@ -223,7 +225,9 @@ class TestGenerate:
         assert m.total_edges > 0
         assert m.manifest_sha256 != ""
 
-    def test_hashes_for_existing_files(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_hashes_for_existing_files(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         existing = [h for h in m.file_hashes if h.exists]
         assert len(existing) == 3
@@ -231,27 +235,38 @@ class TestGenerate:
             assert len(h.sha256) == 64  # SHA-256 hex length
             assert h.size_bytes > 0
 
-    def test_missing_file_hash(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_missing_file_hash(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         missing = [h for h in m.file_hashes if not h.exists]
         assert len(missing) == 1
-        assert missing[0].filename == "gamma-doc-20260101-V1.0.md"
+        # filename is now the registered relative path, not bare basename
+        assert missing[0].filename == "docs/gamma-doc-20260101-V1.0.md"
 
-    def test_snapshot_includes_registry(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_snapshot_includes_registry(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         assert "documents" in m.registry_snapshot
         assert "project_config" in m.registry_snapshot
 
-    def test_no_snapshot_flag(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_no_snapshot_flag(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo, include_snapshot=False)
         assert m.registry_snapshot == {}
 
-    def test_no_hashes_flag(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_no_hashes_flag(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo, include_hashes=False)
         assert m.file_hashes == []
         assert m.manifest_sha256 == ""
 
-    def test_no_graph_flag(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_no_graph_flag(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo, include_graph=False)
         assert m.dependency_edges == []
         assert m.total_edges == 0
@@ -261,7 +276,9 @@ class TestGenerate:
 
 
 class TestSerialization:
-    def test_to_json_valid(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_to_json_valid(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         j = m.to_json()
         parsed = json.loads(j)
@@ -270,14 +287,18 @@ class TestSerialization:
         assert "file_hashes" in parsed
         assert "dependency_edges" in parsed
 
-    def test_to_json_sorted_keys(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_to_json_sorted_keys(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         j = m.to_json()
         parsed = json.loads(j)
         top_keys = list(parsed.keys())
         assert top_keys == sorted(top_keys)
 
-    def test_to_json_deterministic(self, manifest_registry: Registry, manifest_repo: Path) -> None:
+    def test_to_json_deterministic(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
         m1 = generate(manifest_registry, manifest_repo)
         m2 = generate(manifest_registry, manifest_repo)
         # Timestamps will differ; zero them for comparison
@@ -292,7 +313,9 @@ class TestSerialization:
 
 
 class TestWriteManifest:
-    def test_write_creates_file(self, manifest_registry: Registry, manifest_repo: Path, tmp_path: Path) -> None:
+    def test_write_creates_file(
+        self, manifest_registry: Registry, manifest_repo: Path, tmp_path: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         out = tmp_path / "output" / "manifest.json"
         result = write_manifest(m, out)
@@ -300,7 +323,9 @@ class TestWriteManifest:
         parsed = json.loads(out.read_text())
         assert parsed["summary"]["total_registered"] == 4
 
-    def test_write_creates_parent_dirs(self, manifest_registry: Registry, manifest_repo: Path, tmp_path: Path) -> None:
+    def test_write_creates_parent_dirs(
+        self, manifest_registry: Registry, manifest_repo: Path, tmp_path: Path
+    ) -> None:
         m = generate(manifest_registry, manifest_repo)
         deep = tmp_path / "a" / "b" / "c" / "manifest.json"
         write_manifest(m, deep)
@@ -313,19 +338,25 @@ class TestWriteManifest:
 class TestResolveFilePath:
     def test_explicit_path(self, manifest_repo: Path) -> None:
         doc = {"path": "docs/alpha-doc-20260101-V1.0.md"}
-        result = _resolve_file_path("alpha-doc-20260101-V1.0.md", doc, manifest_repo, ["docs/"])
+        result = _resolve_file_path(
+            "alpha-doc-20260101-V1.0.md", doc, manifest_repo, ["docs/"]
+        )
         assert result is not None
         assert result.name == "alpha-doc-20260101-V1.0.md"
 
     def test_search_tracked_dirs(self, manifest_repo: Path) -> None:
         doc = {}  # no explicit path
-        result = _resolve_file_path("beta-doc-20260101-V1.0.md", doc, manifest_repo, ["docs/"])
+        result = _resolve_file_path(
+            "beta-doc-20260101-V1.0.md", doc, manifest_repo, ["docs/"]
+        )
         assert result is not None
         assert result.name == "beta-doc-20260101-V1.0.md"
 
     def test_missing_file_returns_none(self, manifest_repo: Path) -> None:
         doc = {}
-        result = _resolve_file_path("nonexistent-20260101-V1.0.md", doc, manifest_repo, ["docs/"])
+        result = _resolve_file_path(
+            "nonexistent-20260101-V1.0.md", doc, manifest_repo, ["docs/"]
+        )
         assert result is None
 
     def test_path_traversal_blocked(self, manifest_repo: Path) -> None:
@@ -337,6 +368,7 @@ class TestResolveFilePath:
     def test_hash_file_missing_no_crash(self, manifest_repo: Path) -> None:
         """_hash_file on nonexistent path returns exists=False, no exception."""
         from librarian.manifest import _hash_file
+
         fh = _hash_file(manifest_repo / "no-such-file.md")
         assert fh.exists is False
         assert fh.sha256 == ""
@@ -345,6 +377,7 @@ class TestResolveFilePath:
         """_hash_file on unreadable file returns exists=False."""
         import os
         from librarian.manifest import _hash_file
+
         f = tmp_path / "locked.md"
         f.write_text("secret")
         os.chmod(f, 0o000)
@@ -352,3 +385,91 @@ class TestResolveFilePath:
         # Restore permissions for cleanup
         os.chmod(f, 0o644)
         assert fh.exists is False
+
+
+# ----------------------------------------------- Canonical JSON (seal input)
+
+
+class TestCanonicalJson:
+    def test_excludes_generated_at(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
+        """to_canonical_json must not include generated_at."""
+        m = generate(manifest_registry, manifest_repo)
+        canonical = json.loads(m.to_canonical_json())
+        assert "generated_at" not in canonical.get("meta", {})
+
+    def test_includes_generated_at_in_full(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
+        """to_json (non-canonical) must still include generated_at."""
+        m = generate(manifest_registry, manifest_repo)
+        full = json.loads(m.to_json())
+        assert "generated_at" in full.get("meta", {})
+
+    def test_canonical_stable_across_time(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
+        """Two canonical JSONs generated from the same files must be identical."""
+        import time
+
+        m1 = generate(manifest_registry, manifest_repo)
+        time.sleep(1.1)
+        m2 = generate(manifest_registry, manifest_repo)
+        assert m1.to_canonical_json() == m2.to_canonical_json()
+
+    def test_canonical_sorted_keys(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
+        m = generate(manifest_registry, manifest_repo)
+        parsed = json.loads(m.to_canonical_json())
+        assert list(parsed.keys()) == sorted(parsed.keys())
+
+
+# ----------------------------------------------- ManifestError: basename collision
+
+
+class TestManifestError:
+    def test_duplicate_basename_raises(self, tmp_path: Path) -> None:
+        """Two on-disk files with the same basename in different tracked dirs must raise."""
+        import yaml
+
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "archive").mkdir()
+        (tmp_path / "docs" / "conflict-20260101-V1.0.md").write_text("version 1")
+        (tmp_path / "archive" / "conflict-20260101-V1.0.md").write_text("version 2")
+
+        reg_data = {
+            "project_config": {
+                "project_name": "Collision Test",
+                "tracked_dirs": ["docs/", "archive/"],
+            },
+            "documents": [
+                {
+                    "filename": "conflict-20260101-V1.0.md",
+                    "title": "Doc A",
+                    "status": "active",
+                    "path": "docs/conflict-20260101-V1.0.md",
+                },
+                {
+                    "filename": "conflict-20260101-V1.0.md",
+                    "title": "Doc B",
+                    "status": "active",
+                    "path": "archive/conflict-20260101-V1.0.md",
+                },
+            ],
+        }
+        reg_path = tmp_path / "docs" / "REGISTRY.yaml"
+        with reg_path.open("w") as f:
+            yaml.safe_dump(reg_data, f)
+
+        registry = Registry.load(reg_path)
+        with pytest.raises(ManifestError, match="Duplicate basename"):
+            generate(registry, tmp_path)
+
+    def test_unique_basenames_ok(
+        self, manifest_registry: Registry, manifest_repo: Path
+    ) -> None:
+        """Standard fixture with all-unique basenames must not raise."""
+        m = generate(manifest_registry, manifest_repo)
+        assert m.total_hashed == 3

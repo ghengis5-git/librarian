@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .manifest import Manifest, generate as generate_manifest
+from .manifest import generate as generate_manifest
 from .registry import Registry
 
 
@@ -47,7 +47,7 @@ class EvidencePack:
     # Identity
     pack_id: str = ""  # ISO timestamp used as unique ID
     project_name: str = ""
-    generator_version: str = "0.7.0"
+    generator_version: str = "0.8.0"
 
     # Anchors
     git_commit_hash: str = ""
@@ -87,7 +87,7 @@ class EvidencePack:
             "seal": {
                 "manifest_json_sha256": self.manifest_json_sha256,
                 "algorithm": "SHA-256",
-                "note": "Computed over the deterministic JSON serialization of the manifest (sorted keys). Re-generate the manifest and re-hash to verify.",
+                "note": "Computed over canonical manifest JSON (sorted keys, generated_at excluded). Re-generate canonical form and re-hash to verify.",
             },
         }
         if self.signature:
@@ -95,7 +95,9 @@ class EvidencePack:
         return result
 
     def to_json(self, indent: int = 2) -> str:
-        return json.dumps(self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False)
+        return json.dumps(
+            self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False
+        )
 
 
 # ------------------------------------------------------------------ git helpers
@@ -193,7 +195,10 @@ def _git_verify_commit(repo_root: Path, commit_hash: str) -> dict[str, Any]:
         return {"signed": False, "reason": "git not available or timed out"}
 
     if result.returncode != 0:
-        return {"signed": False, "reason": f"git log failed: {result.stderr.strip()[:200]}"}
+        return {
+            "signed": False,
+            "reason": f"git log failed: {result.stderr.strip()[:200]}",
+        }
 
     # Output is a single line: "G|signer|key_id|trust_model"
     # Take the last non-empty line to skip any banner text
@@ -235,6 +240,7 @@ def _git_verify_commit(repo_root: Path, commit_hash: str) -> dict[str, Any]:
 
 class SigningError(Exception):
     """Raised when evidence_signing is enabled but signing is not configured."""
+
     pass
 
 
@@ -272,9 +278,9 @@ def _require_signing(repo_root: Path, mode: str) -> dict[str, Any]:
         )
     if mode == "gpg" and gpg_format == "ssh":
         raise SigningError(
-            f"evidence_signing is 'gpg' but gpg.format is 'ssh'.\n"
-            f"  Run: git config gpg.format openpgp\n"
-            f"  Or change evidence_signing to 'ssh' in project_config."
+            "evidence_signing is 'gpg' but gpg.format is 'ssh'.\n"
+            "  Run: git config gpg.format openpgp\n"
+            "  Or change evidence_signing to 'ssh' in project_config."
         )
 
     # Verify HEAD is signed
@@ -286,7 +292,7 @@ def _require_signing(repo_root: Path, mode: str) -> dict[str, Any]:
         raise SigningError(
             f"evidence_signing is '{mode}' but HEAD commit is not signed ({reason}).\n"
             f"  Ensure your latest commit was signed:\n"
-            f"    git commit -S -m \"your message\"\n"
+            f'    git commit -S -m "your message"\n'
             f"  Or enable auto-signing:\n"
             f"    git config commit.gpgsign true"
         )
@@ -329,10 +335,10 @@ def generate_evidence(
     # Generate manifest
     manifest = generate_manifest(registry, repo_root)
     manifest_dict = manifest.to_dict()
-    manifest_json = manifest.to_json()
-
-    # Compute seal over manifest JSON
-    seal = hashlib.sha256(manifest_json.encode("utf-8")).hexdigest()
+    # Seal over canonical form (excludes generated_at) so verification is
+    # stable across time — re-hashing a fresh manifest produces the same seal
+    # as long as file contents are unchanged.
+    seal = hashlib.sha256(manifest.to_canonical_json().encode("utf-8")).hexdigest()
 
     # Read git state
     commit = _git_commit_hash(repo_root)
@@ -370,7 +376,9 @@ def write_evidence(pack: EvidencePack, output_path: str | Path) -> Path:
     return output_path.resolve()
 
 
-def verify_evidence(pack_path: str | Path, registry: Registry, repo_root: str | Path) -> dict[str, Any]:
+def verify_evidence(
+    pack_path: str | Path, registry: Registry, repo_root: str | Path
+) -> dict[str, Any]:
     """Verify an evidence pack against the current state.
 
     Re-generates the manifest and compares the seal.  If the pack
@@ -392,10 +400,11 @@ def verify_evidence(pack_path: str | Path, registry: Registry, repo_root: str | 
     pack_seal = pack_data.get("seal", {}).get("manifest_json_sha256", "")
     pack_commit = pack_data.get("git_anchor", {}).get("commit_hash", "")
 
-    # Re-generate manifest
+    # Re-generate manifest and seal over canonical form (excludes generated_at)
     current_manifest = generate_manifest(registry, repo_root)
-    current_json = current_manifest.to_json()
-    current_seal = hashlib.sha256(current_json.encode("utf-8")).hexdigest()
+    current_seal = hashlib.sha256(
+        current_manifest.to_canonical_json().encode("utf-8")
+    ).hexdigest()
     current_commit = _git_commit_hash(repo_root)
 
     result = {

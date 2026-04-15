@@ -1,6 +1,6 @@
 """Librarian — document governance, version control, and registry management."""
 
-__version__ = "0.7.5"
+__version__ = "0.8.0"
 
 from .audit import AuditReport, FolderSuggestion, audit, format_report
 from .config import (
@@ -18,16 +18,30 @@ from .config import (
 )
 from .dashboard import render as render_dashboard, write_dashboard
 from .diffaudit import DiffReport, diff_manifests, format_diff
-from .evidence import EvidencePack, generate_evidence, write_evidence, verify_evidence, SigningError
+from .evidence import (
+    EvidencePack,
+    generate_evidence,
+    write_evidence,
+    verify_evidence,
+    SigningError,
+)
 from .manifest import (
     DependencyEdge,
     FileHash,
     Manifest,
+    ManifestError,
     generate as generate_manifest,
     write_manifest,
 )
 from .naming import ParsedName, ValidationResult, parse_filename, validate
-from .oplog import OpLogEntry, append as oplog_append, log_operation, read_log, format_log, verify_chain
+from .oplog import (
+    OpLogEntry,
+    append as oplog_append,
+    log_operation,
+    read_log,
+    format_log,
+    verify_chain,
+)
 from .oplog_lock import (
     is_append_only,
     lock_instructions,
@@ -99,6 +113,7 @@ __all__ = [
     "DependencyEdge",
     "FileHash",
     "Manifest",
+    "ManifestError",
     "generate_manifest",
     "write_manifest",
     # naming
