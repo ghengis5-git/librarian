@@ -415,7 +415,7 @@ documents:
   format: md
   version: '1.0'
   date: '2026-04-22'
-  status: draft
+  status: active
   author: Chris Kahn
   classification: PERSONAL / INTERNAL USE ONLY
   locations:
@@ -435,6 +435,7 @@ documents:
   - planning
   - phase-9
   - release
+  updated: '2026-04-22'
 - filename: librarian-manifest-20260412-V1.0.json
   path: examples/manifests/librarian-manifest-20260412-V1.0.json
   title: Librarian Example Manifest
@@ -932,7 +933,7 @@ documents:
     Track 4 Phase 9 PyPI rename migration planning doc (no code). Minor bump justified
     by new public module + manifest canonical form shape change. Test suite 814 →
     884.
-  status: draft
+  status: active
   version: V6.0
   created: '2026-04-22'
   updated: '2026-04-22'
@@ -954,7 +955,7 @@ documents:
     wrapping, legal-discovery template loadability), housekeeping, rollback procedures,
     definition of done. Uses ASCII-only commit messages; sleep 30 before PyPI /json
     curls for CDN propagation.
-  status: draft
+  status: active
   version: V1.0
   created: '2026-04-22'
   updated: '2026-04-22'
@@ -1041,8 +1042,8 @@ registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
   total_documents: 46
-  active: 28
-  draft: 5
+  active: 31
+  draft: 2
   superseded: 13
   not_in_repo: 0
   archived: 0
