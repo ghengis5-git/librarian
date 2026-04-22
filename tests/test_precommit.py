@@ -27,6 +27,8 @@ from librarian.precommit import (
     _find_registry,
     _get_exempt,
     _load_project_config,
+    _norm_key,
+    _safe_resolve,
     _should_check,
     main,
 )
@@ -121,6 +123,27 @@ class TestLoadProjectConfig:
     def test_returns_empty_on_missing_project_config(self, tmp_path):
         reg = tmp_path / "REGISTRY.yaml"
         reg.write_text("documents: []\n")
+        assert _load_project_config(reg) == {}
+
+    def test_returns_empty_on_non_utf8_bytes(self, tmp_path):
+        """Phase 8.2a fix H2 (Codex second-pass): a registry saved in
+        UTF-16 or containing stray high-bit bytes raises UnicodeDecodeError
+        before PyYAML runs. The hook must treat that as 'no overrides'
+        (returning ``{}``), not crash with a traceback — the pre-commit
+        contract is non-blocking on unrelated registry problems."""
+        reg = tmp_path / "REGISTRY.yaml"
+        # 0xff 0xfe is a UTF-16 BOM; followed by arbitrary high-bit bytes
+        # that utf-8 cannot decode. Write bytes directly so no encoding
+        # rewrite happens on the way in.
+        reg.write_bytes(b"\xff\xfeproject_config:\x00\xff\xfe\n")
+        # Must not raise.
+        assert _load_project_config(reg) == {}
+
+    def test_returns_empty_on_utf8_continuation_bytes_alone(self, tmp_path):
+        """Stray UTF-8 continuation bytes (0x80-0xBF at start of sequence)
+        also raise UnicodeDecodeError before YAML parsing. Same contract."""
+        reg = tmp_path / "REGISTRY.yaml"
+        reg.write_bytes(b"\x80\x81\x82\n")
         assert _load_project_config(reg) == {}
 
 
@@ -373,3 +396,266 @@ class TestEmptyArgvNote:
         assert main([]) == 0
         captured = capsys.readouterr()
         assert "no files to check" in captured.out.lower()
+
+
+# --------------------------------------------------------------------------- #
+# Phase 8.2 — Windows / UNC path handling                                     #
+# --------------------------------------------------------------------------- #
+#
+# These tests exercise the Windows-only code paths on POSIX by monkey-patching
+# ``_IS_WINDOWS`` and ``os.path.normcase``. The goal is to catch regressions in
+# the case-folding, separator-normalization, and OSError-tolerance code without
+# requiring an actual Windows host. One POSIX-behavior regression test is
+# included so the Windows gate can't silently leak into POSIX.
+
+
+class TestNormKeyPOSIX:
+    """On POSIX ``_norm_key`` must be pass-through (preserve case + slashes)."""
+
+    def test_preserves_case_on_posix(self):
+        assert _norm_key("Docs/Foo.md") == "Docs/Foo.md"
+
+    def test_preserves_forward_slashes(self):
+        assert _norm_key("a/b/c") == "a/b/c"
+
+    def test_accepts_path_object(self):
+        assert _norm_key(Path("/x/y")) == "/x/y"
+
+    def test_no_backslash_translation_on_posix(self):
+        # Backslashes are valid filename chars on POSIX — must not be rewritten.
+        assert _norm_key("a\\b") == "a\\b"
+
+
+class TestNormKeyWindows:
+    """On Windows ``_norm_key`` folds case and flips separators."""
+
+    def test_lowercases_on_windows(self, monkeypatch):
+        monkeypatch.setattr("librarian.precommit._IS_WINDOWS", True)
+        monkeypatch.setattr("os.path.normcase", lambda s: s.lower())
+        assert _norm_key("DOCS/Foo.md") == "docs/foo.md"
+
+    def test_flips_backslashes(self, monkeypatch):
+        monkeypatch.setattr("librarian.precommit._IS_WINDOWS", True)
+        # Simulate Windows normcase: lowercase + flip to backslashes
+        monkeypatch.setattr(
+            "os.path.normcase",
+            lambda s: s.lower().replace("/", "\\"),
+        )
+        # After os.path.normcase → replace("\\", "/") we should end up
+        # with forward slashes regardless of input separator style.
+        assert _norm_key("C:\\Users\\Chris\\proj") == "c:/users/chris/proj"
+
+    def test_unc_path_normalized(self, monkeypatch):
+        monkeypatch.setattr("librarian.precommit._IS_WINDOWS", True)
+        monkeypatch.setattr(
+            "os.path.normcase",
+            lambda s: s.lower().replace("/", "\\"),
+        )
+        # UNC path with mixed case server + share
+        assert _norm_key("\\\\SERVER\\Share\\proj") == "//server/share/proj"
+
+
+class TestSafeResolve:
+    """``_safe_resolve`` must return the unresolved path on OSError rather
+    than raising. On Windows, disconnected network shares are the main trigger.
+    """
+
+    def test_resolves_normal_path(self, tmp_path):
+        # Round-trip through resolve — must succeed on existing dir
+        assert _safe_resolve(tmp_path).is_dir()
+
+    def test_resolves_nonexistent_path(self, tmp_path):
+        # strict=False lets resolve succeed on nonexistent paths.
+        p = tmp_path / "does-not-exist" / "foo.md"
+        assert _safe_resolve(p) is not None
+
+    def test_oserror_falls_back_to_input(self, monkeypatch):
+        """If Path.resolve raises OSError, we return the original Path."""
+        class BadPath(type(Path("/"))):  # type: ignore[misc]
+            # Using a subclass of the concrete Path flavor in use
+            def resolve(self, strict=False):
+                raise OSError("disconnected UNC share")
+
+        # Simplest test: monkeypatch Path.resolve on a real instance.
+        original = Path("/tmp/fake")
+
+        def raising_resolve(self, strict=False):
+            raise OSError("simulated")
+
+        monkeypatch.setattr(Path, "resolve", raising_resolve)
+        result = _safe_resolve(original)
+        # Same instance — fell back without raising
+        assert result == original
+
+
+class TestShouldCheckWindowsCaseInsensitive:
+    """Phase 8.2 Windows/UNC fix — a file whose path differs in case from
+    ``tracked_dirs`` must still be considered in-scope.
+
+    We simulate Windows by patching ``_IS_WINDOWS=True`` and providing a
+    fake ``os.path.normcase`` that lowercases only (separator handling is
+    already covered by the helper tests above).
+    """
+
+    def test_case_mismatched_tracked_dir_still_in_scope(
+        self, fresh_repo, monkeypatch
+    ):
+        """``Docs/`` in registry vs ``docs/`` on disk must match on Windows."""
+        monkeypatch.setattr("librarian.precommit._IS_WINDOWS", True)
+        monkeypatch.setattr("os.path.normcase", lambda s: s.lower())
+
+        # Existing fresh_repo has tracked_dirs: [docs/] and a docs/ directory.
+        # Upper-case the PATH we pass in (a user supplying ``Docs/...``).
+        f = fresh_repo / "docs" / "uppercase-path-20260414-V1.0.md"
+        f.write_text("x")
+        # Simulate an uppercase-hand input that POSIX ``relative_to`` would
+        # still match because docs/ exists — use the real docs/ path but
+        # pretend the registry has ``Docs/`` configured.
+        pc = _load_project_config(fresh_repo / "docs" / "REGISTRY.yaml")
+        pc["tracked_dirs"] = ["Docs/"]  # upper case
+        assert _should_check(f, fresh_repo / "docs" / "REGISTRY.yaml", pc) is True
+
+    def test_case_sensitive_on_posix_gate(self, fresh_repo, monkeypatch):
+        """Regression: with ``_IS_WINDOWS=False`` (our actual platform),
+        case mismatches between tracked_dirs and the file's location must
+        NOT silently pass. The file lives under ``docs/`` but tracked_dirs
+        says ``Docs/`` — on POSIX this is a real miss."""
+        monkeypatch.setattr("librarian.precommit._IS_WINDOWS", False)
+        f = fresh_repo / "docs" / "real-file-20260414-V1.0.md"
+        f.write_text("x")
+        pc = _load_project_config(fresh_repo / "docs" / "REGISTRY.yaml")
+        pc["tracked_dirs"] = ["Docs/"]  # different case than the real dir
+        assert _should_check(f, fresh_repo / "docs" / "REGISTRY.yaml", pc) is False
+
+
+class TestShouldCheckDisconnectedShare:
+    """If resolving the parent/repo root raises OSError (disconnected UNC
+    share on Windows), ``_should_check`` must still make a decision rather
+    than crashing. With ``_safe_resolve`` we fall back to the lexical path.
+    """
+
+    def test_oserror_during_resolve_does_not_crash(
+        self, fresh_repo, monkeypatch
+    ):
+        f = fresh_repo / "docs" / "normal-file-20260414-V1.0.md"
+        f.write_text("x")
+        pc = _load_project_config(fresh_repo / "docs" / "REGISTRY.yaml")
+
+        # Simulate every resolve() raising OSError (as it would on a
+        # disconnected UNC share). _safe_resolve should swallow and return
+        # the unresolved path — not propagate an exception.
+        original_resolve = Path.resolve
+        call_count = {"n": 0}
+
+        def flaky_resolve(self, strict=False):
+            call_count["n"] += 1
+            raise OSError("simulated disconnected share")
+
+        monkeypatch.setattr(Path, "resolve", flaky_resolve)
+
+        # Must not raise. Result may be True or False depending on lexical
+        # comparison — we only assert non-crash behavior here.
+        try:
+            _should_check(f, fresh_repo / "docs" / "REGISTRY.yaml", pc)
+        except OSError:
+            pytest.fail("_should_check must tolerate OSError from resolve()")
+        # And resolve() was actually called (sanity check)
+        assert call_count["n"] >= 1
+
+
+class TestFindRegistryUNCLoopTermination:
+    """``_find_registry`` must terminate on UNC paths. ``Path.parent`` on a
+    UNC root returns the UNC root itself (idempotent), which would loop
+    forever without the seen-set guard added in Phase 8.2.
+    """
+
+    def test_seen_guard_breaks_idempotent_parent(self, monkeypatch, tmp_path):
+        """Simulate a Path whose .parent returns itself — _find_registry
+        must not loop forever. The ``seen`` set + the parent-equality check
+        both defend against this."""
+        # Use a real tmp_path as the start, but make sure there's no
+        # REGISTRY.yaml anywhere. The function must return None without
+        # spinning. A pathologically bad Path is hard to construct cleanly
+        # — instead we just verify the function completes in bounded time
+        # by running it against tmp_path (known no-registry).
+        f = tmp_path / "leaf.md"
+        f.write_text("x")
+        # Just running this is the test — if loop termination is broken
+        # this test hangs (pytest default timeout will catch it).
+        assert _find_registry(f) is None
+
+    def test_handles_oserror_during_initial_resolve(self, monkeypatch, tmp_path):
+        """If the start dir's resolve() raises OSError (offline UNC),
+        _find_registry must not crash."""
+        f = tmp_path / "leaf.md"
+        f.write_text("x")
+
+        original_resolve = Path.resolve
+        # First call (on start.parent) raises, subsequent calls succeed so
+        # we don't wedge the seen-set loop.
+        calls = {"n": 0}
+
+        def flaky(self, strict=False):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError("simulated offline share on initial resolve")
+            return original_resolve(self, strict=strict)
+
+        monkeypatch.setattr(Path, "resolve", flaky)
+        # Must not raise
+        try:
+            result = _find_registry(f)
+        except OSError:
+            pytest.fail("_find_registry must tolerate OSError via _safe_resolve")
+        # Registry won't be found here (tmp_path has no docs/REGISTRY.yaml)
+        assert result is None
+
+
+# --------------------------------------------------------------------------- #
+# Phase 8.2a adversarial-review fix M1 — main() must not crash on OSError      #
+# --------------------------------------------------------------------------- #
+
+
+class TestMainOSErrorTolerance:
+    """The top-level ``main()`` loop used a raw ``.resolve()`` on each input
+    path. On Windows with a disconnected UNC share that raises OSError, the
+    hook would crash with a traceback before any file got checked. The
+    Phase 8.2 adversarial-review fix routes the call through
+    :func:`_safe_resolve` so the hook degrades gracefully instead of
+    crashing."""
+
+    def test_main_does_not_crash_when_parent_resolve_raises_oserror(
+        self, fresh_repo, capsys, monkeypatch
+    ):
+        """Simulate a disconnected share: first resolve call raises OSError.
+        main() must absorb the error (via _safe_resolve) and still produce
+        a clean exit, not a Python traceback."""
+        monkeypatch.chdir(fresh_repo)
+        f = fresh_repo / "docs" / "good-doc-20260414-V1.0.md"
+        f.write_text("x")
+
+        original_resolve = Path.resolve
+        raised = {"count": 0}
+
+        def flaky(self, strict=False):
+            # Raise only on the very first resolve (the one main() does on
+            # the file's parent). Subsequent resolves inside _find_registry
+            # / _should_check succeed so the rest of the pipeline can run.
+            if raised["count"] == 0:
+                raised["count"] += 1
+                raise OSError("simulated offline share in main()")
+            return original_resolve(self, strict=strict)
+
+        monkeypatch.setattr(Path, "resolve", flaky)
+
+        # Must not raise. Exit code should be clean (0 = pass or 1 = fail,
+        # but NOT an unhandled OSError crashing Python).
+        try:
+            rc = main([str(f)])
+        except OSError:
+            pytest.fail(
+                "main() must not crash on OSError — should route through "
+                "_safe_resolve like the rest of Phase 8.2 hardening"
+            )
+        assert rc in (0, 1)
+        assert raised["count"] == 1  # confirm we actually exercised the path

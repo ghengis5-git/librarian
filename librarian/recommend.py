@@ -43,7 +43,7 @@ PRESET_EXPECTATIONS: dict[str, dict[str, Any]] = {
         "core": ["legal-review", "contract-summary"],
         "recommended": [
             "regulatory-compliance-checklist", "nda-tracker",
-            "patent-review", "ip-landscape",
+            "patent-review", "ip-landscape", "legal-discovery",
         ],
     },
     "scientific": {

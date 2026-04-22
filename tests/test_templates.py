@@ -900,6 +900,7 @@ class TestBusinessTemplates:
 EXPECTED_LEGAL_IDS = [
     "contract-summary",
     "ip-landscape",
+    "legal-discovery",
     "legal-review",
     "nda-tracker",
     "patent-review",
@@ -909,10 +910,10 @@ EXPECTED_LEGAL_IDS = [
 
 class TestLegalTemplates:
     def test_legal_template_count(self):
-        """Legal preset provides exactly 6 preset-specific templates."""
+        """Legal preset provides exactly 7 preset-specific templates."""
         templates = discover_templates(preset="legal")
         leg_ids = sorted(k for k, v in templates.items() if v.preset == "legal")
-        assert len(leg_ids) == 6
+        assert len(leg_ids) == 7
 
     def test_legal_template_ids(self):
         """All expected legal template IDs are present."""

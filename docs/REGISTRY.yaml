@@ -888,11 +888,48 @@ documents:
   - ops
   path: docs/release-v0-7-5-runbook-20260414-V1.0.md
   infrastructure_exempt: false
+- filename: session-history-20260422-V1.0.md
+  title: Archived Session 31-52 Deliverables from CLAUDE.md
+  description: Historical context for Librarian development from Session 31 through
+    Session 52 (v0.7.0 through v0.7.5 releases). Extracted from CLAUDE.md during v0.8.0
+    slimming pass so the main handoff doc stays within reasonable token budget.
+    Session 53 and forward remain in CLAUDE.md.
+  status: active
+  version: V1.0
+  created: '2026-04-22'
+  updated: '2026-04-22'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - meta
+  - documentation
+  - governance
+  path: docs/session-history-20260422-V1.0.md
+  infrastructure_exempt: false
+- filename: package-structure-20260422-V1.0.md
+  title: Archived Librarian package tree and template inventory
+  description: Full Librarian Python package structure including all 57+ document
+    templates across 10 subdirectories (universal, software, scientific, business,
+    legal, healthcare, finance, government, security, compliance). Extracted from
+    CLAUDE.md during v0.8.0 slimming pass. Keep in sync with reality when adding,
+    renaming, or removing modules or templates.
+  status: active
+  version: V1.0
+  created: '2026-04-22'
+  updated: '2026-04-22'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - meta
+  - architecture
+  - documentation
+  path: docs/package-structure-20260422-V1.0.md
+  infrastructure_exempt: false
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 39
-  active: 26
+  total_documents: 41
+  active: 28
   draft: 2
   superseded: 11
   not_in_repo: 0

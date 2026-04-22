@@ -992,8 +992,10 @@ def load_defaults_file(path: str | Path) -> dict[str, Any]:
     path = Path(path)
     if not path.exists():
         return {}
-    with path.open("r") as f:
-        data = yaml.safe_load(f) or {}
+    # Route through yaml_errors.load_yaml so a malformed defaults file
+    # surfaces a friendly line/column error instead of a raw traceback.
+    from .yaml_errors import load_yaml  # local import avoids circularity risk
+    data = load_yaml(path) or {}
     return data
 
 

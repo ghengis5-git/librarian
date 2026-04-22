@@ -1,0 +1,391 @@
+---
+name: session-history
+description: Archived Session 31-52 Deliverables from CLAUDE.md. Historical context for Librarian development up through v0.7.5 release. Session 53 and forward remain in CLAUDE.md.
+type: reference
+version: V1.0
+date: 2026-04-22
+superseded_by: null
+---
+
+# Librarian Session History (Sessions 31-52)
+
+> **This file is the archive of CLAUDE.md's `## Current State` → `### Session N Deliverables` section, extracted 2026-04-22 during Session 53 to keep CLAUDE.md at a manageable size.**
+>
+> **Current/latest session and forward-looking roadmap live in `CLAUDE.md`.** This archive is read-only history — do not edit entries retroactively; if a past deliverable is wrong, correct it in a new session entry in CLAUDE.md.
+>
+> **When to read this file:** When a prompt references a specific session number (e.g. "as in Session 42"), a commit hash pre-dating Session 53, or a phase already marked complete (A-G, 7.0-7.5, 8.0-8.1).
+
+---
+
+## Completed Phases (summary)
+- **Phase A** (Sessions 26–27): Foundation — Python package, 4 CLI subcommands, pre-commit hook
+- **Phase B** (Session 28): Manifest system — portable JSON + SHA-256 + dependency graph
+- **Phase C** (Session 28): Audit extensions — operation log, evidence pack, diff audit
+- **Phase D** (Session 29): Interactive dashboard — Lunr search, cytoscape.js graph, filter chips, timeline
+- **Phase E** (Session 29): Static site generator — multi-page HTML, per-doc pages, graph page
+- **Sidebar + grouping** (Session 30): Collapsible tree nav with status/tag/path grouping modes
+- **Folder suggestions** (Session 30): Audit auto-detects crowded directories/tags, suggests reorganization
+- **Design refresh** (Session 30): Unified design tokens across sitegen + dashboard template
+- **Website completion** (Session 31): Doc page content rendering, search/filter, tree page, dashboard nav, bug fixes
+
+---
+
+## Session 31 Deliverables
+- Zero-dep markdown→HTML converter (`_md_to_html`) — headings, code blocks, lists, tables, blockquotes
+- Doc pages render real file content (prose for .md, syntax blocks for .yaml/.json/.sh)
+- Index page: client-side text search + status filter chips (All/Active/Draft/Superseded)
+- Folder structure page (`tree.html`) — directory cards with file tables
+- Dashboard nav overlay — floating frosted-glass bar injected into standalone dashboard
+- Replaced `<base>` tag with explicit `path_prefix` pattern for correct relative links
+- Cytoscape.js loading hardened — graceful fallback, case-insensitive extraction, PermissionError handling
+- Sidebar JS escaping fix (`\\x27` instead of `\'`)
+- 27 new tests (markdown, content rendering, search/filter, doc page content, tree page)
+- Site generates 14 pages (index, tree, graph, dashboard, 10 doc pages)
+
+## Session 32 Deliverables
+- Interactive folder-tree diagram on tree.html — expandable/collapsible, click-to-scroll, status dots
+- Configuration system (`config.py`) with layered merge: defaults → preset → project_config overrides
+- 9 preset packs: software, business, accounting, government, scientific, finance, healthcare, legal, minimal
+- 8 naming templates: default, legal, engineering, corporate, dateless, scientific, healthcare, finance
+- Configurable naming: separator (-/_/.), case (lower/mixed/upper), date (YYYYMMDD/YYYY-MM-DD/off), version (VX.Y/vX.Y/X.Y), domain prefix
+- Configurable category strictness: soft (warn) or hard (reject) mode
+- `init` CLI command: scaffold REGISTRY.yaml from preset + naming template, optionally create folders
+- `config` CLI command: show resolved config, list presets, list naming templates
+- Updated naming.py: fully config-aware parser and validator, backward-compatible with default behavior
+- Interactive Settings page — gear icon (far right, tooltip-only), form inputs for all config, live naming preview, YAML export
+- Document header/footer/metadata config: organization, classification banner, doc-id, distribution, retention, copyright
+- Government/military preset: DoD 5200.01 classification markings (UNCLASSIFIED through TOP SECRET), CUI support
+- HeaderConfig, FooterConfig, MetadataRequirements dataclasses in config.py
+- Settings page sections for Document Header/Footer and Required Metadata fields
+- Gear icon refactored to `_gear_link()` helper, positioned far right after seal in header flex layout
+- Dashboard overlay nav uses gear icon instead of text Settings link
+- Compliance Standards toggles: DoD 5200.01, ISO 9001, HIPAA, SEC/FINRA, Research/Academic, Legal
+- Live preview panel: sticky sidebar showing filename, header, footer, metadata previews in real-time
+- Compliance buttons auto-apply naming, header/footer, and metadata rules from industry standards
+- 56 config tests + 8 tree diagram tests + 9 settings page tests = 73 new tests (291 total)
+
+## Session 33 Deliverables
+- **Critical JS fix:** All `onclick` handlers used `\x27` (literal text) instead of `'` (actual quote) — `\x27` is only valid inside JS string literals, not HTML attributes. Every button/toggle silently failed. Replaced all 19 HTML-context `\x27` with `'`.
+- **Compliance toggle-off:** Clicking an already-selected compliance button now deselects it and restores project defaults. Added `captureDefaults()` (snapshots form state on page load), `applyFields()` (shared setter), and `wasActive` toggle logic.
+- **Compliance active state:** Solid accent background + white text/icons when selected (was nearly invisible border ring before).
+- **Missing org field:** `applyStandard()` now sets `cfg-hdr-org` from STANDARDS object.
+- 18 new comprehensive interactivity tests (309 total): onclick quoting, ID consistency, STANDARDS completeness, toggle/deselect, YAML export coverage, preview opacity behavior.
+
+## Session 34 Deliverables
+- **Editable tag lists:** Forbidden words, exempt files, and tags taxonomy now have add/remove UI (`addTag()`, `removeTag()`, `getTagValues()` JS helpers, `×` remove buttons on each tag)
+- **Company logo URL field:** `cfg-hdr-logo` input in Document Header section, wired into captureDefaults, applyFields, all 6 STANDARDS entries, YAML export (`logo_url:`), and live preview (shows filename indicator)
+- **Legal disclaimer presets:** `cfg-ftr-disclaimer` dropdown with 7 industry options (general, HIPAA, financial, legal, government, academic, technology). `DISCLAIMERS` object with full text, `applyDisclaimer()` sets footer custom text.
+- **YAML export extended:** `generateYaml()` now exports forbidden_words, exempt_files, and tags_taxonomy lists via `getTagValues()`
+- **CSS additions:** `.tag-remove`, `.settings-tag-add`, `.settings-disclaimer-select` styles for editable tags and disclaimer dropdown
+- **Safe HTML escaping:** `escHtml()` uses DOM `createTextNode` pattern; `renderLines()` replaces raw `.innerHTML`
+- 20 new tests (329 total): editable tag CRUD functions, logo field presence/preview/YAML/standards, disclaimer dropdown/object/options, YAML export coverage for new fields
+
+## Session 35 Deliverables
+- **Phase G plan:** `docs/phase-g-templates-and-recommendations-20260412-V1.0.md` — document templates and recommendations engine
+- **Former-project scrub completed** (Session 34 carryover): All references to the former consumer project removed across entire codebase (re-verified Session 47)
+- **Registry cleanup** (Session 34 carryover): 17 documents registered (14 active, 1 draft, 2 superseded), 0 naming violations, 0 pending cross-refs
+- **Pre-commit hook hardened**: Removed `py` from DOC_EXTENSIONS, added source dirs to SKIP_DIRS, warnings pass in non-interactive mode
+- **Audit false positive fix**: `audit.py` now checks registered `path` for files outside `tracked_dirs`
+
+## Session 36 Deliverables (Phase G.1 — Template infrastructure)
+- **Mini template engine** (`_base.py`, ~260 lines): Zero-dependency engine with `{{variable}}` substitution, `{% if %}` / `{% elif %}` / `{% else %}` / `{% endif %}` conditionals, `{% for %}` / `{% endfor %}` iteration. Supports truthiness, `==`, `!=`, `in` membership, `and`, `or`, `not` operators. No arbitrary Python eval.
+- **DocumentTemplate dataclass**: `from_string()`, `from_file()`, `render()` — parses YAML frontmatter + markdown body, renders with context dict
+- **Template registry** (`templates/__init__.py`): `discover_templates()`, `load_template()`, `list_templates()`, `build_context()` — scans built-in dirs + custom dir with resolution priority: custom > preset > cross-cutting > universal
+- **4 universal templates**: `readme`, `project-plan`, `changelog`, `meeting-notes` — each with YAML frontmatter (template_id, display_name, suggested_tags, cross-refs, sections) and conditional blocks for compliance standards
+- **`scaffold` CLI subcommand**: `--template`, `--title`, `--folder`, `--author`, `--preset`, `--list`, `--list-all`, `--dry-run`, `--no-register`. Creates properly named file, registers in REGISTRY.yaml with tags/cross-refs, logs operation, prints recommended companions.
+- **Context builder**: Reads `project_config` (preset, compliance flags, naming rules, header/footer config) and builds the dict that feeds the engine
+- **56 new tests** (385 total): engine variable substitution (5), conditionals (11), for loops (4), condition eval (4), DocumentTemplate (3), frontmatter (2), discovery (7), context builder (5), scaffold CLI (11), security hardening (4)
+
+## Session 37 Deliverables (Phase G.2a — Software + Scientific templates)
+- **8 software templates**: architecture-decision-record, technical-architecture, api-specification, runbook, security-assessment, incident-postmortem, test-plan, release-notes
+- **6 scientific templates**: scientific-foundation, experiment-protocol, literature-review, data-management-plan, irb-application, lab-notebook-entry
+- **Compliance conditionals**: security-assessment has ISO 27001 + HIPAA + DoD 5200 conditional blocks; data-management-plan has HIPAA + ISO 27001 + DoD 5200; experiment-protocol has HIPAA + ISO 9001; test-plan has ISO 9001; technical-architecture has ISO 27001 + DoD 5200
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set
+- **IRB requires field**: irb-application declares `requires: [experiment-protocol]` — first use of prerequisite chain
+- **17 new tests** (402 total): template counts, ID verification, section counts, tag counts, cross-ref validity, conditional rendering (ISO 27001, HIPAA), prerequisite chains, preset isolation
+
+## Session 38 Deliverables (Phase G.2b — Business + Legal templates)
+- **8 business templates**: strategic-plan, cost-analysis, competitor-analysis, project-management-plan, business-case, risk-assessment, stakeholder-analysis, executive-summary
+- **6 legal templates**: legal-review, patent-review, ip-landscape, contract-summary, regulatory-compliance-checklist, nda-tracker
+- **Compliance conditionals**: strategic-plan has SEC/FINRA + ISO 9001; risk-assessment has ISO 9001 + ISO 27001; regulatory-compliance-checklist has HIPAA + ISO 27001 + SEC/FINRA + DoD 5200; contract-summary has HIPAA (BAA) + SEC/FINRA; legal-review has HIPAA + SEC/FINRA
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set + universal
+- **Preset isolation**: business templates don't leak into scientific, legal don't leak into software
+- **15 new tests** (417 total): business count/ids/sections/tags/xrefs/conditionals/isolation (8), legal count/ids/sections/xrefs/conditionals (7)
+
+## Session 39 Deliverables (Phase G.2c — Healthcare + Finance + Government templates)
+- **6 healthcare templates**: clinical-protocol, hipaa-risk-assessment, quality-improvement-plan, policy-document, incident-report, credentialing-checklist
+- **6 finance templates**: due-diligence-report, investment-memo, compliance-review, audit-finding, risk-assessment-finance, regulatory-filing-checklist
+- **6 government templates**: policy-directive, standard-operating-procedure, memorandum, acquisition-plan, security-plan, after-action-report
+- **Compliance conditionals**: healthcare templates use HIPAA + ISO 27001 + ISO 9001; finance templates use SEC/FINRA + HIPAA; government templates use DoD 5200 + ISO 9001
+- **Cross-reference integrity**: all cross-refs resolve within each preset's template set + universal
+- **Preset isolation**: healthcare/finance/government templates don't leak across presets
+- **Template ID collision avoidance**: finance risk-assessment uses `risk-assessment-finance` to avoid collision with business `risk-assessment`
+- **24 new tests** (441 total): healthcare 8, finance 8, government 8 — each covering count/ids/sections/tags/xrefs/conditionals/isolation
+
+## Session 40 Deliverables (Phase G.2d — Cross-cutting Security + Compliance templates)
+- **7 security templates** (cross-cutting — available to all presets): threat-model, vulnerability-assessment, penetration-test-report, security-architecture-review, incident-response-plan, access-control-matrix, data-classification-policy
+- **6 compliance templates** (cross-cutting — available to all presets): sox-controls-matrix, gdpr-dpia, pci-dss-checklist, iso27001-statement-of-applicability, audit-readiness-checklist, vendor-risk-assessment
+- **Cross-cutting resolution**: security/ and compliance/ directories auto-loaded for every preset via `CROSS_CUTTING` tuple in `templates/__init__.py` — no code changes needed
+- **Compliance conditionals**: threat-model (HIPAA + DoD 5200 + ISO 27001), data-classification-policy (DoD 5200 + HIPAA + SEC/FINRA), audit-readiness-checklist (5 compliance blocks: ISO 9001/27001 + HIPAA + SEC/FINRA + DoD 5200), vendor-risk-assessment (HIPAA + SEC/FINRA), gdpr-dpia (HIPAA), iso27001-statement-of-applicability (HIPAA), penetration-test-report (HIPAA), incident-response-plan (HIPAA), access-control-matrix (HIPAA + DoD 5200), security-architecture-review (ISO 27001 + DoD 5200), sox-controls-matrix (SEC/FINRA)
+- **Cross-reference integrity**: all cross-refs resolve within security + compliance cross-cutting sets
+- **28 new tests** (469 total): TestSecurityTemplates (7), TestComplianceTemplates (7), TestCrossCuttingResolution (14 parametrized — 7 presets × 2 cross-cutting dirs)
+
+## Session 41 Deliverables (Phase G.3 — Recommendations engine)
+- **`librarian/recommend.py`** (~230 lines): Deterministic gap analysis engine with 4 rules
+  - Rule 1 (Preset baseline): `PRESET_EXPECTATIONS` dict with core/recommended template sets for all 7 presets (software, business, legal, scientific, healthcare, finance, government)
+  - Rule 2 (Cross-reference pull): Scans `typical_cross_refs` from present docs, flags missing targets with `referenced_by` attribution
+  - Rule 3 (Maturity progression): Checks template `requires` fields; recommends templates when all prerequisites are present
+  - Rule 4 (Compliance triggers): `COMPLIANCE_TEMPLATES` maps 5 flags (hipaa, dod_5200, iso_9001, iso_27001, sec_finra) to security/compliance template IDs
+- **Deduplication**: Each template_id appears at most once; earlier rules take priority (core > recommended > cross_ref > maturity > compliance)
+- **CLI integration**: `audit --recommend` appends formatted recommendations after standard OODA audit; `audit --json` produces machine-readable JSON (works with or without `--recommend`)
+- **`Recommendation` + `RecommendationReport` dataclasses**: `.to_dict()` for JSON serialization, category properties (`.core`, `.recommended`, `.cross_ref_gaps`, `.maturity`, `.compliance`)
+- **`format_recommendations()`**: Human-readable formatter matching the plan's output format (CORE/RECOMMENDED/CROSS-REFERENCE GAPS/MATURITY PROGRESSION/COMPLIANCE sections)
+- **39 new tests** (508 total): preset expectations structure (4), compliance templates structure (2), Rule 1 (8), Rule 2 (3), Rule 3 (3), Rule 4 (5), deduplication (2), report dataclass (3), formatter (6), CLI integration (3)
+
+## Session 42 Deliverables (Phase G.4 — Templates catalog page + site integration)
+- **Template Catalog page** (`templates.html`): New page in the static site with a filterable card grid of all available templates
+  - Preset switcher dropdown to browse templates across all 7 presets
+  - Source filter (Universal, Security, Compliance, Custom, or per-preset)
+  - Compliance filter (HIPAA, DoD 5200, ISO 9001, ISO 27001, SEC/FINRA)
+  - Cards display: template name, description, section count, tag count, cross-ref count, source badge
+  - Click-to-expand: full section list, cross-ref links, compliance conditionals, requires/recommended-with, scaffold command
+  - Cross-ref links between template cards (click scrolls to target card)
+  - Source badges with distinct colors: universal (blue), security (red), compliance (gold), custom (green)
+  - Client-side filtering via JSON template data — no server round-trips
+- **Navigation integration**: "Templates" link added to all site nav bars (header nav, sidebar pages, dashboard overlay nav)
+- **Recommendations on index page**: Index page now renders a recommendations panel below the document table, showing core/recommended/cross-ref/maturity/compliance gaps with priority color coding
+- **`_build_recommendations_html()` helper**: Reusable function that generates recommendations HTML from any manifest, returns empty string if no gaps
+- **CSS additions**: 30+ new CSS classes for template cards (`.tmpl-*`) and recommendations panel (`.rec-*`), following existing design token system
+- **24 new tests** (532 total): templates catalog page (12), navigation links (4), index recommendations (5), dashboard overlay (1), CSS presence (2)
+
+## Session 42b Deliverables (Phase G.4 completion)
+- **Settings page template browser**: "Available Templates" section with scrollable table listing all templates for the active preset, click-to-copy scaffold command, auto-refreshes when preset dropdown changes
+- **Custom templates dir support**: `custom_templates_dir` config field wired through settings page, scaffold CLI, and site generator; custom templates override built-in when IDs collide
+- **SKILL.md updated** (V1.1): Added Document Templates section covering scaffold command, template organization table, custom templates, compliance conditionals, recommendations engine
+- **README.md updated**: Added scaffold to CLI commands table, new Document Templates section with usage examples, updated test count to 540
+- **8 new tests** (540 total): settings template browser (3), custom template override/add/none/nonexistent/scaffold-cli (5)
+
+## Session 43 Deliverables (Security hardening + oplog chaining + evidence signing)
+- **Security review document**: `docs/security-review-20260413-V1.0.md` — 8-item finding catalog with severity/effort/remediation
+- **XSS prevention** (`sitegen.py`): `_safe_url()` blocks javascript:/data: URIs in links and images; `esc()` JS function escapes single quotes with `&#39;`; tree page onclick handlers use `&#39;` instead of `\x27`
+- **Path traversal prevention** (`manifest.py`): `.resolve()` + `.relative_to()` on explicit `path` fields; TOCTOU fix replacing `is_file()` with try/except
+- **Template recursion guard** (`templates/_base.py`): `_MAX_CONDITION_DEPTH = 20` prevents stack overflow from deeply nested conditionals
+- **Custom template path hardening** (`templates/__init__.py`): `.resolve()` before loading custom template directories
+- **Oplog hash chaining** (`oplog.py`): SHA-256 chain with `prev_hash` field, genesis sentinel, `fcntl.flock()` write exclusivity, `verify_chain()` integrity checker, backward-compatible with v1 logs, chain indicator (⛓) in formatted output
+- **Evidence signing feature flag** (`evidence.py`): `evidence_signing: off|gpg|ssh` in `project_config`. Captures git commit signature via `git log --format=%G?|%GS|%GK|%GT`. `SigningError` with setup instructions. No network calls.
+- **SSH signing parser fix** (`evidence.py`): Pipe-delimited format without `--show-signature` (which mixed banner text into stdout). Takes last non-empty line.
+- **`setup-signing.sh`**: Automated GPG/SSH signing configuration script; fixed macOS BSD sed compatibility
+- **Config update**: `evidence_signing: "off"` added to DEFAULTS; `evidence_signing: ssh` set in project REGISTRY.yaml
+- **Updated exports** (`__init__.py`): `SigningError`, `verify_chain` added to public API
+- **38 new tests** (578 total): XSS safe_url (10), path traversal (3), recursion depth (1), oplog chaining (6), verify chain (5), format indicator (1), evidence signing config (8), default off (2), verify signature (1), signed pack mock (1)
+
+## Session 44 Deliverables (Website improvements + wizard + settings UX)
+- **Header redesign**: Removed seal hash from top, removed diamond bullet, added SVG logo mark, Playfair Display serif font for brand title, brass/gold gear icon (22px, `--gear-color: #b07d2e`)
+- **Dashboard removed from site**: Index + Graph + Tree cover all features; standalone `librarian dashboard` CLI preserved for portable single-file export
+- **Nav updates**: "Index" renamed to "Home", Dashboard link removed
+- **Tree page Folders Only mode**: Collapse All / Expand All / Folders Only toggle buttons with `toggleFoldersOnly()` JS
+- **24 compliance standards**: Expanded from 6 to 24 across all touchpoints (Settings buttons, STANDARDS JS object, COMPLIANCE_TEMPLATES in recommend.py, disclaimer dropdown). Two-tier layout with industry filter dropdown.
+- **Setup wizard** (`wizard.html`): 5-step questionnaire — use case (Personal/Business/Both) → industry → compliance → formality (Minimal/Standard/Strict) → org details. Generates ready-to-paste `project_config` YAML block.
+- **Settings Basic/Advanced toggle**: BASIC view as default showing only Project Basics + Compliance Standards. Advanced reveals all settings sections. `data-view` attributes control visibility.
+- **Settings search bar**: Search icon + input field in settings topbar. Searches section headers, field labels, and hints. Auto-switches to Advanced view on search. Highlights matching rows, dims non-matching sections, scrolls to first match.
+- **Template catalog search**: Search input added to templates page filter bar. Searches template id, name, description, tags, and section names. Works alongside preset/source/compliance dropdowns.
+- **Compliance filter fix**: Template compliance detection expanded from 5 flags to 22 (now catches `gdpr` and `sox`). Compliance dropdown dynamically trimmed to only show flags with actual template content (8 options instead of 23 dead-end options).
+- **36 new tests** (614 total): wizard page (12), settings view toggle (10), settings search bar (4), template search input (4), compliance filter accuracy (6)
+
+## Session 45 Deliverables (Manage page + Audit page + bug fixes)
+- **Folders Only fix** (tree.html): `toggleFoldersOnly()` now expands all collapsed branches before hiding files, showing full nested hierarchy instead of just top-level folders
+- **Settings template browser fix**: `renderSettingsTemplates()` now shows all templates when no preset is selected (was filtering for empty string)
+- **Project Manager page** (`manage.html`): Full document management page with 4 collapsible sections:
+  - Unregistered Files — shows files on disk not in registry, one-click `quickRegister()` buttons
+  - Register Existing File — form with filename, path, status, description, tags → generates `librarian register` CLI command
+  - Create Folder — path input → generates `mkdir -p` command
+  - Scaffold from Template — preset/template/title/folder/author → generates `librarian scaffold` command
+  - Shared: sticky command output panel, section collapse, shell quoting, datalist autocomplete, scaffold live preview
+- **Audit & Verify page** (`audit.html`): Unified governance health dashboard with 6 sections:
+  - KPI cards: Registered, Unregistered, Missing, Naming Issues, Chain Integrity
+  - OODA Audit: unregistered/missing/naming/cross-ref/folder findings with severity coloring
+  - File Integrity: SHA-256 hash table with search filter and full-hash toggle
+  - Operation Log: last 20 oplog entries with operation badges and chain status
+  - Manifest Seal: full SHA-256 seal display with copy button and explanation
+  - Recommendations: grouped by category (core/recommended/cross-ref/maturity/compliance)
+  - CLI Commands: 6 copy-to-clipboard cards for forensic commands
+  - Runs actual audit at site-gen time; reads real oplog and chain verification
+- **Nav bar updated**: Added Manage and Audit links (Home → Manage → Audit → Tree → Graph → Templates)
+- **60+ CSS classes**: `.mgr-*` for Manage page, `.aud-*` for Audit page, `.kpi-ok/warn/err` status colors
+- **Adversarial security review**: Found and fixed 2 vulnerability classes:
+  - CRITICAL: `</script>` breakout in all JSON data embedded in `<script>` tags — `_json_safe()` helper escapes `</` → `<\/` in 17 call sites across all pages
+  - HIGH: Path traversal in `_render_file_content()` — added `.resolve()` + `.relative_to()` guard, blocks `../` and symlink escapes
+  - Template engine confirmed safe (no code execution, no builtin access, depth guard works)
+  - Oplog chain integrity verified (detect-only by design, not prevention)
+- **40 new tests** (673 total): Manage page (16), Audit page (17), Folders Only fix (1), script breakout (3), path traversal (3)
+
+## Session 46 Deliverables (Phase F kickoff + security residuals)
+- **Phase F plan corrected to V1.1** (`docs/phase-f-plugin-and-release-20260413-V1.1.md`): `doc-librarian` → `librarian` project name corrected throughout; PyPI namespace treated as unresolved open question (current pyproject uses `librarian-2026` fallback); session plan renumbered to 46/47; V1.0 marked superseded with banner and registry entry updated (`status: superseded`, `superseded_by: V1.1`).
+- **Version bumps**: `librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json` → 0.7.1.
+- **Marketplace scaffolding**: `marketplace.json` created at repo root — self-contained marketplace manifest for `librarian@librarian-marketplace` install path; ready for separate-repo or same-repo submission.
+- **Registry updated**: `phase-f-plugin-and-release-20260413-V1.1.md` registered as draft; V1.0 moved to superseded with forward pointer.
+- **Scrub partial**: `skills/librarian/` created as rename target. Cowork sandbox blocks `rm` on tracked files so `skills/doc-librarian/` coexists temporarily — must be removed in host terminal during Session 47 publish prep. Other `doc-librarian` residuals catalogued in V1.1 §Scrub pass (legacy dashboard filenames under `dashboard/legacy/`, one example manifest).
+- **README updated**: test count 578 → 673.
+- **Security residuals addressed** (2 of 3 remaining LOW items from Session 45):
+  - **Template for-loop iterator coverage** (`librarian/templates/_base.py`): now accepts any iterable (set, dict_keys, generators, custom iterables) via `list(iterable)` unpacking; rejects str/bytes to avoid accidental character-iteration. Empty/falsy iterables still skip cleanly.
+  - **Template engine output size guard** (`librarian/templates/_base.py`): new `_MAX_RENDER_BYTES = 4 MB` cap and `TemplateRenderError` exception raised when `render_template()` output exceeds cap. Prevents resource exhaustion from hostile templates. Exported from `librarian.templates` and top-level `librarian` package.
+  - **Remaining**: oplog chain is still detect-only; changing it to prevention-mode requires oplog-format approval (CLAUDE.md §When to Stop and Ask).
+- **8 new tests** (681 total; confirmed in host Session 48): for-loop over set/dict_keys/generator (3), for-loop rejects str/bytes (2), output size under limit (1), over limit raises (1), `_MAX_RENDER_BYTES` sanity (1), plus the existing `test_empty_list` still passes under the new logic.
+- **Open Phase F blockers** (need user decision before Session 47 publish): (1) PyPI namespace (`librarian-docs` / keep `librarian-2026` / new name); (2) git history strategy (squash vs. full); (3) GitHub org vs. personal; (4) hook ship-enabled vs. opt-in; (5) IP clearance.
+
+## Session 47 Deliverables (Phase F blocker resolution — scrub, hook, decisions)
+- **Former-project (PRISM) scrub — verified clean**: grep for `prism` case-insensitive across entire repo → **0 matches**. Residuals cleaned: (1) polluted `examples/manifests/example-manifest-20260411-V1.0.json` (216 PRISM hits) replaced with generic minimal example manifest; (2) `dashboard/legacy/*.{html,jsx}` (88 combined hits) replaced with tombstone stubs pointing at the active `librarian-dashboard-template-20260412-V3.0.html`; (3) Phase F V1.0 + V1.1 plans cleaned — 10 PRISM mentions rewritten as "former-project references"; (4) CLAUDE.md Session 35 deliverable line rephrased. Sandbox blocks `rm` on tracked files, so `dashboard/legacy/*` stubs remain in tree and must be removed in host terminal before publish.
+- **Git log reviewed** (21 commits on main): all messages use conventional prefixes (`feat:`/`fix:`/`docs:`/`infra:`/`registry:`), no WIP, no leaked secrets, no profanity. **Recommendation: keep full history** (no squash). One commit message `1dda1ec docs: remove all PRISM references` is itself a self-referential mention but is historically accurate and fine to leave.
+- **Hook middle-option implemented** (ship disabled + project-gated opt-in):
+  - `hooks/hooks.json` — hook key remains `_PreToolUse` (shipped disabled). Prompt rewritten to: (a) walk up from the target file to find nearest `REGISTRY.yaml`, (b) read `project_config.enforce_naming_hook`, (c) approve unconditionally if the flag is absent or false, (d) only then validate the filename against the naming convention. Users who globally enable the hook (`_PreToolUse` → `PreToolUse`) still won't get enforcement on projects that haven't opted in.
+  - `cmd_init` — added interactive prompt ("Enable naming-enforcement hook for this project? [y/N]"), plus non-interactive `--enable-hook` and `--no-hook` flags. Writes `project_config.enforce_naming_hook: <bool>` into the generated REGISTRY.yaml. Post-init status line reports hook state and the `_PreToolUse` → `PreToolUse` rename needed to activate globally.
+  - `skills/librarian/SKILL.md` — new §First-Run Setup section explaining the hook opt-in; metadata version bumped 0.7.0 → 0.7.1. End-to-end sanity check passed: `python -m librarian init --no-hook` writes `enforce_naming_hook: false` and prints the disabled status message.
+- **IP clearance — resolved**: user confirmed no patents being filed on librarian. Removed as a publish blocker.
+- **Remaining Phase F blockers**: (1) PyPI namespace — user kept `librarian-2026` (already in `pyproject.toml`); (2) git history — keep full (recommended above, awaiting confirmation); (3) GitHub org vs. personal — open.
+- **Host-terminal cleanup still required before publish**: (a) `rm -rf dashboard/legacy/` (stubs present but tracked); (b) `rm -rf skills/doc-librarian/` (coexists with `skills/librarian/`); (c) `rm -rf _site*` scratch dirs; (d) run `pytest` to confirm 681/681 (sandbox has no pytest). ✅ Confirmed 681/681 in Session 48.
+
+## Session 48 Deliverables (Phase F publish — shipped)
+- **Git history rewritten** via `git filter-repo` — all 24 commits now authored/committed as `Chris Kahn <272935920+ghengis5-git@users.noreply.github.com>`; all re-signed with SSH key; filter-branch backup refs gc'd.
+- **GitHub repo published**: https://github.com/ghengis5-git/librarian (public, Apache 2.0, 704 KiB pack, 411 objects). Initial push via `gh repo create --public --source=. --push`.
+- **GitHub release**: `v0.7.1` — "Librarian v0.7.1 — First public release" with full release notes covering 22 CLI commands, 57+ templates, 9 presets, 24 compliance standards, tamper-evident evidence packs, 681 tests. Also anchored with `v0.7.1-published` tag.
+- **PyPI published**: https://pypi.org/project/librarian-2026/0.7.1/ — wheel (316 KB) + sdist (305 KB). Install path `pip install librarian-2026`. Dry-run on TestPyPI succeeded first. Also pushed to TestPyPI: https://test.pypi.org/project/librarian-2026/0.7.1/
+- **Plugin marketplace**: `marketplace.json` at repo root (same-repo distribution path, no separate marketplace repo needed). Install: `claude plugins marketplace add ghengis5-git/librarian` → `claude plugins add librarian@librarian-marketplace`.
+- **pyproject.toml cleanup**: dropped obsolete `License :: OSI Approved :: Apache Software License` classifier (PEP 639 now requires SPDX-only `license = "Apache-2.0"`); author email switched from `ghengis5@gmail.com` to the GitHub noreply address to hide it from PyPI metadata.
+- **Test count corrected**: 682 → 681 across CLAUDE.md, README.md, and publish checklist. Session 46 docs overcounted template-engine hardening tests by one (actual: 8 new, not 9).
+- **example-manifest**, **librarian-manifest-20260413**, **librarian-evidence-20260413** registered in REGISTRY.yaml; audit reports 24/24 clean.
+- **7 publish commits on main** (all SSH-signed, all noreply-authored):
+  - `b772777` feat: template engine hardening — iterator coverage + output size guard
+  - `987d3ed` docs: Phase F prep — hook opt-in, ghengis5-git owner, noreply identity
+  - `fbd47e1` chore: remove legacy dashboard stubs and old skill dir pre-publish
+  - `8ae7ded` docs: correct test count to 681
+  - `acd369f` docs: refresh manifest + evidence before publish
+  - (pyproject fix commit) chore: drop obsolete license classifier (PEP 639) + hide author email
+  - (release-notes + Phase F close commit — in progress)
+
+## Session 49 Deliverables (Post-publish plugin-install fixes)
+- **Phase F plan docs marked superseded** in `docs/REGISTRY.yaml` — both `phase-f-plugin-and-release-20260413-V1.1.md` and `phase-f-publish-checklist-20260413-V1.0.md` now `status: superseded` (both plans fully executed in Session 48).
+- **Release notes scaffolded and committed**: `docs/release-notes-20260413-V1.0.md` (V1.0). Scaffold required `--preset software` override because project registry's preset doesn't include the `release-notes` template by default. Body covers 22 CLI commands, 57+ templates, 9 presets, 24 compliance standards, evidence packs, 681 tests, install paths, known issues.
+- **Plugin marketplace install path fixes** (3 issues discovered by live smoke test):
+  1. **`marketplace.json` wrong location** — Claude Code looks at `.claude-plugin/marketplace.json`, not repo root. Moved via `git mv`.
+  2. **Real email leak in marketplace.json** — `owner.email: ghengis5@gmail.com` was still in the file; scrubbed to noreply. **Caveat**: the leak persists in public git history on the original Session 48 `marketplace.json` add commit. User opted to leave the history untouched (low-traffic repo, email derivable from GitHub profile anyway). To scrub later: `git filter-repo --replace-text` + force-push.
+  3. **hooks.json schema mismatch** — Claude Code's validator requires a top-level `hooks: {}` record; our "ship-disabled via `_PreToolUse` underscore prefix" trick failed validation with `Invalid input: expected record, received undefined`. Fixed by shipping `hooks/hooks.json` with `"hooks": {}` (empty, truly disabled) and moving the real hook into `hooks/hooks.enabled.example.json`. Users enable by copying the example over the primary file.
+- **README Gate 1 updated** to reflect the new enable procedure (copy `hooks.enabled.example.json` over `hooks.json`, restart Claude Code).
+- **SSH host key** — `ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts` required on user's machine to allow plugin's secondary clone (first `install` failed with `No ED25519 host key is known`). This is a per-machine setup issue, not a plugin bug.
+- **CLI verb correction**: install command is `claude plugins install`, not `claude plugins add`. README install line was already correct; only affected the Session 48 CLAUDE.md snippet.
+- **Verified install path end-to-end**: plugin now reports `Status: ✔ enabled` in `claude plugins list`. Marketplace path: `claude plugins marketplace add ghengis5-git/librarian` → `claude plugins install librarian@librarian-marketplace`.
+- **3 post-publish commits on main**:
+  - `4347ca4` fix: move marketplace.json to .claude-plugin/ for Claude Code discovery
+  - `bb8ea34` fix: scrub real email from marketplace.json owner field
+  - `7d27353` fix(plugin): hooks.json schema — ship empty hooks record, move real hook to .enabled.example
+- **Phase F truly complete** — all four distribution channels (GitHub, PyPI, plugin marketplace install path, release notes) verified working in the wild.
+
+## Session 50 Deliverables (Phase 7.3 prep — v0.7.2 patch release)
+- **Scope decision**: Phase 7.3 only (patch release). Phase 7.1 (pre-commit hook registry-sync bug) and 7.2 (next_review field + Audit KPI) deferred to v0.7.3. v0.7.2 is a pure re-release of `main` — it ships the Session 49 install-path fixes to anyone who installed during the broken window. No code changes, no test changes, no API changes.
+- **Version strings bumped 0.7.1 → 0.7.2** in 5 manifests:
+  - `librarian/__init__.py` (`__version__`)
+  - `pyproject.toml` (`[project] version`)
+  - `.claude-plugin/plugin.json` (`version`)
+  - `.claude-plugin/marketplace.json` (`plugins[0].version`)
+  - `skills/librarian/SKILL.md` (frontmatter `metadata.version`)
+- **Release notes drafted**: `docs/release-notes-20260413-V2.0.md` — documents what changed in Session 49 (marketplace.json path, hooks.json schema, owner email scrub), explicitly calls out no-op areas (CLI, manifest, oplog, evidence, templates, tests), includes "remove the broken marketplace entry first" guidance for users stuck on v0.7.1 plugin install. Treated as a new document rather than a revision of V1.0 (each release notes file = one release).
+- **Registry updated**:
+  - v0.7.1 release notes promoted `draft` → `active` (they describe a live release).
+  - v0.7.2 release notes added as new `draft` entry (V2.0, patch-tagged).
+  - `registry_meta`: total 25 → 26, active 17 → 18.
+- **Runbook produced** for host terminal: `docs/release-v0-7-2-runbook-20260413-V1.0.md` — step-by-step commands to execute the release (pytest sanity → commit version bumps → tag → build → TestPyPI dry-run → PyPI upload → gh release create → marketplace refresh → plugin smoke test). Nothing destructive or irreversible happens in Cowork; all git/build/upload steps live in the runbook.
+- **Cowork sandbox limits hit as expected**: can't run `pytest`, `git tag`, `python -m build`, `twine upload`, or `gh release create`. These are the entire "execute the release" surface. All execution steps moved to the host runbook per user direction.
+- **Phase 7.3 — EXECUTED** in host terminal between Sessions 50 and 51. Runbook ran clean: tag `v0.7.2` pushed, sdist + wheel uploaded to PyPI (`librarian-2026==0.7.2`), GitHub release created, marketplace refreshed, plugin smoke test passed. `82103c9 release: v0.7.2` and `ebfe7a7 registry: activate v0.7.2 release notes` landed on main. No Session 50.5 log because the host commits *are* the log.
+
+## Session 51 Deliverables (Phase 7.1 + 7.2 + 7.3-next release + 7.5 — most unreleased, v0.7.3 shipped mid-session)
+
+### Phase 7.1 — Pre-commit hook registry-sync hardening (`425180e`)
+- **Diagnosis correction**: CLAUDE.md's Phase 7.1 entry described the bug as "hook greps for full filepath but registry stores filename only". That bug was actually fixed in `853c5ba` (Session 35, while working on Phase G.1 prep). Tested against all 27 real registry entries → zero false negatives.
+- **Real latent bugs found and fixed**:
+  1. **Unescaped regex metacharacters** — `$filename` was interpolated verbatim into an extended regex. Literal dots in version suffixes (`V1.0.md`) were treated as wildcards; a staged `foo-V1.0.md` could spuriously match a registered `foo-V1x0xmd`. Demonstrated with a fixture registry.
+  2. **No end-of-line anchor** — a staged `foo.md` would substring-match a registered `foo.md.backup` or `old-foo.md`.
+- **Fix** (`scripts/librarian-pre-commit-hook-20260411-V1.0.sh`): escape regex metachars via `sed 's/[][().*+?|{}\\^$]/\\&/g'`, then anchor with `^[-[:space:]]+(filename|path):[[:space:]]+([^[:space:]]*/)?${filename_esc}[[:space:]]*$`. Accepts both list-item (`- filename: x`) and indented-path (`  path: dir/x`) YAML forms; filename must be at end of line.
+- **11 regression tests** in `tests/test_precommit_hook.py` — 8 grep-level unit tests + 3 end-to-end tests that stage files into a fixture git repo and run the real hook script.
+- **Hook self-tested on its own commit** — passed cleanly.
+
+### Phase 7.2 — `next_review` field + `review` CLI + Audit page KPI (`c92875a`)
+- **Scope (user-chosen A3 + B1 + C1 + D1)**:
+  - A3 — both flag-on-existing-command AND dedicated subcommand
+  - B1 — explicit-only (presets do NOT auto-apply default cadences)
+  - C1 — absolute ISO 8601 dates only; no relative parsing (`+6mo`, `+1y`) this pass
+  - D1 — overdue = warn severity; `AuditReport.clean` deliberately unaffected to preserve the existing exit-code contract for downstream automation
+- **New module** `librarian/review.py` (~210 lines): `parse_review_date`, `format_review_date`, `compute_overdue`, `compute_upcoming`, `OverdueReview` dataclass, `ReviewDateError`. Status-aware — superseded/archived docs excluded from overdue calc. Most-overdue-first sort.
+- **Schema**: optional `next_review: YYYY-MM-DD|null` on each document entry (`schema/registry.schema.yaml`). Backwards compatible — every existing entry remains valid without it.
+- **CLI surface**:
+  - `librarian register --review-by YYYY-MM-DD`
+  - `librarian bump --review-by YYYY-MM-DD` and `librarian bump --clear-review` (mutually exclusive; default = inherit from predecessor)
+  - `librarian scaffold --review-by YYYY-MM-DD`
+  - `librarian review set <filename> --by YYYY-MM-DD`
+  - `librarian review clear <filename>`
+  - `librarian review list [--overdue | --upcoming [--within-days N]]`
+- **Audit integration**: `AuditReport.overdue_reviews: list[OverdueReview]` populated automatically; `format_report` emits an "Overdue reviews" section; `audit --json` includes `overdue_reviews` in the payload.
+- **Audit page** (`sitegen.py`): new "Overdue Reviews" KPI card (kpi-warn when > 0); new OODA-section table with filename / deadline / days-overdue; new "List Overdue Reviews" CLI quick-card.
+- **Docs**: `skills/librarian/references/cli-reference.md` updated with all new flags + the `review` subcommand.
+- **51 new tests** (692 → 743) — `tests/test_review.py` (49 tests across 8 classes) and `tests/test_sitegen.py` (+2, +1 updated).
+- **Smoke test on real registry**: set deadline on `librarian-architecture-20260411-V1.0.md` → audit detected (468 days overdue) → `review list --overdue` listed it → cleared back out → `git checkout` reverted stray writes.
+
+### Phase 7.3-next — v0.7.3 release (shipped mid-session)
+- Commits on main leading up to tag: `425180e` (7.1), `c92875a` (7.2), `4283c43` (Session 51 docs), `62d3086` (release: version bumps + notes + runbook + manifest/evidence), `e8d866d` (post-release: activate release-notes V3.0 + runbook in registry).
+- All 12 runbook steps executed clean: pytest 743 passed → `git tag -s v0.7.3` → `python -m build` (wheel 311 KB, sdist 306 KB) → TestPyPI dry-run → real PyPI upload → `git push origin main && git push origin v0.7.3` → `gh release create v0.7.3` with wheel + sdist attached → marketplace refreshed (plugin went 0.7.2 → 0.7.3).
+- **Post-release smoke test** in a fresh `/tmp/lib-smoke` venv: `pip install librarian-2026==0.7.3` + `librarian register --review-by 2027-01-01` + `librarian review list` + `librarian audit` all worked end-to-end. PyPI CDN had a brief propagation lag (first install pulled 0.7.2); resolved on retry with `--no-cache-dir`.
+- v0.7.3 release notes promoted draft → active in post-release housekeeping commit `e8d866d` (mirrors how v0.7.1 and v0.7.2 were handled).
+- **Phase 7.4 explicitly skipped** mid-session — email-in-history scrub deferred indefinitely; user opted not to rewrite the Session 48 blob even though traffic could warrant it later.
+
+### Phase 7.5 — Oplog append-only detection + setup helper (`f296045`)
+- **Scope pivot**: the original Phase 7.5 description in CLAUDE.md said "oplog prevention mode — requires oplog-format change — needs explicit approval." Session 51 chose **Option A** of the three scoped alternatives: OS-level append-only flag. **Zero oplog format change** — the JSONL schema stays identical, so the §When to Stop and Ask rule on oplog format changes was not triggered.
+- **Mechanism**: kernel-enforced append-only via `chflags uappend` (macOS, UF_APPEND bit 0x04) or `chattr +a` (Linux, requires CAP_LINUX_IMMUTABLE / sudo). The existing `oplog.append()` already opens with `"a"` (`O_APPEND`), so normal operation is unaffected once the flag is set. Attackers with write access can no longer truncate or rewrite past entries — kernel returns EPERM.
+- **New module** `librarian/oplog_lock.py` (~162 lines): `is_append_only(path) -> bool | None` (True/False/None with graceful degradation on unsupported platforms, missing tools, overlay/network filesystems); `platform_support() -> "macos" | "linux" | "unsupported"`; `lock_instructions(path)` / `unlock_instructions(path)` build human-readable shell commands. Never raises.
+- **Setup helper** `scripts/librarian-oplog-lock-20260414-V1.0.sh` (~185 lines): `status | lock | unlock` subcommands, auto-detects OS. Applying the flag lives outside Python because Linux requires sudo — didn't want to gate library calls on that. Treats non-zero `lsattr` exit as "unknown" rather than silently reporting "unlocked" (bug caught + fixed mid-build during smoke test).
+- **CLI**: new `librarian oplog status` subcommand (inspect-only; apply/remove routes through the shell script).
+- **Audit integration**: `AuditReport.oplog_locked: bool | None` + `AuditReport.oplog_path: str` fields; `format_report` adds a one-line status (silent when `None`); `audit --json` includes both fields in payload; `report.clean` deliberately unaffected (preserves the existing CI-contract; advisory like folder suggestions and overdue reviews).
+- **Audit page** (`sitegen.py`): new "Oplog Lock" KPI card (✓ when locked, ✗ when unlocked, – when undetectable); two new CLI quick-cards for status + enable. Audit page test count bumped 19 → 21.
+- **Docs**: `skills/librarian/references/cli-reference.md` updated with full `oplog` section covering states (locked/unlocked/undetectable/missing), apply/remove instructions, and cross-platform semantics.
+- **31 new tests** (743 → 774) — `tests/test_oplog_lock.py` (30 tests: platform dispatch 6, macOS stat-flag 5, Linux lsattr parsing 7 with mocked subprocess, instruction strings 5, audit integration 5) + `tests/test_sitegen.py` (+1 KPI assertion, +1 new CLI quick-cards test). macOS and Linux detection paths are covered via mocking rather than actually setting the flag (requires sudo on Linux, not worth the test flakiness).
+- **End-to-end smoke test** in overlayfs sandbox: Python CLI, shell script, audit text output, and `audit --json` all agree on "undetectable" state — matches the graceful-degradation contract documented in `oplog_lock.py`. Expected path: on a real ext4/macOS filesystem the detection would succeed.
+
+## Session 52 Deliverables (Phase 8.0 + 8.1 — shipped in v0.7.5)
+
+Security patch release. Four distribution channels updated; CRIT shell-injection fix verified live on PyPI.
+
+### Phase 8.0 — Adversarial-review hardening (9 findings, commit `e37e42e`)
+- **CRIT** (`librarian/oplog_lock.py`): `shlex.quote()` wraps the path in `lock_instructions`/`unlock_instructions`. Prior versions f-string interpolated paths, producing copy-pasteable shell-injection strings when paths contained `;`, `$()`, backticks, or shell metacharacters. Post-release smoke test confirmed: `/tmp/foo; rm -rf HOME` → `chflags uappend '/private/tmp/foo; rm -rf HOME'` → `shlex.split()` re-tokenizes to 3 args. Semicolon is inert.
+- **HIGH** (`librarian/precommit.py`): symlink-safe containment in `_should_check`. Previously `filepath.resolve()` would follow a symlink out of repo_root → `ValueError` → file silently skipped from naming check. Now resolves the *parent* directory only (trusted, handles macOS `/var → /private/var`) and rebinds the leaf name; on-disk filename always validated regardless of symlink target.
+- **HIGH** (`librarian/precommit.py`): filesystem-root fallback removed from `_find_registry`. Prior walk-up probed `/docs/REGISTRY.yaml` as a last resort, which on some container images would set `repo_root = /` and pull the entire filesystem into naming-check scope.
+- **HIGH** (`scripts/librarian-oplog-lock-20260414-V1.0.sh`): macOS `is_locked()` stat-failure now reports "unknown", not false "unlocked". Previously `stat ... || echo 0` swallowed permission-denied errors and yielded a false all-clear.
+- **MED** (`librarian/oplog_lock.py`): TOCTOU pre-check `p.exists()` removed. Missing-file detection delegated to platform probe's error path (`FileNotFoundError` on macOS, non-zero `lsattr` exit on Linux) — both still return `None` per the contract.
+- **MED** (`librarian/precommit.py`): `_get_exempt()` helper extracted from two duplicated blocks in `_should_check` and `_check_file`. Single source of truth for `infrastructure_exempt` parsing.
+- **MED** (`librarian/precommit.py`): empty-argv behavior emits `"Librarian naming check — no files to check"` on stdout (exit 0 preserved). Distinguishes legitimate framework-triggered "nothing to check" from CLI misconfiguration.
+- **MED** (`librarian/oplog_lock.py`): `LIBRARIAN_DEBUG=1` surfaces lsattr rc + stderr to our stderr. Default behavior silent (unchanged).
+- **LOW** (`scripts/librarian-oplog-lock-*.sh`): dropped `uname -s 2>/dev/null || echo unknown` fallback — `uname` is POSIX-guaranteed; failure should surface rather than be relabeled.
+
+### Phase 8.1 — Polish sweep (bundled in commit `e37e42e`)
+- `librarian/sitegen.py` line 2154 converted to raw f-string (`rf"""..."""`). Embedded JavaScript regex literals (`\d`, `\s`, `\.`) were producing `DeprecationWarning` on Python 3.11+ / `SyntaxWarning` on 3.12+. Verified clean with `python -W error`.
+- Added `.pre-commit-hooks.yaml` and `cli-reference.md` to `project_config.naming_rules.infrastructure_exempt`.
+- New `project_config.audit_config.folder_threshold` config knob wired through `cmd_audit` in `__main__.py`. Default remains 15. Librarian's own registry overrides to 30 (self-documentation density was tripping the warning on every audit run).
+- Added "latest copy" manifest + evidence mirrors (`librarian-manifest-20260414.json`, `librarian-evidence-20260414.json`) to `infrastructure_exempt` to eliminate persistent audit noise.
+
+### Tests (Session 52)
+- Pre-session baseline: 796 (CLAUDE.md's previously-cited 774 was stale — it didn't count Phase 7.7's `test_precommit.py`).
+- Added: 18 regression tests. `test_oplog_lock.py` +9 (shlex quoting 4, TOCTOU 2, LIBRARIAN_DEBUG stderr 3). `test_precommit.py` +9 (symlink 2, root-fallback 2, `_get_exempt` 4, empty-argv 1).
+- Post-session: **814/814 passing.**
+
+### Release — v0.7.5 shipped mid-session
+- 5 manifests bumped 0.7.4 → 0.7.5 (`librarian/__init__.py`, `pyproject.toml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `skills/librarian/SKILL.md`).
+- New documents: `docs/release-notes-20260414-V5.0.md` (security-patch release notes), `docs/release-v0-7-5-runbook-20260414-V1.0.md` (host runbook), `docs/librarian-manifest-20260414-V3.0.json` + `docs/librarian-evidence-20260414-V3.0.json` (fresh seal). V2.0 manifest/evidence pair moved active → superseded.
+- Registry: total 35 → 39, active 24, draft 2 → 4 → 2 (V5.0 notes + runbook promoted draft→active at session end), superseded 9 → 11.
+- Four distribution channels live at 0.7.5: PyPI, GitHub release, git tag, plugin marketplace.
+- **Release hiccup** (resolved): runbook step 3 initially skipped due to stale `.git/index.lock` + em-dash/paren shell-quoting tripping zsh parser (`zsh: missing end of string`, `zsh: invalid mode specification`, `zsh: missing delimiter for 'u' glob qualifier`). PyPI upload succeeded anyway because `python -m build` reads the working tree (not HEAD) — so published wheel always had `__version__ = "0.7.5"`. Tag briefly pointed to pre-bump commit. Recovery: cleared lock, retried commit with ASCII-only message, deleted + recreated tag at bump commit `1b836d1`, force-synced remote tag. Total recovery cost: ~20 minutes.
+- **New auto-memory**: `feedback_release_runbook_ascii_only.md` — future release runbooks must use ASCII-only `-m` messages (no em-dashes, no parens inside quoted strings, no `$` or backticks in nested quotes). Pairs with the existing CDN-lag-sleep pattern.
+
+### Commits landed in Session 52
+- `b526a7e` — docs: Phase 8 roadmap (pre-execution planning)
+- `e37e42e` — fix: Phase 8.0 adversarial-review hardening (9 findings) — bundles both 8.0 and 8.1
+- `7a09b47` — docs: fix self-reference typo in v0.7.2 runbook
+- `1b836d1` — release: v0.7.5 (version bumps + release notes + runbook + V3.0 manifest/evidence + registry updates)
+- `2469c46` — registry: activate v0.7.5 release notes plus runbook (housekeeping)
+
+All SSH-signed. All pushed to origin/main.

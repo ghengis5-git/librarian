@@ -55,12 +55,72 @@ use this Python entry point. They share the same naming rules (via
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 import yaml
 
 from .naming import validate as validate_name
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Windows / UNC path helpers (Phase 8.2)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Windows filesystems introduce three complications the original POSIX-only
+# code didn't handle:
+#
+#   1. Mapped-drive vs UNC mismatch. A project at ``Z:\proj`` may resolve via
+#      ``Path.resolve()`` to ``\\server\share\proj`` (the underlying UNC).
+#      If one side of a ``relative_to()`` comparison resolves and the other
+#      doesn't, the containment check raises ``ValueError`` and the file is
+#      silently skipped from the naming check — exactly the UNC bug users hit.
+#
+#   2. Case-insensitivity. NTFS compares case-insensitively, but
+#      :meth:`pathlib.Path.relative_to` is case-sensitive on every platform.
+#      ``Path("Z:/Docs/foo.md").relative_to("z:/docs")`` raises ValueError.
+#
+#   3. Disconnected shares. Calling ``Path.resolve()`` on a UNC path whose
+#      server is offline can raise ``OSError``. We must tolerate that.
+#
+# ``os.path.normcase`` is the right primitive for (2) — it lowercases and
+# swaps separators on Windows, and is a no-op on POSIX. We normalize both
+# sides of every prefix check.
+_IS_WINDOWS = os.name == "nt"
+
+
+def _norm_key(p: Path | str) -> str:
+    """Return a case-normalized POSIX-style key for path comparisons.
+
+    On Windows this folds to lowercase and converts backslashes to forward
+    slashes so UNC (``\\\\server\\share``) and mapped-drive (``Z:\\``) forms
+    compare predictably against each other once resolved. On POSIX this
+    preserves case and simply returns the forward-slash form.
+    """
+    s = str(p)
+    if _IS_WINDOWS:
+        # normcase lowercases AND flips separators on Windows.
+        s = os.path.normcase(s)
+        # Unify separators so startswith() matches work regardless of
+        # whether the caller gave us backslashes or forward slashes.
+        s = s.replace("\\", "/")
+    return s
+
+
+def _safe_resolve(p: Path) -> Path:
+    """Resolve *p* tolerating OSError (disconnected network shares).
+
+    ``Path.resolve(strict=False)`` still raises OSError on some Windows
+    failure modes (offline UNC, deep recursion, reparse-point loops).
+    When that happens we fall back to the unresolved path rather than
+    crashing — the file will still get its naming check, just without
+    symlink/junction unwrapping.
+    """
+    try:
+        return p.resolve(strict=False)
+    except OSError:
+        return p
 
 
 # Document extensions the naming convention applies to. Matches the
@@ -84,15 +144,35 @@ def _find_registry(start: Path) -> Path | None:
     treat the entire filesystem as ``repo_root``, pulling every file
     into the naming check's scope. Now we stop at the last directory
     above the root and return ``None`` if no registry was found.
+
+    Windows/UNC note (Phase 8.2): UNC paths like ``\\\\server\\share`` have
+    ``anchor == '\\\\server\\share\\'``. ``Path.parent`` on a UNC root
+    returns the UNC root itself (idempotent), so loop termination still
+    works — but the comparison must be case-insensitive on Windows.
+    We compare via ``_norm_key`` to match NTFS semantics. We also use
+    ``_safe_resolve`` so a disconnected network share falls back to the
+    lexical path instead of raising.
     """
     current = start if start.is_dir() else start.parent
-    current = current.resolve()
+    current = _safe_resolve(current)
     filesystem_root = Path(current.anchor)
-    while current != filesystem_root:
+    root_key = _norm_key(filesystem_root)
+    seen: set[str] = set()
+    while True:
+        current_key = _norm_key(current)
+        # Loop termination: stop once we reach the filesystem/UNC root, OR
+        # if ``.parent`` returns the same path we already saw (defensive
+        # against pathological UNC behavior on odd Python versions).
+        if current_key == root_key or current_key in seen:
+            break
+        seen.add(current_key)
         candidate = current / "docs" / "REGISTRY.yaml"
         if candidate.is_file():
             return candidate
-        current = current.parent
+        parent = current.parent
+        if _norm_key(parent) == current_key:
+            break  # idempotent parent — we've hit the anchor
+        current = parent
     # Deliberately no filesystem-root fallback — see security note above.
     return None
 
@@ -109,11 +189,32 @@ def _get_exempt(project_config: dict) -> frozenset[str]:
 
 
 def _load_project_config(registry_path: Path) -> dict:
-    """Best-effort load of project_config. Returns empty dict on any error."""
+    """Best-effort load of project_config. Returns empty dict on any error.
+
+    Phase 8.2a adversarial-review fix L3: the exception swallow is
+    **intentional** and documented here so future maintainers don't
+    "helpfully" switch it to use :func:`librarian.yaml_errors.load_yaml`
+    (which would raise :class:`YamlParseError` on malformed registries).
+
+    The pre-commit hook must not block a developer's commit on problems that
+    are unrelated to the files they are staging — e.g. an unrelated branch
+    landed a broken REGISTRY.yaml, or the registry is missing. In those cases
+    we degrade to "no project_config overrides" (empty dict), which causes
+    ``_should_check`` to skip the file rather than falsely reject it. The
+    user still sees the registry-parse failure separately via
+    ``librarian audit``, which *does* use the friendly YAML-error path.
+
+    Phase 8.2a adversarial-review fix H2 (Codex second-pass): we also
+    catch :class:`UnicodeDecodeError` — opening with ``encoding="utf-8"``
+    raises *before* PyYAML runs when the file isn't valid UTF-8 (e.g. a
+    registry that was corrupted or saved as UTF-16 by a mis-configured
+    editor). Without this, the hook crashed with a traceback rather than
+    honoring its non-blocking contract.
+    """
     try:
         with registry_path.open("r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-    except (OSError, yaml.YAMLError):
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
         return {}
     if not isinstance(data, dict):
         return {}
@@ -166,26 +267,50 @@ def _should_check(
     # macOS's ``/var -> /private/var``), then rebind the original leaf
     # name onto the resolved parent. This gives us a containment check
     # that does NOT follow a user-placed symlink at the filepath itself.
+    #
+    # Phase 8.2 Windows/UNC fix: both ``raw_parent`` and ``repo_root`` must
+    # resolve consistently, because ``Path.resolve()`` on Windows converts
+    # mapped drives to UNC (``Z:\proj`` → ``\\server\share\proj``). If only
+    # one side resolved, ``relative_to`` would raise even for a file
+    # genuinely inside the repo. We also fall back to a case-insensitive
+    # POSIX-string prefix check (via ``_norm_key``) when ``relative_to``
+    # still disagrees — which happens on case-varying Windows paths.
+    #
+    # Phase 8.2a adversarial-review fix L1: the previously-present outer
+    # ``try/except ValueError`` around this whole block was dead code —
+    # every path that can raise ValueError is already caught by the
+    # inner try/except on ``relative_to``. Removed to tighten flow.
+    raw_parent = filepath.parent if filepath.is_absolute() \
+        else (Path.cwd() / filepath).parent
+    resolved_parent = _safe_resolve(raw_parent)
+    resolved_repo = _safe_resolve(repo_root)
+    lexical = resolved_parent / filepath.name
     try:
-        raw_parent = filepath.parent if filepath.is_absolute() \
-            else (Path.cwd() / filepath).parent
-        try:
-            resolved_parent = raw_parent.resolve(strict=False)
-        except OSError:
-            resolved_parent = raw_parent
-        lexical = resolved_parent / filepath.name
-        rel = lexical.relative_to(repo_root)
+        rel = lexical.relative_to(resolved_repo)
+        rel_posix = rel.as_posix()
     except ValueError:
-        # File lives outside the registry's repo — skip (another project)
-        return False
+        # Case-insensitive fallback for Windows, where NTFS treats
+        # ``Z:\Docs`` and ``z:\docs`` as the same directory but
+        # ``Path.relative_to`` compares case-sensitively.
+        lex_key = _norm_key(lexical)
+        repo_key = _norm_key(resolved_repo).rstrip("/")
+        if repo_key and lex_key.startswith(repo_key + "/"):
+            rel_posix = lex_key[len(repo_key) + 1:]
+        else:
+            # Truly outside the repo — skip (another project)
+            return False
 
-    rel_posix = rel.as_posix() + ("/" if filepath.is_dir() else "")
+    rel_posix = rel_posix + ("/" if filepath.is_dir() else "")
+    # Case-normalize the rel path too, so ``Docs/foo.md`` matches tracked
+    # dir ``docs/`` on Windows without forcing the user to care about case.
+    rel_posix_cmp = _norm_key(rel_posix) if _IS_WINDOWS else rel_posix
     for td in tracked_dirs:
         if not td:
             continue
         # Ensure trailing slash for prefix match
         prefix = td if td.endswith("/") else td + "/"
-        if rel_posix.startswith(prefix):
+        prefix_cmp = _norm_key(prefix) if _IS_WINDOWS else prefix
+        if rel_posix_cmp.startswith(prefix_cmp):
             return True
     return False
 
@@ -261,7 +386,11 @@ def main(argv: list[str] | None = None) -> int:
 
     for raw in args.files:
         fp = Path(raw)
-        parent = (fp if fp.is_dir() else fp.parent).resolve()
+        # Phase 8.2 consistency fix: use _safe_resolve so a disconnected
+        # UNC share or other OSError-producing path doesn't crash the
+        # hook before any file gets checked. Matches the hardening
+        # already applied in _find_registry and _should_check.
+        parent = _safe_resolve(fp if fp.is_dir() else fp.parent)
         if parent not in registry_cache:
             registry_cache[parent] = _find_registry(parent)
         registry_path = registry_cache[parent]

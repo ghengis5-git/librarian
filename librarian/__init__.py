@@ -76,6 +76,7 @@ from .templates import (
     build_context,
 )
 from .versioning import Version, bump_filename, parse_version
+from .yaml_errors import YamlParseError, load_yaml, load_yaml_string
 
 __all__ = [
     "__version__",
@@ -163,4 +164,8 @@ __all__ = [
     "Version",
     "bump_filename",
     "parse_version",
+    # yaml_errors (Phase 8.2 — friendly YAML parse errors)
+    "YamlParseError",
+    "load_yaml",
+    "load_yaml_string",
 ]

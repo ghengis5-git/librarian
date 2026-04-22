@@ -15,6 +15,7 @@ from typing import Any
 import yaml
 
 from .config import LibrarianConfig, load_config
+from .yaml_errors import YamlParseError, load_yaml
 
 
 @dataclass
@@ -30,8 +31,10 @@ class Registry:
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"registry not found: {path}")
-        with path.open("r") as f:
-            data = yaml.safe_load(f) or {}
+        # Use load_yaml for friendly parse errors (line/column + caret).
+        # Propagates as YamlParseError so callers can catch it without
+        # depending on PyYAML's exception hierarchy.
+        data = load_yaml(path) or {}
         return cls(path=path, data=data)
 
     def save(self) -> None:
