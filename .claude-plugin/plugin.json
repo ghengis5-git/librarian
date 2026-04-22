@@ -1,6 +1,6 @@
 {
   "name": "librarian",
-  "version": "0.7.5",
+  "version": "0.8.0",
   "description": "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests.",
   "author": {
     "name": "Chris Kahn"

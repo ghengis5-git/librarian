@@ -404,6 +404,37 @@ documents:
   tags:
   - planning
   - phase-d
+- filename: phase-9-pypi-rename-migration-20260422-V1.0.md
+  path: docs/phase-9-pypi-rename-migration-20260422-V1.0.md
+  title: Phase 9 — PyPI Distribution Rename Migration
+  description: Planning doc for renaming the PyPI distribution from librarian-2026
+    to a cleaner name (librarian-governance or the bare librarian via PEP 541). Decision
+    matrix across three paths (PEP 541 transfer, new name, or stay), release choreography,
+    wrapper-package mechanics, risks, and a recommendation to take Path B (librarian-governance).
+    Explicitly out of scope for v0.8.0.
+  format: md
+  version: '1.0'
+  date: '2026-04-22'
+  status: draft
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  locations:
+    disk: true
+    chat: false
+    cowork: true
+  parent: librarian-buildout-plan-20260411-V1.2.md
+  supplements:
+  - phase-f-plugin-and-release-20260413-V1.1.md
+  cross_references:
+  - phase-f-plugin-and-release-20260413-V1.1.md
+  - librarian-buildout-plan-20260411-V1.2.md
+  supersedes: null
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - planning
+  - phase-9
+  - release
 - filename: librarian-manifest-20260412-V1.0.json
   path: examples/manifests/librarian-manifest-20260412-V1.0.json
   title: Librarian Example Manifest
@@ -888,6 +919,51 @@ documents:
   - ops
   path: docs/release-v0-7-5-runbook-20260414-V1.0.md
   infrastructure_exempt: false
+- filename: release-notes-20260422-V6.0.md
+  title: v0.8.0 minor release (Phase 8.2a + Pass-4 HIGH fixes + evidence-seal security
+    fixes)
+  description: Release notes for v0.8.0 — bundles Track 1 evidence-seal security fixes
+    (duplicate rel_path guard, manifest canonical-form shape change), Track 2 Phase
+    8.2a (legal-discovery template, new public librarian.yaml_errors module with friendly
+    YAML parse errors, Windows/UNC precommit hardening), Track 3 Pass-4 HIGH fixes
+    (caret off-by-one in yaml_errors, UnicodeDecodeError wrapping in load_yaml), and
+    Track 4 Phase 9 PyPI rename migration planning doc (no code). Minor bump justified
+    by new public module + manifest canonical form shape change. Test suite 814 →
+    884.
+  status: draft
+  version: V6.0
+  created: '2026-04-22'
+  updated: '2026-04-22'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - documentation
+  - changelog
+  path: docs/release-notes-20260422-V6.0.md
+  infrastructure_exempt: false
+- filename: release-v0-8-0-runbook-20260422-V1.0.md
+  title: v0.8.0 release runbook (host-terminal execution steps)
+  description: 14-step host-terminal runbook for executing the v0.8.0 minor release
+    — pre-flight, sanity checks, commit bumps, tag, manifest+evidence V4.0 refresh
+    (5 sub-steps), commit artifacts, build, TestPyPI dry-run, PyPI upload, git push,
+    GitHub release, plugin marketplace refresh, smoke test (4 in-venv probes covering
+    HIGH-1 seal stability, HIGH-2 duplicate resolution, Pass-4 HIGH-1 UnicodeDecodeError
+    wrapping, legal-discovery template loadability), housekeeping, rollback procedures,
+    definition of done. Uses ASCII-only commit messages; sleep 30 before PyPI /json
+    curls for CDN propagation.
+  status: draft
+  version: V1.0
+  created: '2026-04-22'
+  updated: '2026-04-22'
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  tags:
+  - release
+  - runbook
+  - ops
+  path: docs/release-v0-8-0-runbook-20260422-V1.0.md
+  infrastructure_exempt: false
 - filename: session-history-20260422-V1.0.md
   title: Archived Session 31-52 Deliverables from CLAUDE.md
   description: Historical context for Librarian development from Session 31 through
@@ -928,19 +1004,20 @@ documents:
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 41
+  total_documents: 44
   active: 28
-  draft: 2
+  draft: 5
   superseded: 11
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0
   pending_cross_reference_updates: 0
   last_audit: '2026-04-12'
-  last_audit_note: '2026-04-12: Registered all unregistered files (superseded buildout
-    plans, dashboard, phase-d plan, example manifest). Created README.md. Renamed
-    phase-d-implementation-plan.md to follow naming convention. Removed all references
-    to former consumer project.'
+  last_audit_note: '2026-04-22: Session 53 registered phase-9 PyPI rename migration
+    plan, v0.8.0 release notes V6.0, and v0.8.0 runbook V1.0 as draft entries ahead
+    of the host-terminal release execution. V3.0 manifest + evidence pair stays active
+    until the host terminal mints V4.0 (step 5 of runbook). Counts updated from 41
+    → 44 total, 2 → 5 draft.'
   naming_violations: 0
   naming_violation_details: []
   total_on_disk: 10
@@ -948,4 +1025,4 @@ registry_meta:
   locations_in_cowork: 10
   locations_disk_only: 0
   locations_chat_only: 0
-  last_updated: '2026-04-14'
+  last_updated: '2026-04-22'

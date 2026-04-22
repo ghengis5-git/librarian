@@ -95,7 +95,7 @@ Commands:
 ---
 
 ## Test Suite
-- **875 tests** across 18 test files (verified Session 53 post-Codex second-pass)
+- **884 tests** across 18 test files (Session 53 post pass-4 fixes — 875 baseline + 5 UnicodeDecodeError + 4 DuplicateResolutionDetection)
 - Run: `python -m pytest tests/ -v --tb=short`
 - **Always** run tests before any commit
 - Phase-by-phase test breakdown: see `docs/session-history-20260422-V1.0.md`
@@ -153,15 +153,25 @@ All three items came from user direct request. Injected "GitHub issues list" in 
 - Pre-session baseline (reconciled via full `--co` collection): 840.
 - Added: 20 (yaml_errors initial) + 15 (Phase 8.2 Windows/UNC).
 - Added post-Codex second-pass: 1 (caret-lands-at-column regression) + 2 (UnicodeDecodeError regressions). Integration test `test_format_error_caret_line_matches_source_line_tabs` was split/rewritten (no net delta).
-- Net added this session: 38.
-- Post-session: **875** — verified passing via sandbox python3 + PYTHONPATH in seven batches (sandbox 45s-per-call limit required splitting; all batches green, collection confirms 875 total). Full-suite host-venv pytest run still owed before release.
+- Added post-pass-4 HIGH fixes: 5 (`TestLoadYamlUnicodeDecodeError`) + 4 (`TestDuplicateResolutionDetection`) = 9.
+- Net added this session: 47.
+- Post-session: **884** — verified passing via sandbox python3 + PYTHONPATH across multiple batches (all green). Full-suite host-venv pytest run still owed before release.
 
 #### Version bump
 - `librarian/__init__.py` shows `__version__ = "0.8.0"`. **Minor** bump (not patch) because this session adds a new public module (`yaml_errors`) plus a new template. Other manifests (`pyproject.toml`, plugin.json, marketplace.json, SKILL.md) still at 0.7.5 — must be bumped together in the release commit.
-- v0.8.0 triggers the adversarial-review guardrail (per `auto-memory/feedback_major_release_adversarial_review.md` and the "Release Process Guardrails" block below). First-pass review flagged 6 issues (M1, M2, L1, L2, L3, L4); all six were remediated in-session. Second-pass adversarial review (subagent) returned **0 CRIT / 0 HIGH / 0 MED / 2 LOW**. **Third-pass adversarial review via Codex** then surfaced two more legitimate findings that the earlier passes missed: **H1** (caret off-by-one in `_caret_prefix`) and **H2** (missing `UnicodeDecodeError` catch in `_load_project_config`). Both were remediated in-session with regression tests. A fourth-pass review is owed before shipping to confirm CLEAR status.
+- v0.8.0 triggers the adversarial-review guardrail (per `auto-memory/feedback_major_release_adversarial_review.md` and the "Release Process Guardrails" block below). First-pass review flagged 6 issues (M1, M2, L1, L2, L3, L4); all six were remediated in-session. Second-pass adversarial review (subagent) returned **0 CRIT / 0 HIGH / 0 MED / 2 LOW**. **Third-pass adversarial review via Codex** then surfaced two more legitimate findings that the earlier passes missed: **H1** (caret off-by-one in `_caret_prefix`) and **H2** (missing `UnicodeDecodeError` catch in `_load_project_config`). Both were remediated in-session with regression tests.
 
-#### Nothing committed yet
-- All work sits in the working tree. No commits, no tag, no push. User had not approved the release path at session boundary.
+#### Pass-4 adversarial review (Session 53, post-commit-283c242)
+Opus subagent re-audited v0.7.5..283c242 and returned **two new HIGH findings**:
+- **Pass-4 HIGH-1** — `librarian/yaml_errors.py::load_yaml` caught `yaml.YAMLError` but not `UnicodeDecodeError`. A UTF-16-BOM or Latin-1 registry raised `UnicodeDecodeError` from `open(..., encoding="utf-8")` before PyYAML ran, giving the user a raw Python traceback with no path context — the exact failure mode this wrapper was built to prevent. **Fix:** added a second `except UnicodeDecodeError` branch that re-raises as `YamlParseError` with byte offset, decode reason, and "re-save as UTF-8 without BOM" guidance. 5 regression tests in `tests/test_yaml_errors.py::TestLoadYamlUnicodeDecodeError`.
+- **Pass-4 HIGH-2** — `librarian/manifest.py::generate` had a silent evidence-chain corruption when two registry entries shared a `filename` and neither had an explicit `path:` field. `_resolve_file_path` walks `tracked_dirs` and returns the *first* match for both, so `file_hashes` contained the same file hashed twice and the second registration's real file (which may be on disk under a different path) was silently dropped from the evidence chain — any tamper to that shadowed file was undetectable. **Fix:** added `seen_rel_paths` dict check in both the on-disk and missing-file branches of the Type-2 loop. Any repeat `rel_path` now raises `ManifestError` with guidance to add distinct `path:` entries. The existing `seen_basenames` check was intentionally preserved — it fires when basenames collide with *different* `rel_path` (rename-based collision across tracked dirs); the new check is its inverse (same `rel_path` registered twice). 4 regression tests in `tests/test_manifest.py::TestDuplicateResolutionDetection` including an end-to-end tamper-detection proof.
+
+**Pass 4b** (re-review after fixes, Opus subagent, static-analysis mode): **CLEAR — release gate satisfied for v0.8.0**. No new findings, no regressions introduced by either fix.
+
+#### Nothing committed yet beyond 283c242
+- Commit 283c242 landed (Session 53 Phase 8.2a initial work — 875 tests).
+- Pass-4 HIGH-1/HIGH-2 fixes + 9 new regression tests are uncommitted in the working tree — must be bundled into the v0.8.0 release commit.
+- No tag, no push. User has not approved the release path at session boundary.
 
 ---
 

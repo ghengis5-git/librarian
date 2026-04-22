@@ -150,6 +150,87 @@ class TestLoadYamlExceptionChaining:
 
 
 # --------------------------------------------------------------------------- #
+# Phase 8.2a adversarial-review pass-4 fix H1 — UnicodeDecodeError handling    #
+# --------------------------------------------------------------------------- #
+
+
+class TestLoadYamlUnicodeDecodeError:
+    """A non-UTF-8 registry (UTF-16 BOM, Latin-1 accented bytes, stray
+    high-bit bytes from copy-paste) raises :class:`UnicodeDecodeError`
+    during ``open(..., encoding='utf-8')`` *before* PyYAML ever runs.
+
+    The wrapper must catch it and re-raise as :class:`YamlParseError`
+    with path context and a clear "re-save as UTF-8" hint, mirroring
+    the fix already applied to ``_load_project_config`` in ``precommit.py``
+    during the Codex second-pass review.
+    """
+
+    def test_utf16_bom_raises_yaml_parse_error(self, tmp_path):
+        """UTF-16 BOM (``\\xff\\xfe`` or ``\\xfe\\xff``) is the most common
+        non-UTF-8 encoding a user hits when they save a registry in a
+        Windows editor without changing the default."""
+        p = tmp_path / "utf16.yaml"
+        # UTF-16 LE with BOM
+        p.write_bytes("foo: bar\n".encode("utf-16"))
+
+        with pytest.raises(YamlParseError) as excinfo:
+            load_yaml(p)
+        err = excinfo.value
+        assert err.path == p
+        # Underlying cause must be UnicodeDecodeError, preserved via ``from e``.
+        assert isinstance(err.__cause__, UnicodeDecodeError)
+
+    def test_utf16_bom_message_names_file_and_hints_utf8(self, tmp_path):
+        p = tmp_path / "utf16.yaml"
+        p.write_bytes("foo: bar\n".encode("utf-16"))
+
+        with pytest.raises(YamlParseError) as excinfo:
+            load_yaml(p)
+        msg = str(excinfo.value)
+        assert str(p) in msg, "error message must name the offending file"
+        # User needs to know the fix, not just that something failed.
+        assert "UTF-8" in msg
+
+    def test_bare_high_bit_bytes_raise_yaml_parse_error(self, tmp_path):
+        """Stray Latin-1 / high-bit continuation bytes are the other
+        common failure mode — e.g. a smart-quote pasted from Word. These
+        hit the UTF-8 decoder with no BOM, so the byte offset is the
+        content position, not offset 0."""
+        p = tmp_path / "latin1.yaml"
+        # 0xa9 is the Latin-1 copyright sign; illegal as a UTF-8 lead byte.
+        p.write_bytes(b"project_config:\n  name: caf\xa9\n")
+
+        with pytest.raises(YamlParseError) as excinfo:
+            load_yaml(p)
+        err = excinfo.value
+        assert isinstance(err.__cause__, UnicodeDecodeError)
+        # Path must be reported.
+        assert err.path == p
+
+    def test_unicode_decode_error_has_problem_attribute(self, tmp_path):
+        """Programmatic callers read ``err.problem`` — must be non-empty
+        and mention the byte offset so tooling can point to the byte."""
+        p = tmp_path / "bad_encoding.yaml"
+        p.write_bytes(b"foo: \xff\xfe bar\n")
+
+        with pytest.raises(YamlParseError) as excinfo:
+            load_yaml(p)
+        err = excinfo.value
+        assert err.problem  # non-empty
+        # Offset should be surfaced so the user can locate the byte.
+        assert "offset" in err.problem.lower()
+
+    def test_valid_utf8_still_parses(self, tmp_path):
+        """Regression: plain UTF-8 files with non-ASCII content must still
+        load cleanly — the new exception handler only kicks in on decode
+        failure."""
+        p = tmp_path / "utf8.yaml"
+        p.write_text("name: café\nemoji: \U0001f4da\n", encoding="utf-8")
+        data = load_yaml(p)
+        assert data == {"name": "café", "emoji": "\U0001f4da"}
+
+
+# --------------------------------------------------------------------------- #
 # load_yaml_string — in-memory source                                          #
 # --------------------------------------------------------------------------- #
 

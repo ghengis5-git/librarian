@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "librarian-2026"
-version = "0.7.5"
+version = "0.8.0"
 description = "Document governance, version control, and registry management. Enforces naming conventions, tracks versions, manages cross-references, and produces tamper-evident manifests."
 requires-python = ">=3.10"
 license = "Apache-2.0"

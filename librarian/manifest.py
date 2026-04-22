@@ -312,6 +312,17 @@ def generate(
     if include_hashes:
         on_disk_count = 0
         seen_basenames: dict[str, str] = {}  # basename -> first rel_path seen
+        # Pass-4 adversarial-review fix H2: track registered-filename → rel_path
+        # so we catch two distinct registrations that resolve to the SAME file.
+        # The original basename check fires only when rel_paths DIFFER (same
+        # name in two tracked dirs). The silent-corruption mode is the inverse:
+        # two docs with the same ``filename`` and no explicit ``path:`` both
+        # flow through ``_resolve_file_path``, which returns the FIRST match
+        # for both. They get hashed as if they were the same file, and the
+        # second doc's real content is silently dropped from the evidence
+        # chain. An evidence seal produced this way verifies only one of the
+        # two files, and any tamper to the dropped file goes undetected.
+        seen_rel_paths: dict[str, str] = {}  # rel_path -> first registered filename
         for doc in documents:
             fname = doc.get("filename", "")
             if not fname:
@@ -328,12 +339,46 @@ def generate(
                         f"All tracked files must have unique basenames across tracked "
                         f"directories. Rename one of the files before generating a manifest."
                     )
+                # Pass-4 H2: a repeat rel_path is ALWAYS a silent-corruption
+                # hazard, whether the duplicate registrations share a filename
+                # or not. The earlier guard only fired on differing fnames,
+                # which let the most common case (two entries with the same
+                # filename and no ``path:``) slip through undetected.
+                if rel_path in seen_rel_paths:
+                    raise ManifestError(
+                        f"Duplicate resolution for '{rel_path}' detected:\n"
+                        f"  first registered as '{seen_rel_paths[rel_path]}'\n"
+                        f"  also registered as '{fname}'\n"
+                        f"Two registry entries resolve to the same file on disk. "
+                        f"This creates a silent gap in the evidence chain: only "
+                        f"the first file is hashed, and any tamper to the shadowed "
+                        f"file cannot be detected. Add a distinct 'path:' entry to "
+                        f"each document, or remove the duplicate registration."
+                    )
                 seen_basenames[basename] = rel_path
+                seen_rel_paths[rel_path] = fname
                 fh = _hash_file(fpath, rel_path)
                 on_disk_count += 1
             else:
                 # Use explicit path field if available; else registered filename
                 rel_path = doc.get("path") or fname
+                # Pass-4 H2: the missing-file branch also needs collision
+                # detection. If a missing doc shares a rel_path with an on-
+                # disk doc (or another missing doc), both end up in file_hashes
+                # under the same key, producing non-deterministic ordering and
+                # ambiguous evidence. Refuse rather than emit a silently broken
+                # manifest. Same reasoning as the on-disk branch: any repeat
+                # rel_path is a bug regardless of fname equality.
+                if rel_path in seen_rel_paths:
+                    raise ManifestError(
+                        f"Duplicate resolution for '{rel_path}' detected:\n"
+                        f"  first registered as '{seen_rel_paths[rel_path]}'\n"
+                        f"  also registered as '{fname}'\n"
+                        f"Two registry entries point to the same file path. "
+                        f"Add a distinct 'path:' entry to each document, or "
+                        f"remove the duplicate registration."
+                    )
+                seen_rel_paths[rel_path] = fname
                 fh = FileHash(filename=rel_path, sha256="", size_bytes=0, exists=False)
             manifest.file_hashes.append(fh)
 

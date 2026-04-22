@@ -167,6 +167,16 @@ def load_yaml(path: str | Path) -> Any:
 
     Returns the parsed data (or ``None`` for an empty file — callers
     typically coerce with ``... or {}``).
+
+    Phase 8.2a adversarial-review fix H1 (pass 4): a non-UTF-8 registry
+    (UTF-16 BOM, Latin-1 accented bytes, stray high-bit bytes from copy-
+    paste) raises :class:`UnicodeDecodeError` during the ``open(..., 'r',
+    encoding='utf-8')`` read, *before* PyYAML ever runs. Letting that
+    propagate gave the user a raw Python traceback with no path context
+    and no guidance — identical failure mode to the parse-error case this
+    wrapper was built to fix. We now catch it, extract the byte offset
+    and decode reason, and re-raise as a :class:`YamlParseError` with a
+    clear "re-save as UTF-8 without BOM" hint.
     """
     p = Path(path)
     try:
@@ -175,6 +185,16 @@ def load_yaml(path: str | Path) -> Any:
     except yaml.YAMLError as e:
         line, column, problem, message = _format_error(p, e)
         raise YamlParseError(p, line, column, problem, message) from e
+    except UnicodeDecodeError as e:
+        problem = (
+            f"Invalid UTF-8 byte at offset {e.start}: {e.reason}. "
+            f"Re-save the file as UTF-8 without BOM."
+        )
+        message = (
+            f"{p}: YAML encoding error\n"
+            f"  {problem}"
+        )
+        raise YamlParseError(p, None, None, problem, message) from e
 
 
 def load_yaml_string(source: str, source_label: str = "<string>") -> Any:
