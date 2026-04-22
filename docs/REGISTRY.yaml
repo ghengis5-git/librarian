@@ -735,7 +735,7 @@ documents:
   title: Librarian manifest 20260414 V3.0
   description: Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.5
     publish seal (covers Phase 8.0 hardening + Phase 8.1 polish)
-  status: active
+  status: superseded
   supersedes: librarian-manifest-20260414-V2.0.json
   version: '3.0'
   created: '2026-04-14'
@@ -748,11 +748,12 @@ documents:
   - audit
   path: docs/librarian-manifest-20260414-V3.0.json
   infrastructure_exempt: false
+  superseded_by: librarian-manifest-20260422-V4.0.json
 - filename: librarian-evidence-20260414-V3.0.json
   title: Librarian evidence pack 20260414 V3.0
   description: Tamper-evident IP evidence pack for v0.7.5 security patch, SSH-signed.
     Wraps the V3.0 manifest with the commit that shipped Phase 8.0 + 8.1.
-  status: active
+  status: superseded
   supersedes: librarian-evidence-20260414-V2.0.json
   version: '3.0'
   created: '2026-04-14'
@@ -765,6 +766,7 @@ documents:
   - audit
   path: docs/librarian-evidence-20260414-V3.0.json
   infrastructure_exempt: false
+  superseded_by: librarian-evidence-20260422-V4.0.json
 - filename: release-notes-20260413-V1.0.md
   title: v0.7.1 first public release
   description: Release notes documenting new features, improvements, bug fixes, known
@@ -968,8 +970,8 @@ documents:
   title: Archived Session 31-52 Deliverables from CLAUDE.md
   description: Historical context for Librarian development from Session 31 through
     Session 52 (v0.7.0 through v0.7.5 releases). Extracted from CLAUDE.md during v0.8.0
-    slimming pass so the main handoff doc stays within reasonable token budget.
-    Session 53 and forward remain in CLAUDE.md.
+    slimming pass so the main handoff doc stays within reasonable token budget. Session
+    53 and forward remain in CLAUDE.md.
   status: active
   version: V1.0
   created: '2026-04-22'
@@ -1001,13 +1003,47 @@ documents:
   - documentation
   path: docs/package-structure-20260422-V1.0.md
   infrastructure_exempt: false
+- filename: librarian-manifest-20260422-V4.0.json
+  path: docs/librarian-manifest-20260422-V4.0.json
+  title: Librarian Manifest V4.0
+  description: Manifest generated against v0.8.0 tag. 44 registered documents, SHA-256
+    hashes, dependency graph.
+  format: json
+  version: '4.0'
+  date: '2026-04-22'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  supersedes: librarian-manifest-20260414-V3.0.json
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - manifest
+  - evidence
+- filename: librarian-evidence-20260422-V4.0.json
+  path: docs/librarian-evidence-20260422-V4.0.json
+  title: Librarian Evidence Pack V4.0
+  description: Tamper-evident evidence pack, SSH-signed against v0.8.0 tag. Uses canonical
+    manifest form (no generated_at) per Track 1 HIGH-1 fix.
+  format: json
+  version: '4.0'
+  date: '2026-04-22'
+  status: active
+  author: Chris Kahn
+  classification: PERSONAL / INTERNAL USE ONLY
+  supersedes: librarian-evidence-20260414-V3.0.json
+  superseded_by: null
+  infrastructure_exempt: false
+  tags:
+  - evidence
+  - ssh-signed
 registry_meta:
   version_convention_note: This project was created 2026-04-11 with the canonical
     dot form (VX.Y) from day one. No legacy transition rules apply.
-  total_documents: 44
+  total_documents: 46
   active: 28
   draft: 5
-  superseded: 11
+  superseded: 13
   not_in_repo: 0
   archived: 0
   in_docs_archive: 0

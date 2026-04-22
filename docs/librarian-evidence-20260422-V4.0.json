@@ -1,0 +1,1574 @@
+{
+  "evidence_pack": {
+    "generated_at": "2026-04-22T19:30:17Z",
+    "generator_version": "0.8.0",
+    "pack_id": "2026-04-22T19:30:17Z",
+    "project_name": "Librarian",
+    "registry_path": "docs/REGISTRY.yaml",
+    "repo_root": "/Users/chriskahnm5/projects/librarian"
+  },
+  "git_anchor": {
+    "branch": "main",
+    "commit_hash": "c88fa3f4ee66e340a342c95db8f0f60619ba85ff",
+    "dirty": true
+  },
+  "manifest": {
+    "dependency_edges": [
+      {
+        "sections": [
+          "Getting Started — Adopting the Librarian in a New Project"
+        ],
+        "source": "README.md",
+        "status": "pending",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [],
+        "source": "librarian-buildout-plan-20260411-V1.1.md",
+        "status": "supersedes",
+        "target": "librarian-buildout-plan-20260411-V1.0.md"
+      },
+      {
+        "sections": [],
+        "source": "librarian-buildout-plan-20260411-V1.2.md",
+        "status": "supersedes",
+        "target": "librarian-buildout-plan-20260411-V1.1.md"
+      },
+      {
+        "sections": [],
+        "source": "librarian-evidence-20260414-V1.0.json",
+        "status": "supersedes",
+        "target": "librarian-evidence-20260413-V1.0.json"
+      },
+      {
+        "sections": [],
+        "source": "librarian-evidence-20260414-V2.0.json",
+        "status": "supersedes",
+        "target": "librarian-evidence-20260414-V1.0.json"
+      },
+      {
+        "sections": [],
+        "source": "librarian-evidence-20260414-V3.0.json",
+        "status": "supersedes",
+        "target": "librarian-evidence-20260414-V2.0.json"
+      },
+      {
+        "sections": [],
+        "source": "librarian-manifest-20260414-V1.0.json",
+        "status": "supersedes",
+        "target": "librarian-manifest-20260413-V1.0.json"
+      },
+      {
+        "sections": [],
+        "source": "librarian-manifest-20260414-V2.0.json",
+        "status": "supersedes",
+        "target": "librarian-manifest-20260414-V1.0.json"
+      },
+      {
+        "sections": [],
+        "source": "librarian-manifest-20260414-V3.0.json",
+        "status": "supersedes",
+        "target": "librarian-manifest-20260414-V2.0.json"
+      },
+      {
+        "sections": [],
+        "source": "phase-9-pypi-rename-migration-20260422-V1.0.md",
+        "status": "supplement",
+        "target": "phase-f-plugin-and-release-20260413-V1.1.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.0.md",
+        "status": "supplement",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.1.md",
+        "status": "supplement",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-plugin-and-release-20260413-V1.1.md",
+        "status": "supersedes",
+        "target": "phase-f-plugin-and-release-20260413-V1.0.md"
+      },
+      {
+        "sections": [],
+        "source": "phase-f-publish-checklist-20260413-V1.0.md",
+        "status": "supplement",
+        "target": "phase-f-plugin-and-release-20260413-V1.1.md"
+      },
+      {
+        "sections": [
+          "Package structure — needs update for templates module"
+        ],
+        "source": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "status": "pending",
+        "target": "librarian-architecture-20260411-V1.0.md"
+      },
+      {
+        "sections": [
+          "Execution plan — Phase G extends the A-F roadmap"
+        ],
+        "source": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "status": "pending",
+        "target": "librarian-buildout-plan-20260411-V1.2.md"
+      },
+      {
+        "sections": [],
+        "source": "project_config.example.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.full.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.minimal.yaml",
+        "status": "supplement",
+        "target": "project_config.schema.yaml"
+      },
+      {
+        "sections": [],
+        "source": "project_config.schema.yaml",
+        "status": "supplement",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [],
+        "source": "registry.schema.yaml",
+        "status": "supplement",
+        "target": "SKILL.md"
+      },
+      {
+        "sections": [
+          "Security model and threat boundaries"
+        ],
+        "source": "security-review-20260413-V1.0.md",
+        "status": "pending",
+        "target": "librarian-architecture-20260411-V1.0.md"
+      }
+    ],
+    "file_hashes": [
+      {
+        "exists": true,
+        "filename": "README.md",
+        "sha256": "2179bf61ac6b460bf1782330a1663107f3e8db7faf0c0d08671d3adfa658a638",
+        "size_bytes": 6937
+      },
+      {
+        "exists": true,
+        "filename": "docs/bug-bounty-report-20260413-V1.0.md",
+        "sha256": "a7654d9f6cf5d5d3bf937142dc309dc741646384d751679613d14e4eb2f4c91a",
+        "size_bytes": 10499
+      },
+      {
+        "exists": true,
+        "filename": "docs/diagrams/librarian-dashboard-20260412-V3.0.html",
+        "sha256": "8cde6bc0a3719e18590bc02fc20fa9e269716e94a15b99ef21b12bc028a24913",
+        "size_bytes": 510979
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-architecture-20260411-V1.0.md",
+        "sha256": "4468ccd114c18c9d69557ba35f80ddc0d63886beeb4db0e948c8762521693047",
+        "size_bytes": 9229
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-buildout-plan-20260411-V1.0.md",
+        "sha256": "7512decc4824f7a7514c8bc5d9d0861dc0aac1747b2bbc5cdbeb54769638efc3",
+        "size_bytes": 19955
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-buildout-plan-20260411-V1.1.md",
+        "sha256": "fd51be57d9eaa7700e68d692dc3e77e3ea585c3bde1ccc901ead830d2aeeb3ad",
+        "size_bytes": 21338
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-buildout-plan-20260411-V1.2.md",
+        "sha256": "e43e0682bf84c862dcfca4559cb26e8c27358d16a07c8ffe1758886cdffeabdb",
+        "size_bytes": 23580
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-evidence-20260413-V1.0.json",
+        "sha256": "e45638206afaafff049448a998faf174bf985973b4cd39c700a7e9d9c19ec431",
+        "size_bytes": 34894
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-evidence-20260414-V1.0.json",
+        "sha256": "23cf3a46971e1563389f7cd726f498962b6dd8f028af92d9d2dc1ee6e83adf95",
+        "size_bytes": 40651
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-evidence-20260414-V2.0.json",
+        "sha256": "113306dc5feeeda24aece479d86f5b72e8fa61ab40a769ef8347d5e8d16b42ab",
+        "size_bytes": 44145
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-evidence-20260414-V3.0.json",
+        "sha256": "6e8a8eb2d2aeb98d1fe6453277cbaabc869346d2a003dc867dc48404d68d3c04",
+        "size_bytes": 50965
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-manifest-20260413-V1.0.json",
+        "sha256": "47070e0020b3383d3c449861e859e83e6e8a5bfadb6d3933f090832326a8e201",
+        "size_bytes": 32021
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-manifest-20260414-V1.0.json",
+        "sha256": "a7e9de947efc45b3c97e8e3de9acdef41cb255473ffe8c2c7a11bdb548ffef8a",
+        "size_bytes": 37477
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-manifest-20260414-V2.0.json",
+        "sha256": "e1c4de469b1e48fd038a98c96a928bfcf4d9b7616a17a0dca6814623934981df",
+        "size_bytes": 40795
+      },
+      {
+        "exists": true,
+        "filename": "docs/librarian-manifest-20260414-V3.0.json",
+        "sha256": "7b9c558c8ee14f9b0c142bb030eab574314715849ceba249175c349cc2badf53",
+        "size_bytes": 47290
+      },
+      {
+        "exists": true,
+        "filename": "docs/package-structure-20260422-V1.0.md",
+        "sha256": "3fa617f243ee0fc9186dd531e636609943ded7b15f510ef12986c30f201cab30",
+        "size_bytes": 8559
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-9-pypi-rename-migration-20260422-V1.0.md",
+        "sha256": "ea2f6bde7260c2d7e11d265962732d5ba8c5f6472fdaa45cce88ef5677da5534",
+        "size_bytes": 15913
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-d-implementation-plan-20260412-V1.0.md",
+        "sha256": "67d42a12fd383b401b452abeec702715ef675ad8f7d6de5a866768640c1ccd67",
+        "size_bytes": 6381
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-f-plugin-and-release-20260413-V1.0.md",
+        "sha256": "23b5ac5279a59946156e2be3600606f74adfd85335a9283fc3ef32f7d824db87",
+        "size_bytes": 9482
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-f-plugin-and-release-20260413-V1.1.md",
+        "sha256": "21f25f28bb14edf7b8414cb12875d4c92d80b0146f339fa97154de5b8a1dd756",
+        "size_bytes": 12777
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-f-publish-checklist-20260413-V1.0.md",
+        "sha256": "c884bd08df8da41ba4ce4cf763f61bc6fdc4d3e2762750e3c039e7e0de48ea5a",
+        "size_bytes": 8371
+      },
+      {
+        "exists": true,
+        "filename": "docs/phase-g-templates-and-recommendations-20260412-V1.0.md",
+        "sha256": "1c449715553bbd21b9126d4f6731cf4a210fec639ed0f7bf1a9adc09c3f726e0",
+        "size_bytes": 31667
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260413-V1.0.md",
+        "sha256": "b46f992bbcafe3954f22f17bfbb3e75a2fcb29ac5f4516f5d8e826b06d2991fb",
+        "size_bytes": 2281
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260413-V2.0.md",
+        "sha256": "7b91e55bf82181d8f2d253bf435ad51e05adbd937da2d8d80be6a2b5447cb65a",
+        "size_bytes": 3681
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260414-V3.0.md",
+        "sha256": "760a15a101f38df21c23b1d0baf619715ee80e63085c871085d9643e9bdf56b4",
+        "size_bytes": 5991
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260414-V4.0.md",
+        "sha256": "ed7ff5ed4f7d99efe1c0175c72bf821dd9177ff77a6afabfeece774e64f04fb7",
+        "size_bytes": 7098
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260414-V5.0.md",
+        "sha256": "4be247a331786976318f753e617e7775461a6391a38af5ae588fbca0675201f9",
+        "size_bytes": 8231
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-notes-20260422-V6.0.md",
+        "sha256": "b5f8b6b76e2deb5c723c0d1b1982852ab8f24091877eb5eae57b9fd8ab58a546",
+        "size_bytes": 15453
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-v0-7-2-runbook-20260413-V1.0.md",
+        "sha256": "a5779acfe949cd7eba4e40914f0ee65bb6d0992c01b4d0a8e4ccf0d333401ace",
+        "size_bytes": 9056
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-v0-7-3-runbook-20260414-V1.0.md",
+        "sha256": "48305df09335c52997ace9f1c3e87589c9791a05fd7e04ee5ba6738b2b5b9188",
+        "size_bytes": 9762
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-v0-7-4-runbook-20260414-V1.0.md",
+        "sha256": "ed4781865f42ecaac3d84cf3961aa313b34864fa586b67572e2d227501da66ab",
+        "size_bytes": 8819
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-v0-7-5-runbook-20260414-V1.0.md",
+        "sha256": "aa0735ab0303bf6263655999281d4f058e93a6072257d9f0bc414877947fac4d",
+        "size_bytes": 10068
+      },
+      {
+        "exists": true,
+        "filename": "docs/release-v0-8-0-runbook-20260422-V1.0.md",
+        "sha256": "e903610acf7df6c16758f05d628d191fed253dcea9010d26964be34e7db7503f",
+        "size_bytes": 17659
+      },
+      {
+        "exists": true,
+        "filename": "docs/security-review-20260413-V1.0.md",
+        "sha256": "99138e935b04fc3a7b171175ba5fba94a0ae6508ab15d8e5d32d59b742472c03",
+        "size_bytes": 13807
+      },
+      {
+        "exists": true,
+        "filename": "docs/session-history-20260422-V1.0.md",
+        "sha256": "dfde08343409c1ff6261b87f36aeb4123b8d022f099053deb701e67ebb544a46",
+        "size_bytes": 53363
+      },
+      {
+        "exists": true,
+        "filename": "examples/manifests/example-manifest-20260411-V1.0.json",
+        "sha256": "8f6a2248c173f6295270436f238b16c68f1a5cbea3561859f9782e1896d88165",
+        "size_bytes": 1743
+      },
+      {
+        "exists": true,
+        "filename": "examples/manifests/librarian-manifest-20260412-V1.0.json",
+        "sha256": "ecd81d5e3ea6b257a0deb9c5124bd6f968db0c09286da92d7cadf790328cca87",
+        "size_bytes": 16761
+      },
+      {
+        "exists": true,
+        "filename": "examples/project_config.example.yaml",
+        "sha256": "27ba6f3d55d440327d67d8aff13d65ffd4de982392b992e882ef223109faca05",
+        "size_bytes": 2025
+      },
+      {
+        "exists": true,
+        "filename": "examples/project_config.full.yaml",
+        "sha256": "d3491f06a77ba7625df7d01689c935831fbce2bca869a8cba85182d234d6bb2f",
+        "size_bytes": 2113
+      },
+      {
+        "exists": true,
+        "filename": "examples/project_config.minimal.yaml",
+        "sha256": "d2376bae1ac5a73da70a5372e11d5ca10c147f67a5cddb3acee9ce0e2a2fd2b2",
+        "size_bytes": 204
+      },
+      {
+        "exists": true,
+        "filename": "schema/manifest.schema.json",
+        "sha256": "50e3a3d1e37a9ba83e89a5c71cfebe4cabee67f469926b7f504c94458860a76d",
+        "size_bytes": 6038
+      },
+      {
+        "exists": true,
+        "filename": "schema/project_config.schema.yaml",
+        "sha256": "3f5553fe056f4072bbdce42e30d3fd91741e3a78cf4150c241d4d7e7ee223ab8",
+        "size_bytes": 5329
+      },
+      {
+        "exists": true,
+        "filename": "schema/registry.schema.yaml",
+        "sha256": "52a0a0243b21fdeb127a512ba3457213a6b0435cc0fd92dc018deb2491cb7309",
+        "size_bytes": 7702
+      },
+      {
+        "exists": true,
+        "filename": "skill/SKILL.md",
+        "sha256": "8ffdce4a53f11b9c32ce014b753e4d65523e4f87ae9264efdb7b332b909b449f",
+        "size_bytes": 32690
+      }
+    ],
+    "manifest_sha256": "f4513b714bb093dfe116a8515865c970f0257d42a8413924eed753c9dfb5f9b9",
+    "meta": {
+      "generated_at": "2026-04-22T19:30:17Z",
+      "generator_version": "0.2.0",
+      "registry_path": "docs/REGISTRY.yaml",
+      "repo_root": "/Users/chriskahnm5/projects/librarian"
+    },
+    "registry_snapshot": {
+      "documents": [
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Canonical skill definition for the project-agnostic document librarian. Includes Getting Started section and generic project_config schema.",
+          "exemption_reason": "Filename is hardcoded by the Claude skill loader (SKILL.md). Date-version suffix not applied.",
+          "filename": "SKILL.md",
+          "format": "md",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "skill/SKILL.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "governance",
+            "skill-definition",
+            "meta",
+            "phase-a"
+          ],
+          "title": "Document Librarian Skill Definition",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "SKILL.md",
+              "note": "README should link to the Getting Started section once written",
+              "sections": [
+                "Getting Started — Adopting the Librarian in a New Project"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-11",
+          "description": "Top-level project README. Overview, installation instructions, and usage examples for the standalone librarian.",
+          "exemption_reason": "Filename is hardcoded by git/GitHub conventions (README.md). Date-version suffix not applied.",
+          "filename": "README.md",
+          "format": "md",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "README.md",
+          "status": "draft",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "infrastructure",
+            "meta",
+            "phase-a"
+          ],
+          "title": "Project README",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "JSON Schema (draft 2020-12) defining the output format of `python -m librarian manifest`. Covers all three sub-manifests: registry snapshot, SHA-256 file hashes, and dependency graph edges.",
+          "exemption_reason": "Schema filenames follow JSON Schema conventions. Date-version suffix not applied.",
+          "filename": "manifest.schema.json",
+          "format": "json",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/manifest.schema.json",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Manifest JSON Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "YAML schema documenting every field in the project_config block of REGISTRY.yaml. Authoritative reference for projects adopting the librarian.",
+          "exemption_reason": "Schema filenames follow descriptive conventions. Date-version suffix not applied.",
+          "filename": "project_config.schema.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/project_config.schema.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "SKILL.md"
+          ],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Project Config Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "YAML schema documenting the full structure of REGISTRY.yaml including project_config, documents array, and registry_meta.",
+          "exemption_reason": "Schema filenames follow descriptive conventions. Date-version suffix not applied.",
+          "filename": "registry.schema.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "schema/registry.schema.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "SKILL.md"
+          ],
+          "tags": [
+            "schema",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Registry Schema",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Bare-minimum project_config with only the required field (project_name). All other values fall back to built-in defaults.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.minimal.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.minimal.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Minimal Config Example",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Complete project_config with every available field and explanatory comments. Copy-paste starting point for new projects.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.full.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.full.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Full Config Example",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "Real-world project_config example showing a production configuration with custom classification levels, extended tags taxonomy, and multi-prefix git commit conventions.",
+          "exemption_reason": "Example config filenames are descriptive identifiers. Date-version suffix not applied.",
+          "filename": "project_config.example.yaml",
+          "format": "yaml",
+          "infrastructure_exempt": true,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "examples/project_config.example.yaml",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "project_config.schema.yaml"
+          ],
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Example Config Reference",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-11",
+          "description": "System architecture document covering package structure, module responsibilities, data flow, SHA-256 design decisions, CLI design, consumer integration, and test architecture as of v0.2.0.",
+          "filename": "librarian-architecture-20260411-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "docs/librarian-architecture-20260411-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "architecture",
+            "governance",
+            "phase-b"
+          ],
+          "title": "Librarian Architecture",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-12",
+          "description": "Six-phase roadmap (A-F) to evolve librarian into a standalone open-source tool",
+          "filename": "librarian-buildout-plan-20260411-V1.2.md",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-buildout-plan-20260411-V1.2.md",
+          "status": "active",
+          "supersedes": "librarian-buildout-plan-20260411-V1.1.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan",
+          "updated": "2026-04-12",
+          "version": "V1.2"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-11",
+          "description": "Interim buildout plan. Superseded by V1.2.",
+          "filename": "librarian-buildout-plan-20260411-V1.1.md",
+          "format": "md",
+          "path": "docs/librarian-buildout-plan-20260411-V1.1.md",
+          "status": "superseded",
+          "superseded_by": "librarian-buildout-plan-20260411-V1.2.md",
+          "supersedes": "librarian-buildout-plan-20260411-V1.0.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan (V1.1)",
+          "version": "1.1"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-11",
+          "description": "Original buildout plan. Superseded by V1.1.",
+          "filename": "librarian-buildout-plan-20260411-V1.0.md",
+          "format": "md",
+          "path": "docs/librarian-buildout-plan-20260411-V1.0.md",
+          "status": "superseded",
+          "superseded_by": "librarian-buildout-plan-20260411-V1.1.md",
+          "tags": [],
+          "title": "Doc Librarian Buildout Plan (V1.0)",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Interactive HTML dashboard with search, dependency graph, filter chips, and timeline. Generated from manifest.",
+          "exemption_reason": "Generated dashboard artifact. Versioned by output, not by naming convention.",
+          "filename": "librarian-dashboard-20260412-V3.0.html",
+          "format": "html",
+          "infrastructure_exempt": true,
+          "path": "docs/diagrams/librarian-dashboard-20260412-V3.0.html",
+          "status": "active",
+          "tags": [
+            "dashboard",
+            "phase-d"
+          ],
+          "title": "Librarian Interactive Dashboard",
+          "version": "3.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Implementation plan for the interactive dashboard (Phase D).",
+          "filename": "phase-d-implementation-plan-20260412-V1.0.md",
+          "format": "md",
+          "path": "docs/phase-d-implementation-plan-20260412-V1.0.md",
+          "status": "active",
+          "tags": [
+            "planning",
+            "phase-d"
+          ],
+          "title": "Phase D Implementation Plan",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            "phase-f-plugin-and-release-20260413-V1.1.md",
+            "librarian-buildout-plan-20260411-V1.2.md"
+          ],
+          "date": "2026-04-22",
+          "description": "Planning doc for renaming the PyPI distribution from librarian-2026 to a cleaner name (librarian-governance or the bare librarian via PEP 541). Decision matrix across three paths (PEP 541 transfer, new name, or stay), release choreography, wrapper-package mechanics, risks, and a recommendation to take Path B (librarian-governance). Explicitly out of scope for v0.8.0.",
+          "filename": "phase-9-pypi-rename-migration-20260422-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": "librarian-buildout-plan-20260411-V1.2.md",
+          "path": "docs/phase-9-pypi-rename-migration-20260422-V1.0.md",
+          "status": "draft",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "phase-f-plugin-and-release-20260413-V1.1.md"
+          ],
+          "tags": [
+            "planning",
+            "phase-9",
+            "release"
+          ],
+          "title": "Phase 9 — PyPI Distribution Rename Migration",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "date": "2026-04-12",
+          "description": "Example manifest generated from the librarian's own registry. Demonstrates the manifest format with SHA-256 hashes and dependency graph.",
+          "exemption_reason": "Example manifest filenames are descriptive identifiers.",
+          "filename": "librarian-manifest-20260412-V1.0.json",
+          "format": "json",
+          "infrastructure_exempt": true,
+          "path": "examples/manifests/librarian-manifest-20260412-V1.0.json",
+          "status": "active",
+          "tags": [
+            "example",
+            "phase-b"
+          ],
+          "title": "Librarian Example Manifest",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "librarian-architecture-20260411-V1.0.md",
+              "note": "Architecture doc needs a templates section after G.1 implementation",
+              "sections": [
+                "Package structure — needs update for templates module"
+              ],
+              "status": "pending"
+            },
+            {
+              "doc": "librarian-buildout-plan-20260411-V1.2.md",
+              "note": "Buildout plan should reference Phase G once implementation begins",
+              "sections": [
+                "Execution plan — Phase G extends the A-F roadmap"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-12",
+          "description": "Phase plan for adding document scaffolding templates (per preset) and a deterministic recommendations engine that detects document gaps in a project registry.",
+          "filename": "phase-g-templates-and-recommendations-20260412-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": "librarian-buildout-plan-20260411-V1.2.md",
+          "path": "docs/phase-g-templates-and-recommendations-20260412-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "planning",
+            "governance",
+            "phase-g"
+          ],
+          "title": "Phase G — Document Templates & Recommendations Engine",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [
+            {
+              "doc": "librarian-architecture-20260411-V1.0.md",
+              "note": "Architecture doc should reference security review findings",
+              "sections": [
+                "Security model and threat boundaries"
+              ],
+              "status": "pending"
+            }
+          ],
+          "date": "2026-04-13",
+          "description": "Comprehensive security audit of the full Librarian codebase. Covers XSS in generated HTML, evidence integrity limitations, path traversal, template engine safety, YAML deserialization, and operation log integrity. Includes prioritized remediation plan.",
+          "filename": "security-review-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "path": "docs/security-review-20260413-V1.0.md",
+          "status": "active",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [],
+          "tags": [
+            "governance",
+            "report"
+          ],
+          "title": "Security Review — Librarian v0.7.0",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Scope plan for Claude Code plugin, PyPI package, and GitHub public release",
+          "filename": "phase-f-plugin-and-release-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "superseded",
+          "superseded_by": "phase-f-plugin-and-release-20260413-V1.1.md",
+          "supersedes": null,
+          "supplements": [
+            "librarian-buildout-plan-20260411-V1.2.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Plugin Packaging + Open-Source Release",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Corrected Phase F plan. Replaces V1.0 doc-librarian naming with librarian throughout; treats PyPI namespace as unresolved open question; updates session plan and effort table to reflect actual progress through Session 45.",
+          "filename": "phase-f-plugin-and-release-20260413-V1.1.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "superseded",
+          "superseded_by": null,
+          "supersedes": "phase-f-plugin-and-release-20260413-V1.0.md",
+          "supplements": [
+            "librarian-buildout-plan-20260411-V1.2.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Plugin Packaging + Open-Source Release",
+          "version": "1.1"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "cross_references": [],
+          "date": "2026-04-13",
+          "description": "Executable runbook for the host-terminal Phase F publish session. Steps F.a–F.h cover filesystem cleanup, manifest/evidence refresh, GitHub repo creation, PyPI publish, marketplace submission, and rollback. Captures the Session 47 blocker-resolution summary.",
+          "filename": "phase-f-publish-checklist-20260413-V1.0.md",
+          "format": "md",
+          "infrastructure_exempt": false,
+          "locations": {
+            "chat": false,
+            "cowork": true,
+            "disk": true
+          },
+          "parent": null,
+          "status": "superseded",
+          "superseded_by": null,
+          "supersedes": null,
+          "supplements": [
+            "phase-f-plugin-and-release-20260413-V1.1.md"
+          ],
+          "tags": [
+            "planning",
+            "infrastructure"
+          ],
+          "title": "Phase F — Publish Checklist",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Structured vulnerability disclosure report for bug bounty submissions. Follows HackerOne/Bugcrowd best practices with CVSS 3.1 scoring, CWE classification, clear reproduction steps, proof of concept, and impact assessment. Designed for researcher submissions to maximize triage speed and bounty outcomes.",
+          "filename": "bug-bounty-report-20260413-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/bug-bounty-report-20260413-V1.0.md",
+          "status": "draft",
+          "tags": [
+            "security",
+            "bug-bounty",
+            "disclosure",
+            "vulnerability"
+          ],
+          "title": "SSRF-in-image-proxy",
+          "updated": "2026-04-13",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Demonstrates the JSON schema librarian generates for a portable manifest",
+          "filename": "example-manifest-20260411-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "examples/manifests/example-manifest-20260411-V1.0.json",
+          "status": "active",
+          "tags": [
+            "example",
+            "documentation"
+          ],
+          "title": "Example manifest output",
+          "updated": "2026-04-13",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Portable JSON manifest with SHA-256 hashes + dependency graph, captured at v0.7.2 release",
+          "filename": "librarian-manifest-20260413-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-manifest-20260413-V1.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-manifest-20260414-V1.0.json",
+          "tags": [
+            "manifest",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian manifest 20260413",
+          "updated": "2026-04-14",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Tamper-evident IP evidence pack captured at v0.7.2 release, signed with SSH key",
+          "filename": "librarian-evidence-20260413-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-evidence-20260413-V1.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-evidence-20260414-V1.0.json",
+          "tags": [
+            "evidence",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian evidence pack 20260413",
+          "updated": "2026-04-14",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Portable JSON manifest with SHA-256 hashes + dependency graph, captured at v0.7.3 release",
+          "filename": "librarian-manifest-20260414-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-manifest-20260414-V1.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-manifest-20260414-V2.0.json",
+          "supersedes": "librarian-manifest-20260413-V1.0.json",
+          "tags": [
+            "manifest",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian manifest 20260414",
+          "updated": "2026-04-14",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Tamper-evident IP evidence pack captured at v0.7.3 release, SSH-signed",
+          "filename": "librarian-evidence-20260414-V1.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-evidence-20260414-V1.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-evidence-20260414-V2.0.json",
+          "supersedes": "librarian-evidence-20260413-V1.0.json",
+          "tags": [
+            "evidence",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian evidence pack 20260414",
+          "updated": "2026-04-14",
+          "version": "1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.4 publish seal (covers Phase 7.5 oplog lock + 7.7 pre-commit integration)",
+          "filename": "librarian-manifest-20260414-V2.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-manifest-20260414-V2.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-manifest-20260414-V3.0.json",
+          "supersedes": "librarian-manifest-20260414-V1.0.json",
+          "tags": [
+            "manifest",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian manifest 20260414 V2.0",
+          "updated": "2026-04-14",
+          "version": "2.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Tamper-evident IP evidence pack for v0.7.4, wrapping the manifest with SSH-signed git commit",
+          "filename": "librarian-evidence-20260414-V2.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-evidence-20260414-V2.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-evidence-20260414-V3.0.json",
+          "supersedes": "librarian-evidence-20260414-V1.0.json",
+          "tags": [
+            "evidence",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian evidence pack 20260414 V2.0",
+          "updated": "2026-04-14",
+          "version": "2.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Portable JSON manifest with SHA-256 hashes + dependency graph, pre-v0.7.5 publish seal (covers Phase 8.0 hardening + Phase 8.1 polish)",
+          "filename": "librarian-manifest-20260414-V3.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-manifest-20260414-V3.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-manifest-20260422-V4.0.json",
+          "supersedes": "librarian-manifest-20260414-V2.0.json",
+          "tags": [
+            "manifest",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian manifest 20260414 V3.0",
+          "updated": "2026-04-14",
+          "version": "3.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Tamper-evident IP evidence pack for v0.7.5 security patch, SSH-signed. Wraps the V3.0 manifest with the commit that shipped Phase 8.0 + 8.1.",
+          "filename": "librarian-evidence-20260414-V3.0.json",
+          "infrastructure_exempt": false,
+          "path": "docs/librarian-evidence-20260414-V3.0.json",
+          "status": "superseded",
+          "superseded_by": "librarian-evidence-20260422-V4.0.json",
+          "supersedes": "librarian-evidence-20260414-V2.0.json",
+          "tags": [
+            "evidence",
+            "seal",
+            "audit"
+          ],
+          "title": "Librarian evidence pack 20260414 V3.0",
+          "updated": "2026-04-14",
+          "version": "3.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Release notes documenting new features, improvements, bug fixes, known issues, and upgrade guidance",
+          "filename": "release-notes-20260413-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260413-V1.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog"
+          ],
+          "title": "v0.7.1 first public release",
+          "updated": "2026-04-13",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Release notes for v0.7.2 patch release shipping Session 49 install-path fixes (marketplace.json location, hooks schema, owner email scrub)",
+          "filename": "release-notes-20260413-V2.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260413-V2.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog",
+            "patch"
+          ],
+          "title": "v0.7.2 patch release (plugin install-path fixes)",
+          "updated": "2026-04-14",
+          "version": "V2.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-13",
+          "description": "Step-by-step runbook for executing the v0.7.2 release in the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release, marketplace refresh, rollback procedures",
+          "filename": "release-v0-7-2-runbook-20260413-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-v0-7-2-runbook-20260413-V1.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "runbook",
+            "ops"
+          ],
+          "title": "v0.7.2 release runbook (host-terminal execution steps)",
+          "updated": "2026-04-14",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Release notes for v0.7.3 — adds optional per-document review deadlines with new `review` CLI subcommand and Audit-page KPI card, hardens pre-commit hook registry-sync grep. Backwards compatible; test suite 681 → 743.",
+          "filename": "release-notes-20260414-V3.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260414-V3.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog"
+          ],
+          "title": "v0.7.3 feature release (next_review field, review CLI, hook hardening)",
+          "updated": "2026-04-14",
+          "version": "V3.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Step-by-step runbook for executing the v0.7.3 release in the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release, marketplace refresh, rollback procedures",
+          "filename": "release-v0-7-3-runbook-20260414-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-v0-7-3-runbook-20260414-V1.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "runbook",
+            "ops"
+          ],
+          "title": "v0.7.3 release runbook (host-terminal execution steps)",
+          "updated": "2026-04-14",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Release notes for v0.7.4 — adds Phase 7.5 (oplog append-only flag detection + setup helper + Audit KPI) and Phase 7.7 (pre-commit framework entry point). Backwards compatible; test suite 743 → 796.",
+          "filename": "release-notes-20260414-V4.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260414-V4.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog"
+          ],
+          "title": "v0.7.4 feature release (oplog append-only detection, pre-commit framework integration)",
+          "updated": "2026-04-14",
+          "version": "V4.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Step-by-step runbook for executing the v0.7.4 release in the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release, marketplace refresh, rollback procedures",
+          "filename": "release-v0-7-4-runbook-20260414-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-v0-7-4-runbook-20260414-V1.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "runbook",
+            "ops"
+          ],
+          "title": "v0.7.4 release runbook (host-terminal execution steps)",
+          "updated": "2026-04-14",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Release notes for v0.7.5 — bundles Phase 8.0 adversarial-review hardening (1 CRIT shell-injection fix, 3 HIGH, 4 MED, 1 LOW) and Phase 8.1 polish (raw f-string, infrastructure_exempt additions, audit_config.folder_threshold config knob). Backwards compatible; test suite 796 → 814.",
+          "filename": "release-notes-20260414-V5.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260414-V5.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog"
+          ],
+          "title": "v0.7.5 security patch release (Phase 8.0 hardening + Phase 8.1 polish)",
+          "updated": "2026-04-14",
+          "version": "V5.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-14",
+          "description": "Step-by-step runbook for executing the v0.7.5 security patch release in the host terminal — sanity checks, commit, tag, build, TestPyPI dry-run, PyPI upload, GitHub release, marketplace refresh, rollback procedures",
+          "filename": "release-v0-7-5-runbook-20260414-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-v0-7-5-runbook-20260414-V1.0.md",
+          "status": "active",
+          "tags": [
+            "release",
+            "runbook",
+            "ops"
+          ],
+          "title": "v0.7.5 release runbook (host-terminal execution steps)",
+          "updated": "2026-04-14",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-22",
+          "description": "Release notes for v0.8.0 — bundles Track 1 evidence-seal security fixes (duplicate rel_path guard, manifest canonical-form shape change), Track 2 Phase 8.2a (legal-discovery template, new public librarian.yaml_errors module with friendly YAML parse errors, Windows/UNC precommit hardening), Track 3 Pass-4 HIGH fixes (caret off-by-one in yaml_errors, UnicodeDecodeError wrapping in load_yaml), and Track 4 Phase 9 PyPI rename migration planning doc (no code). Minor bump justified by new public module + manifest canonical form shape change. Test suite 814 → 884.",
+          "filename": "release-notes-20260422-V6.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-notes-20260422-V6.0.md",
+          "status": "draft",
+          "tags": [
+            "release",
+            "documentation",
+            "changelog"
+          ],
+          "title": "v0.8.0 minor release (Phase 8.2a + Pass-4 HIGH fixes + evidence-seal security fixes)",
+          "updated": "2026-04-22",
+          "version": "V6.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-22",
+          "description": "14-step host-terminal runbook for executing the v0.8.0 minor release — pre-flight, sanity checks, commit bumps, tag, manifest+evidence V4.0 refresh (5 sub-steps), commit artifacts, build, TestPyPI dry-run, PyPI upload, git push, GitHub release, plugin marketplace refresh, smoke test (4 in-venv probes covering HIGH-1 seal stability, HIGH-2 duplicate resolution, Pass-4 HIGH-1 UnicodeDecodeError wrapping, legal-discovery template loadability), housekeeping, rollback procedures, definition of done. Uses ASCII-only commit messages; sleep 30 before PyPI /json curls for CDN propagation.",
+          "filename": "release-v0-8-0-runbook-20260422-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/release-v0-8-0-runbook-20260422-V1.0.md",
+          "status": "draft",
+          "tags": [
+            "release",
+            "runbook",
+            "ops"
+          ],
+          "title": "v0.8.0 release runbook (host-terminal execution steps)",
+          "updated": "2026-04-22",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-22",
+          "description": "Historical context for Librarian development from Session 31 through Session 52 (v0.7.0 through v0.7.5 releases). Extracted from CLAUDE.md during v0.8.0 slimming pass so the main handoff doc stays within reasonable token budget. Session 53 and forward remain in CLAUDE.md.",
+          "filename": "session-history-20260422-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/session-history-20260422-V1.0.md",
+          "status": "active",
+          "tags": [
+            "meta",
+            "documentation",
+            "governance"
+          ],
+          "title": "Archived Session 31-52 Deliverables from CLAUDE.md",
+          "updated": "2026-04-22",
+          "version": "V1.0"
+        },
+        {
+          "author": "Chris Kahn",
+          "classification": "PERSONAL / INTERNAL USE ONLY",
+          "created": "2026-04-22",
+          "description": "Full Librarian Python package structure including all 57+ document templates across 10 subdirectories (universal, software, scientific, business, legal, healthcare, finance, government, security, compliance). Extracted from CLAUDE.md during v0.8.0 slimming pass. Keep in sync with reality when adding, renaming, or removing modules or templates.",
+          "filename": "package-structure-20260422-V1.0.md",
+          "infrastructure_exempt": false,
+          "path": "docs/package-structure-20260422-V1.0.md",
+          "status": "active",
+          "tags": [
+            "meta",
+            "architecture",
+            "documentation"
+          ],
+          "title": "Archived Librarian package tree and template inventory",
+          "updated": "2026-04-22",
+          "version": "V1.0"
+        }
+      ],
+      "project_config": {
+        "archive_path": "docs/archive/",
+        "audit_config": {
+          "folder_threshold": 30
+        },
+        "classification_levels": [
+          "PERSONAL / INTERNAL USE ONLY",
+          "CONFIDENTIAL",
+          "PUBLIC"
+        ],
+        "default_author": "Chris Kahn",
+        "default_classification": "PERSONAL / INTERNAL USE ONLY",
+        "diagrams_path": "docs/diagrams/",
+        "docs_path": "docs/",
+        "enforce_naming_hook": true,
+        "evidence_signing": "ssh",
+        "git_author_email": "you@example.com",
+        "git_author_name": "Your Name",
+        "git_commit_prefixes": {
+          "docs": "docs:",
+          "infra": "infra:",
+          "refactor": "refactor:",
+          "registry": "registry:",
+          "skill": "skill:"
+        },
+        "naming_convention": "descriptive-name-YYYYMMDD-VX.Y.ext",
+        "naming_rules": {
+          "case": "lowercase",
+          "forbidden_words": [
+            "file",
+            "download",
+            "output",
+            "document"
+          ],
+          "infrastructure_exempt": [
+            "SKILL.md",
+            "REGISTRY.yaml",
+            "CLAUDE.md",
+            "README.md",
+            ".gitignore",
+            ".python-version",
+            "manifest.schema.json",
+            "project_config.schema.yaml",
+            "registry.schema.yaml",
+            "project_config.minimal.yaml",
+            "project_config.full.yaml",
+            "project_config.example.yaml",
+            ".pre-commit-hooks.yaml",
+            "cli-reference.md",
+            "librarian-manifest-20260414.json",
+            "librarian-evidence-20260414.json"
+          ],
+          "separator": "-"
+        },
+        "operator_path": "docs/phase-specs/",
+        "os_target": "darwin",
+        "project_name": "Librarian",
+        "staleness_threshold_days": 90,
+        "tags_taxonomy": {
+          "domain": [
+            "governance",
+            "infrastructure",
+            "architecture",
+            "operational",
+            "meta"
+          ],
+          "phase": [
+            "phase-a",
+            "phase-b",
+            "phase-c",
+            "phase-d",
+            "phase-e",
+            "phase-f",
+            "phase-g"
+          ],
+          "status_indicators": [
+            "needs-update",
+            "pending-review",
+            "blocked"
+          ],
+          "type": [
+            "skill-definition",
+            "technical-spec",
+            "schema",
+            "tool",
+            "example",
+            "project-plan",
+            "report"
+          ]
+        },
+        "tracked_dirs": [
+          "docs/",
+          "skill/",
+          "schema/",
+          "examples/"
+        ]
+      },
+      "registry_meta": {
+        "active": 26,
+        "archived": 0,
+        "draft": 5,
+        "in_docs_archive": 0,
+        "last_audit": "2026-04-12",
+        "last_audit_note": "2026-04-22: Session 53 registered phase-9 PyPI rename migration plan, v0.8.0 release notes V6.0, and v0.8.0 runbook V1.0 as draft entries ahead of the host-terminal release execution. V3.0 manifest + evidence pair stays active until the host terminal mints V4.0 (step 5 of runbook). Counts updated from 41 → 44 total, 2 → 5 draft.",
+        "last_updated": "2026-04-22",
+        "locations_chat_only": 0,
+        "locations_disk_only": 0,
+        "locations_in_chat": 0,
+        "locations_in_cowork": 10,
+        "naming_violation_details": [],
+        "naming_violations": 0,
+        "not_in_repo": 0,
+        "pending_cross_reference_updates": 0,
+        "superseded": 13,
+        "total_documents": 44,
+        "total_on_disk": 10,
+        "version_convention_note": "This project was created 2026-04-11 with the canonical dot form (VX.Y) from day one. No legacy transition rules apply."
+      }
+    },
+    "summary": {
+      "total_edges": 22,
+      "total_hashed": 44,
+      "total_on_disk": 44,
+      "total_registered": 44
+    }
+  },
+  "seal": {
+    "algorithm": "SHA-256",
+    "manifest_json_sha256": "674b50352a0d50d938faa446627b1e6ea2cea813e46ee8449127dd083c75b8ab",
+    "note": "Computed over canonical manifest JSON (sorted keys, generated_at excluded). Re-generate canonical form and re-hash to verify."
+  },
+  "signature": {
+    "commit": "c88fa3f4ee66e340a342c95db8f0f60619ba85ff",
+    "key_id": "SHA256:QcSpZixPoF0dAY9eNOsOilRqwpmKpxxAGShN5XG0JV4",
+    "signed": true,
+    "signer": "ghengis5@gmail.com",
+    "status": "G",
+    "status_description": "good signature",
+    "trust_model": "fully"
+  }
+}
